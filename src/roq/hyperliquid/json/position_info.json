@@ -1,0 +1,25 @@
+{
+  "name": "roq/hyperliquid/json/PositionInfo",
+  "type": "comp",
+  "values": [
+    {
+      "name": "retCode",
+      "type": "std/int32"
+    },
+    {
+      "name": "retMsg",
+      "type": "std/string_view"
+    },
+    {
+      "name": "result",
+      "type": "roq/hyperliquid/json/PositionInfoResult"
+    },
+    {
+      "name": "retExtInfo"
+    },
+    {
+      "name": "time",
+      "type": "std/milliseconds"
+    }
+  ]
+}

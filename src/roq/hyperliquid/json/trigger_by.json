@@ -1,0 +1,18 @@
+{
+  "name": "roq/hyperliquid/json/TriggerBy",
+  "type": "enum",
+  "values": [
+    {
+      "name": "UNKNOWN"
+    },
+    {
+      "name": "LastPrice"
+    },
+    {
+      "name": "IndexPrice"
+    },
+    {
+      "name": "MarkPrice"
+    }
+  ]
+}

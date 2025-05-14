@@ -1,1 +1,1 @@
-add_subdirectory(bybit)
+add_subdirectory(hyperliquid)

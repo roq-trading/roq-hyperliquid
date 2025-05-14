@@ -1,0 +1,19 @@
+{
+  "name": "roq/hyperliquid/json/InstrumentInfoResult",
+  "type": "comp",
+  "values": [
+    {
+      "name": "category",
+      "type": "roq/hyperliquid/json/Category"
+    },
+    {
+      "name": "list",
+      "type": "roq/hyperliquid/json/InstrumentInfoResultItem",
+      "array": "std/span"
+    },
+    {
+      "name": "nextPageCursor",
+      "type": "std/string_view"
+    }
+  ]
+}

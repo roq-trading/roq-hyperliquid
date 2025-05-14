@@ -1,5 +1,5 @@
 package:
-  name: roq-bybit
+  name: roq-hyperliquid
   version: {{ GIT_DESCRIBE_TAG }}
 
 source:
@@ -48,4 +48,4 @@ about:
   license: Commercial
   license_family: PROPRIETARY
   license_file: LICENSE
-  summary: Roq Bybit Gateway
+  summary: Roq Hyperliquid Gateway

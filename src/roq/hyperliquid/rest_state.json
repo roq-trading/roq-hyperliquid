@@ -1,0 +1,12 @@
+{
+  "name": "roq/hyperliquid/RestState",
+  "type": "enum",
+  "values": [
+    {
+      "name": "get_instrument_info"
+    },
+    {
+      "name": "done"
+    }
+  ]
+}

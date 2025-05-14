@@ -1,0 +1,33 @@
+{
+  "name": "roq/hyperliquid/json/OrderBook",
+  "type": "comp",
+  "values": [
+    {
+      "name": "id",
+      "type": "std/string_view",
+      "comment": "...O"
+    },
+    {
+      "name": "topic",
+      "type": "std/string_view"
+    },
+    {
+      "name": "type",
+      "type": "roq/hyperliquid/json/EventType"
+    },
+    {
+      "raw": "ts",
+      "name": "timestamp",
+      "type": "std/milliseconds"
+    },
+    {
+      "name": "data",
+      "type": "roq/hyperliquid/json/OrderBookData"
+    },
+    {
+      "raw": "cts",
+      "name": "cts",
+      "type": "std/milliseconds"
+    }
+  ]
+}

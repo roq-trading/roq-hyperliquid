@@ -1,0 +1,11 @@
+{
+  "name": "roq/hyperliquid/json/WalletBalanceResult",
+  "type": "comp",
+  "values": [
+    {
+      "name": "list",
+      "type": "roq/hyperliquid/json/WalletBalanceResultItem",
+      "array": "std/span"
+    }
+  ]
+}

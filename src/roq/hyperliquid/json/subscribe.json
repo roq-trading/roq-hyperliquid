@@ -1,0 +1,34 @@
+{
+  "name": "roq/hyperliquid/json/Subscribe",
+  "type": "comp",
+  "values": [
+    {
+      "name": "op",
+      "type": "roq/hyperliquid/json/Operation"
+    },
+    {
+      "name": "success",
+      "type": "std/bool"
+    },
+    {
+      "name": "ret_msg",
+      "type": "std/string_view"
+    },
+    {
+      "name": "conn_id",
+      "type": "std/string_view"
+    },
+    {
+      "name": "req_id",
+      "type": "std/string_view"
+    },
+    {
+      "name": "data",
+      "type": "roq/hyperliquid/json/SubscribeData"
+    },
+    {
+      "name": "type",
+      "type": "roq/hyperliquid/json/EventType"
+    }
+  ]
+}

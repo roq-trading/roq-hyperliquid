@@ -2,12 +2,12 @@
 
 #include <benchmark/benchmark.h>
 
-#include "roq/bybit/json/utils.hpp"
+#include "roq/hyperliquid/json/utils.hpp"
 
-#include "roq/bybit/tools/crypto.hpp"
+#include "roq/hyperliquid/tools/crypto.hpp"
 
 using namespace roq;
-using namespace roq::bybit;
+using namespace roq::hyperliquid;
 
 using namespace std::literals;
 
@@ -18,7 +18,7 @@ auto const PATH = "/spot/v3/private/order"sv;
 auto const CREATE_ORDER = CreateOrder{
     .account = "A1"sv,
     .order_id = 1001,
-    .exchange = "bybit"sv,
+    .exchange = "hyperliquid"sv,
     .symbol = "BTCUSDT"sv,
     .side = Side::BUY,
     .position_effect = {},

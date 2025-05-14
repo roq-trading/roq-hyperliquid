@@ -1,1 +1,1 @@
-Bybit
+Hyperliquid

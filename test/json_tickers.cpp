@@ -4,11 +4,11 @@
 
 #include "roq/core/json/parser.hpp"
 
-#include "roq/bybit/json/parser.hpp"
-#include "roq/bybit/json/tickers.hpp"
+#include "roq/hyperliquid/json/parser.hpp"
+#include "roq/hyperliquid/json/tickers.hpp"
 
 using namespace roq;
-using namespace roq::bybit;
+using namespace roq::hyperliquid;
 
 using namespace std::literals;
 using namespace std::chrono_literals;

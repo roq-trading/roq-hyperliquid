@@ -2,10 +2,10 @@
 
 #include <catch2/catch_all.hpp>
 
-#include "roq/bybit/json/utils.hpp"
+#include "roq/hyperliquid/json/utils.hpp"
 
 using namespace roq;
-using namespace roq::bybit;
+using namespace roq::hyperliquid;
 
 using namespace std::literals;
 using namespace std::chrono_literals;

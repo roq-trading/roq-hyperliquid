@@ -1,0 +1,12 @@
+{
+  "name": "roq/hyperliquid/json/OptionsType",
+  "type": "enum",
+  "values": [
+    {
+      "name": "Call"
+    },
+    {
+      "name": "Put"
+    }
+  ]
+}

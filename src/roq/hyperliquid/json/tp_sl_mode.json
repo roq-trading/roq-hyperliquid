@@ -1,0 +1,12 @@
+{
+  "name": "roq/hyperliquid/json/TpSlMode",
+  "type": "enum",
+  "values": [
+    {
+      "name": "UNKNOWN"
+    },
+    {
+      "name": "Full"
+    }
+  ]
+}

@@ -4,10 +4,10 @@
 
 #include "roq/core/json/parser.hpp"
 
-#include "roq/bybit/json/instrument_info.hpp"
+#include "roq/hyperliquid/json/instrument_info.hpp"
 
 using namespace roq;
-using namespace roq::bybit;
+using namespace roq::hyperliquid;
 
 using namespace std::literals;
 using namespace std::chrono_literals;

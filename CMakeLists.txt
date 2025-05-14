@@ -16,7 +16,7 @@ message("Using GIT_REPO_VERSION=${GIT_REPO_VERSION}")
 
 # project
 
-project(roq-bybit VERSION ${GIT_REPO_VERSION})
+project(roq-hyperliquid VERSION ${GIT_REPO_VERSION})
 
 # language
 

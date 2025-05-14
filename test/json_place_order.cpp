@@ -2,11 +2,11 @@
 
 #include <catch2/catch_all.hpp>
 
-#include "roq/bybit/json/place_order.hpp"
-#include "roq/bybit/json/utils.hpp"
+#include "roq/hyperliquid/json/place_order.hpp"
+#include "roq/hyperliquid/json/utils.hpp"
 
 using namespace roq;
-using namespace roq::bybit;
+using namespace roq::hyperliquid;
 
 using namespace std::literals;
 using namespace std::chrono_literals;
@@ -30,7 +30,7 @@ TEST_CASE("json_place_order_simple", "[json_place_order]") {
   auto create_order = CreateOrder{
       .account = "A1"sv,
       .order_id = 1000,
-      .exchange = "bybit",
+      .exchange = "hyperliquid",
       .symbol = SYMBOL,
       .side = Side::BUY,
       .position_effect = {},

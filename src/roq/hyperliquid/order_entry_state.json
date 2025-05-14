@@ -1,0 +1,12 @@
+{
+  "name": "roq/hyperliquid/OrderEntryState",
+  "type": "enum",
+  "values": [
+    {
+      "name": "account_info"
+    },
+    {
+      "name": "done"
+    }
+  ]
+}

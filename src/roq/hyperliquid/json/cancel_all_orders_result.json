@@ -1,0 +1,17 @@
+{
+  "name": "roq/hyperliquid/json/CancelAllOrdersResult",
+  "type": "comp",
+  "values": [
+    {
+      "name": "success",
+      "type": "std/int32",
+      "comment": "S..."
+    },
+    {
+      "name": "list",
+      "type": "roq/hyperliquid/json/CancelAllOrdersResultItem",
+      "array": "std/span",
+      "comment": ".LIO"
+    }
+  ]
+}
