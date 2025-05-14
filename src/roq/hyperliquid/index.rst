@@ -593,8 +593,8 @@ Common
 * :ref:`Gateway Flags <gateway-flags>`
 * :ref:`Gateway Config <gateway-config>`
 
-Bybit
-~~~~~
+Hyperliquid
+~~~~~~~~~~~
 
 * `Website <https://www.hyperliquid.com/en-US/>`__
 * `Documentation <https://hyperliquid-exchange.github.io/docs/v5/intro>`__

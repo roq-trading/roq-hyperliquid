@@ -7,8 +7,8 @@ symbols = [
 
   [accounts.A1]
   master = true
-  login = "YOUR_BYBIT_API_KEY_GOES_HERE"
-  secret = "YOUR_BYBIT_SECRET_GOES_HERE"
+  login = "YOUR_HYPERLIQUID_API_KEY_GOES_HERE"
+  secret = "YOUR_HYPERLIQUID_SECRET_GOES_HERE"
   symbols = [ ".*" ]
 
 [users]

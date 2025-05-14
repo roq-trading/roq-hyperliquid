@@ -468,7 +468,7 @@ Error map_error(int32_t ret_code) {
       break;
     case 12627:  // Amount to borrow cannot be higher than the max. amount to borrow per user
       break;
-    case 12628:  // Amount to borrow has exceeded Bybit's max. amount to borrow
+    case 12628:  // Amount to borrow has exceeded Hyperliquid's max. amount to borrow
       break;
     case 12629:  // Amount to borrow has exceeded the user's estimated max. amount to borrow
       break;
