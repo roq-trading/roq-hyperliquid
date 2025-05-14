@@ -1,0 +1,14 @@
+{
+  "name": "roq/bybit/json/OrderBookLevel",
+  "type": "array_item",
+  "values": [
+    {
+      "name": "price",
+      "type": "std/double"
+    },
+    {
+      "name": "quantity",
+      "type": "std/double"
+    }
+  ]
+}

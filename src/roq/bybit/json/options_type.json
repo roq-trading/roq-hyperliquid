@@ -1,0 +1,12 @@
+{
+  "name": "roq/bybit/json/OptionsType",
+  "type": "enum",
+  "values": [
+    {
+      "name": "Call"
+    },
+    {
+      "name": "Put"
+    }
+  ]
+}

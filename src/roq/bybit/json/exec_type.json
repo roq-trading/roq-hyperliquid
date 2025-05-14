@@ -1,0 +1,27 @@
+{
+  "name": "roq/bybit/json/ExecType",
+  "type": "enum",
+  "values": [
+    {
+      "name": "UNKNOWN"
+    },
+    {
+      "name": "Trade"
+    },
+    {
+      "name": "AdlTrade"
+    },
+    {
+      "name": "Funding"
+    },
+    {
+      "name": "BustTrade"
+    },
+    {
+      "name": "Delivery"
+    },
+    {
+      "name": "BlockTrade"
+    }
+  ]
+}

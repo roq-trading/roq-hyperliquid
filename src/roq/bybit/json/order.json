@@ -1,0 +1,23 @@
+{
+  "name": "roq/bybit/json/Order",
+  "type": "comp",
+  "values": [
+    {
+      "name": "id",
+      "type": "std/string_view"
+    },
+    {
+      "name": "topic",
+      "type": "std/string_view"
+    },
+    {
+      "name": "creationTime",
+      "type": "std/milliseconds"
+    },
+    {
+      "name": "data",
+      "type": "roq/bybit/json/OrderDataItem",
+      "array": "std/span"
+    }
+  ]
+}

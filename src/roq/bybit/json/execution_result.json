@@ -1,0 +1,19 @@
+{
+  "name": "roq/bybit/json/ExecutionResult",
+  "type": "comp",
+  "values": [
+    {
+      "name": "list",
+      "type": "roq/bybit/json/ExecutionResultItem",
+      "array": "std/span"
+    },
+    {
+      "name": "nextPageCursor",
+      "type": "std/string_view"
+    },
+    {
+      "name": "category",
+      "type": "roq/bybit/json/Category"
+    }
+  ]
+}

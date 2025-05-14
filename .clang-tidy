@@ -1,0 +1,21 @@
+---
+Checks: "bugprone-*,
+         modernize-*,
+         -bugprone-easily-swappable-parameters,
+         -bugprone-easily-swappable-parameters,
+         -bugprone-macro-parentheses,
+         -clang-diagnostic-unused-command-line-argument,
+         -modernize-concat-nested-namespaces,
+         -modernize-use-nodiscard,
+         -modernize-use-trailing-return-type,
+         performance-*,
+         -performance-enum-size,
+         readability-*,
+         -readability-convert-member-functions-to-static,
+         -readability-enum-initial-value,
+         -readability-named-parameter,
+         -readability-qualified-auto,
+         -readability-redundant-member-init,"
+WarningsAsErrors: ''
+HeaderFilterRegex: ''
+FormatStyle:     none
