@@ -20,9 +20,9 @@ template <>
 constexpr Helper<hyperliquid::json::EventType>::operator std::optional<roq::UpdateType>() const {
   switch (std::get<0>(args_)) {
     using enum hyperliquid::json::EventType::type_t;
-    case _UNDEFINED:
+    case UNDEFINED_INTERNAL:
       return UpdateType::UNDEFINED;
-    case _UNKNOWN:
+    case UNKNOWN_INTERNAL:
       return UpdateType::UNDEFINED;
     case ERROR:
       return UpdateType::UNDEFINED;
@@ -36,7 +36,7 @@ constexpr Helper<hyperliquid::json::EventType>::operator std::optional<roq::Upda
   return {};
 }
 
-static_assert(Helper{hyperliquid::json::EventType{hyperliquid::json::EventType::_UNDEFINED}} == roq::UpdateType::UNDEFINED);
+static_assert(Helper{hyperliquid::json::EventType{hyperliquid::json::EventType::UNDEFINED_INTERNAL}} == roq::UpdateType::UNDEFINED);
 static_assert(Helper{hyperliquid::json::EventType{hyperliquid::json::EventType::SNAPSHOT}} == roq::UpdateType::SNAPSHOT);
 static_assert(Helper{hyperliquid::json::EventType{hyperliquid::json::EventType::DELTA}} == roq::UpdateType::INCREMENTAL);
 static_assert(Helper{hyperliquid::json::EventType{hyperliquid::json::EventType::COMMAND_RESP}} == roq::UpdateType::UNDEFINED);
@@ -54,9 +54,9 @@ template <>
 constexpr Helper<hyperliquid::json::OptionsType>::operator std::optional<roq::OptionType>() const {
   switch (std::get<0>(args_)) {
     using enum hyperliquid::json::OptionsType::type_t;
-    case _UNDEFINED:
+    case UNDEFINED_INTERNAL:
       return roq::OptionType::UNDEFINED;
-    case _UNKNOWN:
+    case UNKNOWN_INTERNAL:
       return roq::OptionType::UNDEFINED;
     case CALL:
       return roq::OptionType::CALL;
@@ -66,7 +66,7 @@ constexpr Helper<hyperliquid::json::OptionsType>::operator std::optional<roq::Op
   return {};
 }
 
-static_assert(Helper{hyperliquid::json::OptionsType{hyperliquid::json::OptionsType::_UNDEFINED}} == roq::OptionType::UNDEFINED);
+static_assert(Helper{hyperliquid::json::OptionsType{hyperliquid::json::OptionsType::UNDEFINED_INTERNAL}} == roq::OptionType::UNDEFINED);
 static_assert(Helper{hyperliquid::json::OptionsType{hyperliquid::json::OptionsType::CALL}} == roq::OptionType::CALL);
 static_assert(Helper{hyperliquid::json::OptionsType{hyperliquid::json::OptionsType::PUT}} == roq::OptionType::PUT);
 
@@ -83,9 +83,9 @@ template <>
 constexpr Helper<hyperliquid::json::OrderStatus>::operator std::optional<roq::OrderStatus>() const {
   switch (std::get<0>(args_)) {
     using enum hyperliquid::json::OrderStatus::type_t;
-    case _UNDEFINED:
+    case UNDEFINED_INTERNAL:
       return roq::OrderStatus::UNDEFINED;
-    case _UNKNOWN:
+    case UNKNOWN_INTERNAL:
       return roq::OrderStatus::UNDEFINED;
     case CREATED:
       return roq::OrderStatus::WORKING;
@@ -113,7 +113,7 @@ constexpr Helper<hyperliquid::json::OrderStatus>::operator std::optional<roq::Or
   return {};
 }
 
-static_assert(Helper{hyperliquid::json::OrderStatus{hyperliquid::json::OrderStatus::_UNDEFINED}} == roq::OrderStatus::UNDEFINED);
+static_assert(Helper{hyperliquid::json::OrderStatus{hyperliquid::json::OrderStatus::UNDEFINED_INTERNAL}} == roq::OrderStatus::UNDEFINED);
 static_assert(Helper{hyperliquid::json::OrderStatus{hyperliquid::json::OrderStatus::CREATED}} == roq::OrderStatus::WORKING);
 static_assert(Helper{hyperliquid::json::OrderStatus{hyperliquid::json::OrderStatus::NEW}} == roq::OrderStatus::WORKING);
 static_assert(Helper{hyperliquid::json::OrderStatus{hyperliquid::json::OrderStatus::REJECTED}} == roq::OrderStatus::REJECTED);
@@ -139,9 +139,9 @@ template <>
 constexpr Helper<hyperliquid::json::OrderType>::operator std::optional<roq::OrderType>() const {
   switch (std::get<0>(args_)) {
     using enum hyperliquid::json::OrderType::type_t;
-    case _UNDEFINED:
+    case UNDEFINED_INTERNAL:
       return roq::OrderType::UNDEFINED;
-    case _UNKNOWN:
+    case UNKNOWN_INTERNAL:
       return roq::OrderType::UNDEFINED;
     case UNKNOWN:
       return roq::OrderType::UNDEFINED;
@@ -153,7 +153,7 @@ constexpr Helper<hyperliquid::json::OrderType>::operator std::optional<roq::Orde
   return {};
 }
 
-static_assert(Helper{hyperliquid::json::OrderType{hyperliquid::json::OrderType::_UNDEFINED}} == roq::OrderType::UNDEFINED);
+static_assert(Helper{hyperliquid::json::OrderType{hyperliquid::json::OrderType::UNDEFINED_INTERNAL}} == roq::OrderType::UNDEFINED);
 static_assert(Helper{hyperliquid::json::OrderType{hyperliquid::json::OrderType::MARKET}} == roq::OrderType::MARKET);
 static_assert(Helper{hyperliquid::json::OrderType{hyperliquid::json::OrderType::LIMIT}} == roq::OrderType::LIMIT);
 
@@ -170,9 +170,9 @@ template <>
 constexpr Helper<hyperliquid::json::Side>::operator std::optional<roq::Side>() const {
   switch (std::get<0>(args_)) {
     using enum hyperliquid::json::Side::type_t;
-    case _UNDEFINED:
+    case UNDEFINED_INTERNAL:
       return roq::Side::UNDEFINED;
-    case _UNKNOWN:
+    case UNKNOWN_INTERNAL:
       return roq::Side::UNDEFINED;
     case NONE:
       return roq::Side::UNDEFINED;
@@ -184,7 +184,7 @@ constexpr Helper<hyperliquid::json::Side>::operator std::optional<roq::Side>() c
   return {};
 }
 
-static_assert(Helper{hyperliquid::json::Side{hyperliquid::json::Side::_UNDEFINED}} == roq::Side::UNDEFINED);
+static_assert(Helper{hyperliquid::json::Side{hyperliquid::json::Side::UNDEFINED_INTERNAL}} == roq::Side::UNDEFINED);
 static_assert(Helper{hyperliquid::json::Side{hyperliquid::json::Side::NONE}} == roq::Side::UNDEFINED);
 static_assert(Helper{hyperliquid::json::Side{hyperliquid::json::Side::BUY}} == roq::Side::BUY);
 static_assert(Helper{hyperliquid::json::Side{hyperliquid::json::Side::SELL}} == roq::Side::SELL);
@@ -202,9 +202,9 @@ template <>
 constexpr Helper<hyperliquid::json::Status>::operator std::optional<roq::TradingStatus>() const {
   switch (std::get<0>(args_)) {
     using enum hyperliquid::json::Status::type_t;
-    case _UNDEFINED:
+    case UNDEFINED_INTERNAL:
       return roq::TradingStatus::UNDEFINED;
-    case _UNKNOWN:
+    case UNKNOWN_INTERNAL:
       return roq::TradingStatus::UNDEFINED;
     case PRE_LAUNCH:
       return roq::TradingStatus::UNDEFINED;
@@ -220,7 +220,7 @@ constexpr Helper<hyperliquid::json::Status>::operator std::optional<roq::Trading
   return {};
 }
 
-static_assert(Helper{hyperliquid::json::Status{hyperliquid::json::Status::_UNDEFINED}} == roq::TradingStatus::UNDEFINED);
+static_assert(Helper{hyperliquid::json::Status{hyperliquid::json::Status::UNDEFINED_INTERNAL}} == roq::TradingStatus::UNDEFINED);
 static_assert(Helper{hyperliquid::json::Status{hyperliquid::json::Status::PRE_LAUNCH}} == roq::TradingStatus::UNDEFINED);
 static_assert(Helper{hyperliquid::json::Status{hyperliquid::json::Status::TRADING}} == roq::TradingStatus::OPEN);
 static_assert(Helper{hyperliquid::json::Status{hyperliquid::json::Status::SETTLING}} == roq::TradingStatus::UNDEFINED);
@@ -240,9 +240,9 @@ template <>
 constexpr Helper<hyperliquid::json::TimeInForce>::operator std::optional<roq::TimeInForce>() const {
   switch (std::get<0>(args_)) {
     using enum hyperliquid::json::TimeInForce::type_t;
-    case _UNDEFINED:
+    case UNDEFINED_INTERNAL:
       return roq::TimeInForce::UNDEFINED;
-    case _UNKNOWN:
+    case UNKNOWN_INTERNAL:
       return roq::TimeInForce::UNDEFINED;
     case GTC:
       return roq::TimeInForce::GTC;
@@ -254,7 +254,7 @@ constexpr Helper<hyperliquid::json::TimeInForce>::operator std::optional<roq::Ti
   return {};
 }
 
-static_assert(Helper{hyperliquid::json::TimeInForce{hyperliquid::json::TimeInForce::_UNDEFINED}} == roq::TimeInForce::UNDEFINED);
+static_assert(Helper{hyperliquid::json::TimeInForce{hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL}} == roq::TimeInForce::UNDEFINED);
 static_assert(Helper{hyperliquid::json::TimeInForce{hyperliquid::json::TimeInForce::GTC}} == roq::TimeInForce::GTC);
 static_assert(Helper{hyperliquid::json::TimeInForce{hyperliquid::json::TimeInForce::FOK}} == roq::TimeInForce::FOK);
 static_assert(Helper{hyperliquid::json::TimeInForce{hyperliquid::json::TimeInForce::IOC}} == roq::TimeInForce::IOC);
@@ -272,8 +272,8 @@ template <>
 constexpr Helper<hyperliquid::json::ContractType, hyperliquid::json::OptionsType>::operator std::optional<roq::SecurityType>() const {
   switch (std::get<1>(args_)) {
     using enum hyperliquid::json::OptionsType::type_t;
-    case _UNDEFINED:
-    case _UNKNOWN:
+    case UNDEFINED_INTERNAL:
+    case UNKNOWN_INTERNAL:
       break;
     case CALL:
     case PUT:
@@ -281,8 +281,8 @@ constexpr Helper<hyperliquid::json::ContractType, hyperliquid::json::OptionsType
   }
   switch (std::get<0>(args_)) {
     using enum hyperliquid::json::ContractType::type_t;
-    case _UNDEFINED:
-    case _UNKNOWN:
+    case UNDEFINED_INTERNAL:
+    case UNKNOWN_INTERNAL:
       break;
     case INVERSE_PERPETUAL:
     case LINEAR_PERPETUAL:
@@ -295,25 +295,25 @@ constexpr Helper<hyperliquid::json::ContractType, hyperliquid::json::OptionsType
 }
 
 static_assert(
-    Helper{hyperliquid::json::ContractType{hyperliquid::json::ContractType::_UNDEFINED}, hyperliquid::json::OptionsType{hyperliquid::json::OptionsType::_UNDEFINED}} ==
+    Helper{hyperliquid::json::ContractType{hyperliquid::json::ContractType::UNDEFINED_INTERNAL}, hyperliquid::json::OptionsType{hyperliquid::json::OptionsType::UNDEFINED_INTERNAL}} ==
     roq::SecurityType::SPOT);
 static_assert(
-    Helper{hyperliquid::json::ContractType{hyperliquid::json::ContractType::_UNDEFINED}, hyperliquid::json::OptionsType{hyperliquid::json::OptionsType::CALL}} ==
+    Helper{hyperliquid::json::ContractType{hyperliquid::json::ContractType::UNDEFINED_INTERNAL}, hyperliquid::json::OptionsType{hyperliquid::json::OptionsType::CALL}} ==
     roq::SecurityType::OPTION);
 static_assert(
-    Helper{hyperliquid::json::ContractType{hyperliquid::json::ContractType::_UNDEFINED}, hyperliquid::json::OptionsType{hyperliquid::json::OptionsType::PUT}} ==
+    Helper{hyperliquid::json::ContractType{hyperliquid::json::ContractType::UNDEFINED_INTERNAL}, hyperliquid::json::OptionsType{hyperliquid::json::OptionsType::PUT}} ==
     roq::SecurityType::OPTION);
 static_assert(
-    Helper{hyperliquid::json::ContractType{hyperliquid::json::ContractType::INVERSE_PERPETUAL}, hyperliquid::json::OptionsType{hyperliquid::json::OptionsType::_UNDEFINED}} ==
+    Helper{hyperliquid::json::ContractType{hyperliquid::json::ContractType::INVERSE_PERPETUAL}, hyperliquid::json::OptionsType{hyperliquid::json::OptionsType::UNDEFINED_INTERNAL}} ==
     roq::SecurityType::SWAP);
 static_assert(
-    Helper{hyperliquid::json::ContractType{hyperliquid::json::ContractType::LINEAR_PERPETUAL}, hyperliquid::json::OptionsType{hyperliquid::json::OptionsType::_UNDEFINED}} ==
+    Helper{hyperliquid::json::ContractType{hyperliquid::json::ContractType::LINEAR_PERPETUAL}, hyperliquid::json::OptionsType{hyperliquid::json::OptionsType::UNDEFINED_INTERNAL}} ==
     roq::SecurityType::SWAP);
 static_assert(
-    Helper{hyperliquid::json::ContractType{hyperliquid::json::ContractType::LINEAR_FUTURES}, hyperliquid::json::OptionsType{hyperliquid::json::OptionsType::_UNDEFINED}} ==
+    Helper{hyperliquid::json::ContractType{hyperliquid::json::ContractType::LINEAR_FUTURES}, hyperliquid::json::OptionsType{hyperliquid::json::OptionsType::UNDEFINED_INTERNAL}} ==
     roq::SecurityType::FUTURES);
 static_assert(
-    Helper{hyperliquid::json::ContractType{hyperliquid::json::ContractType::INVERSE_FUTURES}, hyperliquid::json::OptionsType{hyperliquid::json::OptionsType::_UNDEFINED}} ==
+    Helper{hyperliquid::json::ContractType{hyperliquid::json::ContractType::INVERSE_FUTURES}, hyperliquid::json::OptionsType{hyperliquid::json::OptionsType::UNDEFINED_INTERNAL}} ==
     roq::SecurityType::FUTURES);
 
 template <>
@@ -332,7 +332,7 @@ constexpr Helper<roq::OrderType>::operator std::optional<hyperliquid::json::Orde
   switch (std::get<0>(args_)) {
     using enum roq::OrderType;
     case UNDEFINED:
-      return hyperliquid::json::OrderType::_UNDEFINED;
+      return hyperliquid::json::OrderType::UNDEFINED_INTERNAL;
     case MARKET:
       return hyperliquid::json::OrderType::MARKET;
     case LIMIT:
@@ -341,7 +341,7 @@ constexpr Helper<roq::OrderType>::operator std::optional<hyperliquid::json::Orde
   return {};
 }
 
-static_assert(Helper{roq::OrderType::UNDEFINED} == hyperliquid::json::OrderType{hyperliquid::json::OrderType::_UNDEFINED});
+static_assert(Helper{roq::OrderType::UNDEFINED} == hyperliquid::json::OrderType{hyperliquid::json::OrderType::UNDEFINED_INTERNAL});
 static_assert(Helper{roq::OrderType::MARKET} == hyperliquid::json::OrderType{hyperliquid::json::OrderType::MARKET});
 static_assert(Helper{roq::OrderType::LIMIT} == hyperliquid::json::OrderType{hyperliquid::json::OrderType::LIMIT});
 
@@ -359,7 +359,7 @@ constexpr Helper<roq::Side>::operator std::optional<hyperliquid::json::Side>() c
   switch (std::get<0>(args_)) {
     using enum roq::Side;
     case UNDEFINED:
-      return hyperliquid::json::Side::_UNDEFINED;
+      return hyperliquid::json::Side::UNDEFINED_INTERNAL;
     case BUY:
       return hyperliquid::json::Side::BUY;
     case SELL:
@@ -368,7 +368,7 @@ constexpr Helper<roq::Side>::operator std::optional<hyperliquid::json::Side>() c
   return {};
 }
 
-static_assert(Helper{roq::Side::UNDEFINED} == hyperliquid::json::Side{hyperliquid::json::Side::_UNDEFINED});
+static_assert(Helper{roq::Side::UNDEFINED} == hyperliquid::json::Side{hyperliquid::json::Side::UNDEFINED_INTERNAL});
 static_assert(Helper{roq::Side::BUY} == hyperliquid::json::Side{hyperliquid::json::Side::BUY});
 static_assert(Helper{roq::Side::SELL} == hyperliquid::json::Side{hyperliquid::json::Side::SELL});
 
@@ -386,38 +386,38 @@ constexpr Helper<roq::TimeInForce>::operator std::optional<hyperliquid::json::Ti
   switch (std::get<0>(args_)) {
     using enum roq::TimeInForce;
     case UNDEFINED:
-      return hyperliquid::json::TimeInForce::_UNDEFINED;
+      return hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL;
     case GFD:
-      return hyperliquid::json::TimeInForce::_UNDEFINED;
+      return hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL;
     case GTC:
       return hyperliquid::json::TimeInForce::GTC;
     case OPG:
-      return hyperliquid::json::TimeInForce::_UNDEFINED;
+      return hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL;
     case IOC:
       return hyperliquid::json::TimeInForce::IOC;
     case FOK:
       return hyperliquid::json::TimeInForce::FOK;
     case GTX:
-      return hyperliquid::json::TimeInForce::_UNDEFINED;
+      return hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL;
     case GTD:
-      return hyperliquid::json::TimeInForce::_UNDEFINED;
+      return hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL;
     case AT_THE_CLOSE:
-      return hyperliquid::json::TimeInForce::_UNDEFINED;
+      return hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL;
     case GOOD_THROUGH_CROSSING:
-      return hyperliquid::json::TimeInForce::_UNDEFINED;
+      return hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL;
     case AT_CROSSING:
-      return hyperliquid::json::TimeInForce::_UNDEFINED;
+      return hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL;
     case GOOD_FOR_TIME:
-      return hyperliquid::json::TimeInForce::_UNDEFINED;
+      return hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL;
     case GFA:
-      return hyperliquid::json::TimeInForce::_UNDEFINED;
+      return hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL;
     case GFM:
-      return hyperliquid::json::TimeInForce::_UNDEFINED;
+      return hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL;
   }
   return {};
 }
 
-static_assert(Helper{roq::TimeInForce::UNDEFINED} == hyperliquid::json::TimeInForce{hyperliquid::json::TimeInForce::_UNDEFINED});
+static_assert(Helper{roq::TimeInForce::UNDEFINED} == hyperliquid::json::TimeInForce{hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL});
 static_assert(Helper{roq::TimeInForce::GTC} == hyperliquid::json::TimeInForce{hyperliquid::json::TimeInForce::GTC});
 static_assert(Helper{roq::TimeInForce::IOC} == hyperliquid::json::TimeInForce{hyperliquid::json::TimeInForce::IOC});
 static_assert(Helper{roq::TimeInForce::FOK} == hyperliquid::json::TimeInForce{hyperliquid::json::TimeInForce::FOK});
