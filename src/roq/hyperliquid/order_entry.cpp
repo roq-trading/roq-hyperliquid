@@ -735,10 +735,10 @@ void OrderEntry::operator()(Trace<json::Execution> const &event) {
         .quantity = item.exec_qty,
         .price = item.exec_price,
         .liquidity = liquidity,
-        .base_amount = NaN,
-        .quote_amount = NaN,
         .commission_amount = item.exec_fee,  // XXX ???
         .commission_currency = {},
+        .base_amount = NaN,
+        .quote_amount = NaN,
         .profit_loss_amount = NaN,
     };
     shared_.fills.emplace_back(std::move(fill));
