@@ -4,7 +4,7 @@
 .. |checkmark| unicode:: U+2713
 
 roq-hyperliquid
-=========
+===============
 
 .. tab:: Stable
 
@@ -24,7 +24,7 @@ roq-hyperliquid
 
 
 :code:`roq-hyperliquid`
------------------
+-----------------------
 
 
 Description
