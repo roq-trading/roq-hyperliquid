@@ -32,7 +32,6 @@
       "name": "ping_path",
       "type": "std/string",
       "validator": "roq/flags/validators/Path",
-      "default": "/v5/market/time",
       "description": "Ping path"
     },
     {

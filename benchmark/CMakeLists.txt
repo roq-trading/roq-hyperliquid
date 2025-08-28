@@ -1,6 +1,6 @@
 set(TARGET_NAME ${PROJECT_NAME}-benchmark)
 
-set(SOURCES create_order.cpp main.cpp)
+set(SOURCES main.cpp)
 
 roq_gitignore(OUTPUT .gitignore SOURCES ${TARGET_NAME})
 

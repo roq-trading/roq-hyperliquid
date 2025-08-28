@@ -11,10 +11,6 @@
       "type": "std/string_view"
     },
     {
-      "name": "result",
-      "type": "roq/hyperliquid/json/InstrumentInfoResult"
-    },
-    {
       "name": "retExtInfo"
     },
     {

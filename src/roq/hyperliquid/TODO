@@ -1,14 +1,10 @@
-rest
-  market_info
-    cursor
+something about significant digits vs max decimals
+spot 8, perp 6
 
-order_entry
-  wallet-balance
-    spot vs unified ???
+asset id's are integers, not symbols
 
-flags
-  limits vs cursor
+tif gtc, ioc or alo (add liquidity only, post only)
 
-drop_copy
-  ready should be synchronized with request/response
-    need timeout and how to deal with that
+margin cross or isolated
+
+TWAP there's an order type + explanation of algo

@@ -2,7 +2,7 @@
 
 #include "roq/hyperliquid/json/map.hpp"
 
-using namespace std::literals;
+// using namespace std::literals;
 
 namespace roq {
 
@@ -11,6 +11,7 @@ template <typename... Args>
 using Helper = detail::MapHelper<Args...>;
 }
 
+/*
 // hyperliquid::json => roq
 
 // hyperliquid::json::EventType ==> roq::UpdateType
@@ -295,26 +296,20 @@ constexpr Helper<hyperliquid::json::ContractType, hyperliquid::json::OptionsType
 }
 
 static_assert(
-    Helper{hyperliquid::json::ContractType{hyperliquid::json::ContractType::UNDEFINED_INTERNAL}, hyperliquid::json::OptionsType{hyperliquid::json::OptionsType::UNDEFINED_INTERNAL}} ==
-    roq::SecurityType::SPOT);
-static_assert(
-    Helper{hyperliquid::json::ContractType{hyperliquid::json::ContractType::UNDEFINED_INTERNAL}, hyperliquid::json::OptionsType{hyperliquid::json::OptionsType::CALL}} ==
-    roq::SecurityType::OPTION);
-static_assert(
-    Helper{hyperliquid::json::ContractType{hyperliquid::json::ContractType::UNDEFINED_INTERNAL}, hyperliquid::json::OptionsType{hyperliquid::json::OptionsType::PUT}} ==
-    roq::SecurityType::OPTION);
-static_assert(
-    Helper{hyperliquid::json::ContractType{hyperliquid::json::ContractType::INVERSE_PERPETUAL}, hyperliquid::json::OptionsType{hyperliquid::json::OptionsType::UNDEFINED_INTERNAL}} ==
-    roq::SecurityType::SWAP);
-static_assert(
-    Helper{hyperliquid::json::ContractType{hyperliquid::json::ContractType::LINEAR_PERPETUAL}, hyperliquid::json::OptionsType{hyperliquid::json::OptionsType::UNDEFINED_INTERNAL}} ==
-    roq::SecurityType::SWAP);
-static_assert(
-    Helper{hyperliquid::json::ContractType{hyperliquid::json::ContractType::LINEAR_FUTURES}, hyperliquid::json::OptionsType{hyperliquid::json::OptionsType::UNDEFINED_INTERNAL}} ==
-    roq::SecurityType::FUTURES);
-static_assert(
-    Helper{hyperliquid::json::ContractType{hyperliquid::json::ContractType::INVERSE_FUTURES}, hyperliquid::json::OptionsType{hyperliquid::json::OptionsType::UNDEFINED_INTERNAL}} ==
-    roq::SecurityType::FUTURES);
+    Helper{hyperliquid::json::ContractType{hyperliquid::json::ContractType::UNDEFINED_INTERNAL},
+hyperliquid::json::OptionsType{hyperliquid::json::OptionsType::UNDEFINED_INTERNAL}} == roq::SecurityType::SPOT); static_assert(
+    Helper{hyperliquid::json::ContractType{hyperliquid::json::ContractType::UNDEFINED_INTERNAL},
+hyperliquid::json::OptionsType{hyperliquid::json::OptionsType::CALL}} == roq::SecurityType::OPTION); static_assert(
+    Helper{hyperliquid::json::ContractType{hyperliquid::json::ContractType::UNDEFINED_INTERNAL},
+hyperliquid::json::OptionsType{hyperliquid::json::OptionsType::PUT}} == roq::SecurityType::OPTION); static_assert(
+    Helper{hyperliquid::json::ContractType{hyperliquid::json::ContractType::INVERSE_PERPETUAL},
+hyperliquid::json::OptionsType{hyperliquid::json::OptionsType::UNDEFINED_INTERNAL}} == roq::SecurityType::SWAP); static_assert(
+    Helper{hyperliquid::json::ContractType{hyperliquid::json::ContractType::LINEAR_PERPETUAL},
+hyperliquid::json::OptionsType{hyperliquid::json::OptionsType::UNDEFINED_INTERNAL}} == roq::SecurityType::SWAP); static_assert(
+    Helper{hyperliquid::json::ContractType{hyperliquid::json::ContractType::LINEAR_FUTURES},
+hyperliquid::json::OptionsType{hyperliquid::json::OptionsType::UNDEFINED_INTERNAL}} == roq::SecurityType::FUTURES); static_assert(
+    Helper{hyperliquid::json::ContractType{hyperliquid::json::ContractType::INVERSE_FUTURES},
+hyperliquid::json::OptionsType{hyperliquid::json::OptionsType::UNDEFINED_INTERNAL}} == roq::SecurityType::FUTURES);
 
 template <>
 template <>
@@ -427,5 +422,5 @@ template <>
 std::optional<hyperliquid::json::TimeInForce> Map<roq::TimeInForce>::helper() const {
   return Helper{args_};
 }
-
+*/
 }  // namespace roq

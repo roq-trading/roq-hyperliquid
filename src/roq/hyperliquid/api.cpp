@@ -11,45 +11,12 @@ using namespace std::literals;
 namespace roq {
 namespace hyperliquid {
 
-// === HELPERS ===
-
-namespace {
-auto create_api(auto &settings) {
-  std::string value{settings.app.api};
-  std::transform(std::begin(value), std::end(value), std::begin(value), ::toupper);
-  auto result = magic_enum::enum_cast<tools::API>(value);
-  if (!result.has_value()) {
-    log::fatal(R"(Unexpected: api="{}")"sv, value);
-  }
-  return *result;
-}
-
-auto create_category(auto api) -> json::Category {
-  switch (api) {
-    using enum tools::API;
-    case UNDEFINED:
-      break;
-    case SPOT:
-      return json::Category::SPOT;
-    case LINEAR:
-      return json::Category::LINEAR;
-    case INVERSE:
-      return json::Category::INVERSE;
-    case OPTION:
-      return json::Category::OPTION;
-  }
-  log::fatal("Unexpected"sv);
-}
-}  // namespace
-
 // === IMPLEMENTATION ===
 
 API API::create(Settings const &settings) {
-  auto api = create_api(settings);
-  auto category = create_category(api);
   return {
       .market_data{
-          .market_instrument_info = "/v5/market/instruments-info"sv,
+          .get_info = "/info"sv,
       },
       .simple{
           .account_info = "/v5/account/info"sv,
@@ -62,8 +29,6 @@ API API::create(Settings const &settings) {
           .order_cancel = "/v5/order/cancel"sv,
           .order_cancel_all = "/v5/order/cancel-all"sv,
       },
-      .api = api,
-      .category = category,
   };
 }
 

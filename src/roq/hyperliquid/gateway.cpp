@@ -32,43 +32,17 @@ R create_accounts(auto &settings, auto &config) {
   }
   return result;
 }
-
-template <typename R>
-R create_order_entry(auto &gateway, auto &context, auto &stream_id, auto &accounts, auto &shared) {
-  using result_type = std::remove_cvref_t<R>;
-  result_type result;
-  for (auto &[_, item] : accounts) {
-    auto &account = *item;
-    auto obj = std::make_unique<OrderEntry>(gateway, context, ++stream_id, account, shared);
-    result.try_emplace(static_cast<std::string_view>(account.name), std::move(obj));
-  }
-  return result;
-}
-
-template <typename R>
-R create_drop_copy(auto &gateway, auto &context, auto &stream_id, auto &accounts, auto &shared) {
-  using result_type = std::remove_cvref_t<R>;
-  result_type result;
-  for (auto &[_, item] : accounts) {
-    auto &account = *item;
-    auto obj = std::make_unique<DropCopy>(gateway, context, ++stream_id, account, shared);
-    result.try_emplace(static_cast<std::string_view>(account.name), std::move(obj));
-  }
-  return result;
-}
 }  // namespace
 
 // === IMPLEMENTATION ===
 
 Gateway::Gateway(server::Dispatcher &dispatcher, Settings const &settings, Config const &config, io::Context &context)
     : dispatcher_{dispatcher}, accounts_{create_accounts<decltype(accounts_)>(settings, config)}, context_{context}, shared_{dispatcher, settings},
-      rest_{*this, context_, ++stream_id_, shared_}, order_entry_{create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, accounts_, shared_)},
-      drop_copy_{create_drop_copy<decltype(drop_copy_)>(*this, context_, stream_id_, accounts_, shared_)} {
+      rest_{*this, context_, ++stream_id_, shared_}, market_data_{*this, context_, ++stream_id_, shared_, {}} {
 }
 
 void Gateway::operator()(Event<Start> const &event) {
   log::info("Starting..."sv);
-  assert(std::empty(market_data_));
   dispatch(event);
 }
 
@@ -136,19 +110,8 @@ void Gateway::operator()(Trace<StatisticsUpdate> const &event, bool is_last) {
   dispatcher_(event, is_last);
 }
 
-void Gateway::operator()(Trace<TradeUpdate> const &event, bool is_last, uint8_t user_id, std::string_view const &request_id) {
-  dispatcher_(event, is_last, user_id, request_id);
-}
-
-void Gateway::operator()(Trace<PositionUpdate> const &event, bool is_last) {
-  dispatcher_(event, is_last);
-}
-
-void Gateway::operator()(Trace<FundsUpdate> const &event, bool is_last) {
-  dispatcher_(event, is_last);
-}
-
 void Gateway::operator()(Rest::SymbolsUpdate &symbols_update) {
+  /*
   auto [size, start_from] = shared_.symbols(symbols_update.symbols);
   ensure_symbol_slices(size);
   for (auto &item : market_data_) {
@@ -157,9 +120,11 @@ void Gateway::operator()(Rest::SymbolsUpdate &symbols_update) {
   for (auto &item : drop_copy_) {
     (*item.second)(symbols_update);
   }
+  */
 }
 
 void Gateway::ensure_symbol_slices(size_t size) {
+  /*
   while (std::size(market_data_) < size) {
     log::info("Create market-data (user-stream)"sv);
     auto market_data = std::make_unique<MarketData>(*this, context_, ++stream_id_, shared_, std::size(market_data_));
@@ -168,35 +133,31 @@ void Gateway::ensure_symbol_slices(size_t size) {
     create_event_and_dispatch(*market_data, message_info, start);
     market_data_.emplace_back(std::move(market_data));
   }
+  */
 }
 
-void Gateway::operator()(Trace<OrderEntry::Response> const &event) {
-  auto &[trace_info, response] = event;
-  get_drop_copy(response.account)(event);
-}
-
-uint16_t Gateway::operator()(Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
-  assert(!std::empty(event.value.account));
-  return get_order_entry(event.value.account)(event, order, request_id);
+uint16_t Gateway::operator()(Event<CreateOrder> const &, server::oms::Order const &, [[maybe_unused]] std::string_view const &request_id) {
+  throw server::oms::NotSupported{"not supported"sv};
 }
 
 uint16_t Gateway::operator()(
-    Event<ModifyOrder> const &event, server::oms::Order const &order, std::string_view const &request_id, std::string_view const &previous_request_id) {
-  assert(!std::empty(event.value.account));
-  assert(event.value.account == order.account);
-  return get_order_entry(event.value.account)(event, order, request_id, previous_request_id);
+    Event<ModifyOrder> const &,
+    server::oms::Order const &,
+    [[maybe_unused]] std::string_view const &request_id,
+    [[maybe_unused]] std::string_view const &previous_request_id) {
+  throw server::oms::NotSupported{"not supported"sv};
 }
 
 uint16_t Gateway::operator()(
-    Event<CancelOrder> const &event, server::oms::Order const &order, std::string_view const &request_id, std::string_view const &previous_request_id) {
-  assert(!std::empty(event.value.account));
-  assert(event.value.account == order.account);
-  return get_order_entry(event.value.account)(event, order, request_id, previous_request_id);
+    Event<CancelOrder> const &,
+    server::oms::Order const &,
+    [[maybe_unused]] std::string_view const &request_id,
+    [[maybe_unused]] std::string_view const &previous_request_id) {
+  throw server::oms::NotSupported{"not supported"sv};
 }
 
-uint16_t Gateway::operator()(Event<CancelAllOrders> const &event, std::string_view const &request_id) {
-  assert(!std::empty(event.value.account));
-  return get_order_entry(event.value.account)(event, request_id);
+uint16_t Gateway::operator()(Event<CancelAllOrders> const &, [[maybe_unused]] std::string_view const &request_id) {
+  throw server::oms::NotSupported{"not supported"sv};
 }
 
 uint16_t Gateway::operator()(Event<MassQuote> const &) {
@@ -209,46 +170,14 @@ uint16_t Gateway::operator()(Event<CancelQuotes> const &) {
 
 void Gateway::operator()(metrics::Writer &writer) const {
   rest_(writer);
-  for (auto &[_, item] : order_entry_) {
-    (*item)(writer);
-  }
-  for (auto &[_, item] : drop_copy_) {
-    (*item)(writer);
-  }
-  for (auto &item : market_data_) {
-    (*item)(writer);
-  }
+  market_data_(writer);
 }
 
 template <typename... Args>
 void Gateway::dispatch(Args &&...args) {
   auto helper = [&](auto &target) { target(std::forward<Args>(args)...); };
   helper(rest_);
-  for (auto &[_, item] : order_entry_) {
-    helper(*item);
-  }
-  for (auto &[_, item] : drop_copy_) {
-    helper(*item);
-  }
-  for (auto &item : market_data_) {
-    helper(*item);
-  }
-}
-
-OrderEntry &Gateway::get_order_entry(std::string_view const &account) {
-  auto iter = order_entry_.find(account);
-  if (iter != std::end(order_entry_)) {
-    return *(*iter).second;
-  }
-  throw RuntimeError{R"(Unknown account="{}")"sv, account};
-}
-
-DropCopy &Gateway::get_drop_copy(std::string_view const &account) {
-  auto iter = drop_copy_.find(account);
-  if (iter != std::end(drop_copy_)) {
-    return *(*iter).second;
-  }
-  log::fatal(R"(Unknown account="{}")"sv, account);
+  helper(market_data_);
 }
 
 }  // namespace hyperliquid

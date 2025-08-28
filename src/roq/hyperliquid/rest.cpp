@@ -96,8 +96,8 @@ Rest::Rest(Handler &handler, io::Context &context, uint16_t stream_id, Shared &s
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
       profile_{
-          .instrument_info = create_metrics(shared.settings, name_, "instrument_info"sv),
-          .instrument_info_ack = create_metrics(shared.settings, name_, "instrument_info_ack"sv),
+          .info = create_metrics(shared.settings, name_, "info"sv),
+          .info_ack = create_metrics(shared.settings, name_, "info_ack"sv),
       },
       latency_{
           .ping = create_metrics(shared.settings, name_, "ping"sv),
@@ -124,8 +124,8 @@ void Rest::operator()(metrics::Writer &writer) const {
       // counter
       .write(counter_.disconnect, metrics::Type::COUNTER)
       // profile
-      .write(profile_.instrument_info, metrics::Type::PROFILE)
-      .write(profile_.instrument_info_ack, metrics::Type::PROFILE)
+      .write(profile_.info, metrics::Type::PROFILE)
+      .write(profile_.info_ack, metrics::Type::PROFILE)
       // latency
       .write(latency_.ping, metrics::Type::LATENCY);
 }
@@ -186,8 +186,8 @@ uint32_t Rest::download(RestState state) {
     case UNDEFINED:
       assert(false);
       break;
-    case GET_INSTRUMENT_INFO:
-      get_instrument_info();
+    case GET_INFO:
+      get_info();
       return 1;
     case DONE:
       (*this)(ConnectionStatus::READY);
@@ -199,43 +199,39 @@ uint32_t Rest::download(RestState state) {
 
 // market info
 
-void Rest::get_instrument_info() {
-  profile_.instrument_info([&]() {
-    auto query = fmt::format(
-        "?category={}"
-        "&status=Trading"
-        "&limit=1000"sv,
-        shared_.api.category.as_raw_text());
+void Rest::get_info() {
+  profile_.info([&]() {
+    auto body = R"({"type":"metaAndAssetCtxs"})"sv;
     auto request = web::rest::Request{
-        .method = web::http::Method::GET,
-        .path = shared_.api.market_data.market_instrument_info,
-        .query = query,
+        .method = web::http::Method::POST,
+        .path = shared_.api.market_data.get_info,
+        .query = {},
         .accept = web::http::Accept::APPLICATION_JSON,
-        .content_type = {},
+        .content_type = web::http::ContentType::APPLICATION_JSON,
         .headers = {},
-        .body = {},
+        .body = body,
         .quality_of_service = {},
     };
     auto callback = [this, sequence = download_.sequence()]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
-      get_instrument_info_ack(event, sequence);
+      get_info_ack(event, sequence);
     };
-    (*connection_)("market-instrument-info"sv, request, callback);
+    (*connection_)("info"sv, request, callback);
   });
 }
 
-void Rest::get_instrument_info_ack(Trace<web::rest::Response> const &event, uint32_t sequence) {
-  auto const STATE = RestState::GET_INSTRUMENT_INFO;
-  profile_.instrument_info_ack([&]() {
+void Rest::get_info_ack(Trace<web::rest::Response> const &event, uint32_t sequence) {
+  auto const STATE = RestState::GET_INFO;
+  profile_.info_ack([&]() {
     auto handle_success = [&](auto &body) {
       if (download_.skip(sequence, STATE)) {
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
-        json::InstrumentInfo instrument_info{body, decode_buffer_};
-        Trace event_2{event, instrument_info};
-        (*this)(event_2);
-        // XXX HANS NEW ??? create_trace_and_dispatch(*this, event, instrument_info)();
+        // json::InstrumentInfo info{body, decode_buffer_};
+        // Trace event_2{event, info};
+        // (*this)(event_2);
+        // XXX HANS NEW ??? create_trace_and_dispatch(*this, event, info)();
         download_.check(STATE);
       }
     };
@@ -250,73 +246,6 @@ void Rest::get_instrument_info_ack(Trace<web::rest::Response> const &event, uint
 void Rest::operator()(Trace<json::InstrumentInfo> const &event) {
   auto &[trace_info, instrument_info] = event;
   log::info<4>("instrument_info={}"sv, instrument_info);
-  std::vector<Symbol> symbols;
-  symbols.reserve(std::size(instrument_info.result.list));  // alloc
-  size_t counter = 0;
-  for (auto &item : instrument_info.result.list) {
-    log::info<2>("item={}"sv, item);
-    auto discard = shared_.discard_symbol(item.symbol);
-    auto reference_data = ReferenceData{
-        .stream_id = stream_id_,
-        .exchange = shared_.settings.exchange,
-        .symbol = item.symbol,
-        .description = item.symbol,
-        .security_type = map(item.contract_type, item.options_type),
-        .cfi_code = {},
-        .base_currency = item.base_coin,
-        .quote_currency = item.quote_coin,
-        .settlement_currency = item.settle_coin,
-        .margin_currency = {},
-        .commission_currency = {},
-        .tick_size = item.price_filter.tick_size,
-        .tick_size_steps = {},
-        .multiplier = NaN,
-        .min_notional = NaN,
-        .min_trade_vol = item.lot_size_filter.min_order_qty,
-        .max_trade_vol = item.lot_size_filter.max_order_qty,
-        .trade_vol_step_size = NaN,
-        .option_type = map(item.options_type),
-        .strike_currency = {},
-        .strike_price = NaN,
-        .underlying = {},
-        .time_zone = {},
-        .issue_date = utils::safe_cast{item.launch_time},
-        .settlement_date = {},
-        .expiry_datetime = {},
-        .expiry_datetime_utc = utils::safe_cast{item.delivery_time},
-        .exchange_time_utc = {},
-        .exchange_sequence = {},
-        .sending_time_utc = instrument_info.time,
-        .discard = discard,
-    };
-    create_trace_and_dispatch(handler_, trace_info, reference_data, true);
-    if (discard) {
-      continue;
-    }
-    if (symbols_.emplace(item.symbol).second) {  // only include new
-      symbols.emplace_back(item.symbol);
-    }
-    ++counter;
-    auto market_status = MarketStatus{
-        .stream_id = stream_id_,
-        .exchange = shared_.settings.exchange,
-        .symbol = item.symbol,
-        .trading_status = map(item.status),
-        .exchange_time_utc = {},
-        .exchange_sequence = {},
-        .sending_time_utc = instrument_info.time,
-    };
-    create_trace_and_dispatch(handler_, trace_info, market_status, true);
-  }
-  if (!std::empty(symbols)) {
-    auto symbols_update = SymbolsUpdate{
-        .symbols = symbols,
-    };
-    handler_(symbols_update);
-  }
-  if (counter > 0) {
-    log::info("Symbols {} / {}"sv, counter, std::size(instrument_info.result.list));
-  }
 }
 
 // helpers

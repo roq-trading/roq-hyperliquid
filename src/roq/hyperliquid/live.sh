@@ -12,14 +12,14 @@ CONFIG="${CONFIG:-$NAME}"
 
 CONFIG_FILE="$ROQ_CONFIG_PATH/roq-hyperliquid/$CONFIG.toml"
 
-URI="hyperliquid.com"
+URI="api.hyperliquid.xyz"
 
-REST_URI="https://api.$URI"
-WS_PUBLIC_URI="wss://stream.$URI/v5/public"
-WS_PRIVATE_URI="wss://stream.$URI/v5/private"
+REST_URI="https://$URI"
+WS_PUBLIC_URI="wss://$URI/ws"
+WS_PRIVATE_URI="wss://$URI/ws"
 
 $PREFIX ./roq-hyperliquid \
-  --name "hyperliquid" \
+  --name "$NAME" \
   --config_file "$CONFIG_FILE" \
   --cache_dir "$HOME/var/lib/roq/cache" \
   --event_log_dir "$HOME/var/lib/roq/data" \

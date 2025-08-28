@@ -15,9 +15,7 @@
 
 #include "roq/hyperliquid/account.hpp"
 #include "roq/hyperliquid/config.hpp"
-#include "roq/hyperliquid/drop_copy.hpp"
 #include "roq/hyperliquid/market_data.hpp"
-#include "roq/hyperliquid/order_entry.hpp"
 #include "roq/hyperliquid/rest.hpp"
 #include "roq/hyperliquid/settings.hpp"
 #include "roq/hyperliquid/shared.hpp"
@@ -25,7 +23,7 @@
 namespace roq {
 namespace hyperliquid {
 
-struct Gateway final : public server::Handler, public Rest::Handler, public OrderEntry::Handler, public DropCopy::Handler, public MarketData::Handler {
+struct Gateway final : public server::Handler, public Rest::Handler, public MarketData::Handler {
   Gateway(server::Dispatcher &, Settings const &, Config const &, io::Context &);
 
   Gateway(Gateway const &) = delete;
@@ -62,23 +60,15 @@ struct Gateway final : public server::Handler, public Rest::Handler, public Orde
   void operator()(Trace<MarketByPriceUpdate> const &, bool is_last) override;
   void operator()(Trace<TradeSummary> const &, bool is_last) override;
   void operator()(Trace<StatisticsUpdate> const &, bool is_last) override;
-  void operator()(Trace<TradeUpdate> const &, bool is_last, uint8_t user_id, std::string_view const &request_id) override;
-  void operator()(Trace<PositionUpdate> const &, bool is_last) override;
-  void operator()(Trace<FundsUpdate> const &, bool is_last) override;
 
   void operator()(Rest::SymbolsUpdate &) override;
 
   void ensure_symbol_slices(size_t size);
 
-  void operator()(Trace<OrderEntry::Response> const &) override;
-
   // utilities
 
   template <typename... Args>
   void dispatch(Args &&...);
-
-  OrderEntry &get_order_entry(std::string_view const &account);
-  DropCopy &get_drop_copy(std::string_view const &account);
 
  private:
   server::Dispatcher &dispatcher_;
@@ -92,9 +82,7 @@ struct Gateway final : public server::Handler, public Rest::Handler, public Orde
   uint16_t stream_id_ = {};
   // streams
   Rest rest_;
-  utils::unordered_map<std::string, std::unique_ptr<OrderEntry>> order_entry_;
-  utils::unordered_map<std::string, std::unique_ptr<DropCopy>> drop_copy_;
-  std::vector<std::unique_ptr<MarketData>> market_data_;
+  MarketData market_data_;
   // cache
   std::vector<MBPUpdate> bids_, asks_;
 };

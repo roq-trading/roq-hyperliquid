@@ -6,16 +6,12 @@
 
 #include "roq/hyperliquid/settings.hpp"
 
-#include "roq/hyperliquid/tools/api.hpp"
-
-#include "roq/hyperliquid/json/category.hpp"
-
 namespace roq {
 namespace hyperliquid {
 
 struct API final {
   struct {
-    std::string_view market_instrument_info;
+    std::string_view get_info;
   } market_data;
 
   struct {
@@ -29,9 +25,6 @@ struct API final {
     std::string_view order_cancel;
     std::string_view order_cancel_all;
   } simple;
-
-  tools::API api;
-  json::Category category;
 
   // factory
   static API create(Settings const &);

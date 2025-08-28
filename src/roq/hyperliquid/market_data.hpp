@@ -22,7 +22,6 @@
 
 #include "roq/hyperliquid/shared.hpp"
 
-#include "roq/hyperliquid/json/category.hpp"
 #include "roq/hyperliquid/json/parser.hpp"
 
 namespace roq {
@@ -78,21 +77,6 @@ struct MarketData final : public web::socket::Client::Handler, public json::Pars
 
   // json::Parser::Handler
 
-  void operator()(Trace<json::Ping> const &) override;
-  // response
-  void operator()(Trace<json::Auth> const &) override;
-  void operator()(Trace<json::Subscribe> const &) override;
-  void operator()(Trace<json::Error> const &) override;
-  // public stream
-  void operator()(Trace<json::OrderBook> const &, size_t depth) override;
-  void operator()(Trace<json::PublicTrade> const &) override;
-  void operator()(Trace<json::Tickers> const &) override;
-  // private stream
-  void operator()(Trace<json::Wallet> const &) override;
-  void operator()(Trace<json::Position> const &) override;
-  void operator()(Trace<json::Order> const &) override;
-  void operator()(Trace<json::Execution2> const &) override;
-
  private:
   Handler &handler_;
   // config
@@ -100,9 +84,6 @@ struct MarketData final : public web::socket::Client::Handler, public json::Pars
   std::string const name_;
   size_t const index_;
   std::chrono::nanoseconds const ping_frequency_;
-  bool const spot_;
-  size_t const mbp_depth_;
-  std::string const mbp_topic_;
   // web socket
   std::unique_ptr<web::socket::Client> const connection_;
   // buffers

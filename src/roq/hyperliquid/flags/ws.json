@@ -7,7 +7,7 @@
       "name": "public_uri",
       "type": "roq/io/web/URI",
       "validator": "roq/core/flags/URI",
-      "default": "wss://stream-testnet.hyperliquid.com/v5/public",
+      "default": "wss://api.hyperliquid-testnet.xyz/ws",
       "description": "Exchange end-point"
     },
     {
@@ -19,7 +19,7 @@
       "name": "private_uri",
       "type": "roq/io/web/URI",
       "validator": "roq/core/flags/URI",
-      "default": "wss://stream-testnet.hyperliquid.com/v5/private",
+      "default": "wss://api.hyperliquid-testnet.xyz/ws",
       "description": "Exchange end-point"
     },
     {
