@@ -1,0 +1,19 @@
+{
+  "name": "roq/hyperliquid/json/BBOData",
+  "type": "comp",
+  "values": [
+    {
+      "name": "coin",
+      "type": "std/string_view"
+    },
+    {
+      "name": "time",
+      "type": "std/milliseconds"
+    },
+    {
+      "name": "bbo",
+      "type": "roq/hyperliquid/json/BBODataBBOItem",
+      "array": "std/span"
+    }
+  ]
+}

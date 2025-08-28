@@ -1,0 +1,14 @@
+{
+  "name": "roq/hyperliquid/json/SubscriptionResponseDataSubscription",
+  "type": "comp",
+  "values": [
+    {
+      "name": "type",
+      "type": "std/string_view"
+    },
+    {
+      "name": "coin",
+      "type": "std/string_view"
+    }
+  ]
+}

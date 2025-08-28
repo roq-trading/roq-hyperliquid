@@ -1,0 +1,37 @@
+{
+  "name": "roq/hyperliquid/json/TradesDataItem",
+  "type": "item",
+  "values": [
+    {
+      "name": "coin",
+      "type": "std/string_view"
+    },
+    {
+      "name": "side",
+      "type": "roq/hyperliquid/json/Side"
+    },
+    {
+      "name": "px",
+      "type": "std/double"
+    },
+    {
+      "name": "sz",
+      "type": "std/double"
+    },
+    {
+      "name": "time",
+      "type": "std/milliseconds"
+    },
+    {
+      "name": "hash",
+      "type": "std/string_view"
+    },
+    {
+      "name": "tid",
+      "type": "std/uint64"
+    },
+    {
+      "name": "users"
+    }
+  ]
+}

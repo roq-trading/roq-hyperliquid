@@ -1,0 +1,10 @@
+{
+  "name": "roq/hyperliquid/json/Pong",
+  "type": "comp",
+  "values": [
+    {
+      "name": "channel",
+      "type": "roq/hyperliquid/json/Channel"
+    }
+  ]
+}

@@ -14,6 +14,8 @@
 
 #include "roq/utils/exceptions/unhandled.hpp"
 
+#include "roq/utils/charconv/to_string.hpp"
+
 #include "roq/utils/metrics/factory.hpp"
 
 #include "roq/web/socket/client.hpp"
@@ -90,9 +92,11 @@ MarketData::MarketData(Handler &handler, io::Context &context, uint16_t stream_i
       },
       profile_{
           .parse = create_metrics(shared.settings, name_, "parse"sv),
-          .order_book = create_metrics(shared.settings, name_, "order_book"sv),
-          .trade = create_metrics(shared.settings, name_, "trade"sv),
-          .tickers = create_metrics(shared.settings, name_, "tickers"sv),
+          .pong = create_metrics(shared.settings, name_, "pong"sv),
+          .error = create_metrics(shared.settings, name_, "error"sv),
+          .subscription_response = create_metrics(shared.settings, name_, "subscription_response"sv),
+          .bbo = create_metrics(shared.settings, name_, "bbo"sv),
+          .trades = create_metrics(shared.settings, name_, "trades"sv),
       },
       latency_{
           .ping = create_metrics(shared.settings, name_, "ping"sv),
@@ -123,9 +127,11 @@ void MarketData::operator()(metrics::Writer &writer) const {
       .write(counter_.disconnect, metrics::Type::COUNTER)
       // profile
       .write(profile_.parse, metrics::Type::PROFILE)
-      .write(profile_.order_book, metrics::Type::PROFILE)
-      .write(profile_.trade, metrics::Type::PROFILE)
-      .write(profile_.tickers, metrics::Type::PROFILE)
+      .write(profile_.pong, metrics::Type::PROFILE)
+      .write(profile_.error, metrics::Type::PROFILE)
+      .write(profile_.subscription_response, metrics::Type::PROFILE)
+      .write(profile_.bbo, metrics::Type::PROFILE)
+      .write(profile_.trades, metrics::Type::PROFILE)
       // latency
       .write(latency_.ping, metrics::Type::LATENCY)
       .write(latency_.heartbeat, metrics::Type::LATENCY);
@@ -147,8 +153,12 @@ void MarketData::operator()(web::socket::Client::Disconnected const &) {
 
 void MarketData::operator()(web::socket::Client::Ready const &) {
   (*this)(ConnectionStatus::READY);
+
   auto TEST = R"({"method":"subscribe","subscription":{"type":"trades","coin":"SOL"}})"sv;
   (*connection_).send_text(TEST);
+  auto TEST_2 = R"({"method":"subscribe","subscription":{"type":"bbo","coin":"SOL"}})"sv;
+  (*connection_).send_text(TEST_2);
+
   subscribe();
 }
 
@@ -220,12 +230,7 @@ void MarketData::subscribe(std::string_view const &topic, std::span<Symbol const
 void MarketData::send_ping(std::chrono::nanoseconds now) {
   assert(ping_frequency_.count() > 0);
   next_ping_ = now + ping_frequency_ / 2;
-  auto message = fmt::format(
-      R"({{)"
-      R"("req_id":"{}",)"
-      R"("op":"ping")"
-      R"(}})"sv,
-      now.count());
+  auto message = R"({"method":"ping"})";
   (*connection_).send_text(message);
 }
 
@@ -241,6 +246,80 @@ void MarketData::parse(std::string_view const &message) {
       log_message();
       utils::exceptions::Unhandled::terminate();
     }
+  });
+}
+
+// json::Parser::Handler
+
+void MarketData::operator()(Trace<json::Pong> const &event) {
+  profile_.pong([&]() {
+    auto &[trace_info, pong] = event;
+    log::info<5>("pong={}"sv, pong);
+  });
+}
+
+void MarketData::operator()(Trace<json::Error> const &event) {
+  profile_.error([&]() {
+    auto &[trace_info, error] = event;
+    log::error("error={}"sv, error);
+  });
+}
+
+void MarketData::operator()(Trace<json::SubscriptionResponse> const &event) {
+  profile_.subscription_response([&]() {
+    auto &[trace_info, subscription_response] = event;
+    log::info<2>("subscription_response={}"sv, subscription_response);
+  });
+}
+
+void MarketData::operator()(Trace<json::BBO> const &event) {
+  profile_.bbo([&]() {
+    auto &[trace_info, bbo] = event;
+    log::info<2>("bbo={}"sv, bbo);
+    log::warn("bbo={}"sv, bbo);
+  });
+}
+
+void MarketData::operator()(Trace<json::Trades> const &event) {
+  profile_.trades([&]() {
+    auto &[trace_info, trades] = event;
+    log::info<2>("trades={}"sv, trades);
+    std::chrono::nanoseconds time = {};
+    std::string_view coin;
+    shared_.trades.clear();
+    auto dispatch = [&]() {
+      if (std::empty(shared_.trades)) {
+        return;
+      }
+      auto trade_summary = TradeSummary{
+          .stream_id = stream_id_,
+          .exchange = shared_.settings.exchange,
+          .symbol = coin,
+          .trades = shared_.trades,
+          .exchange_time_utc = time,
+          .exchange_sequence = {},
+          .sending_time_utc = {},
+      };
+      create_trace_and_dispatch(handler_, trace_info, trade_summary, true);
+    };
+    for (auto &item : trades.data) {
+      if (item.time != time || item.coin != coin) {
+        dispatch();
+        time = item.time;
+        coin = item.coin;
+      }
+      auto trade = Trade{
+          .side = map(item.side),
+          .price = item.px,
+          .quantity = item.sz,
+          .trade_id = {},  // note! see below
+          .taker_order_id = {},
+          .maker_order_id = {},
+      };
+      utils::charconv::to_string(std::back_inserter(trade.trade_id), item.tid);
+      shared_.trades.emplace_back(std::move(trade));
+    }
+    dispatch();
   });
 }
 

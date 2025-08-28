@@ -1,0 +1,15 @@
+{
+  "name": "roq/hyperliquid/json/Trades",
+  "type": "comp",
+  "values": [
+    {
+      "name": "channel",
+      "type": "roq/hyperliquid/json/Channel"
+    },
+    {
+      "name": "data",
+      "type": "roq/hyperliquid/json/TradesDataItem",
+      "array": "std/span"
+    }
+  ]
+}

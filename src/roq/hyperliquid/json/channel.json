@@ -1,0 +1,21 @@
+{
+  "name": "roq/hyperliquid/json/Channel",
+  "type": "enum",
+  "values": [
+    {
+      "name": "pong"
+    },
+    {
+      "name": "error"
+    },
+    {
+      "name": "subscriptionResponse"
+    },
+    {
+      "name": "bbo"
+    },
+    {
+      "name": "trades"
+    }
+  ]
+}

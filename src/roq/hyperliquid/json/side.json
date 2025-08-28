@@ -1,0 +1,14 @@
+{
+  "name": "roq/hyperliquid/json/Side",
+  "type": "enum",
+  "values": [
+    {
+      "raw": "B",
+      "name": "bid"
+    },
+    {
+      "raw": "A",
+      "name": "ask"
+    }
+  ]
+}

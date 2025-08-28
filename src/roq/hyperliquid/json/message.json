@@ -1,0 +1,13 @@
+{
+  "name": "roq/hyperliquid/json/Message",
+  "type": "comp",
+  "values": [
+    {
+      "name": "channel",
+      "type": "roq/hyperliquid/json/Channel"
+    },
+    {
+      "name": "data"
+    }
+  ]
+}

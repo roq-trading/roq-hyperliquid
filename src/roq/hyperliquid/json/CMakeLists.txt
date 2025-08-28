@@ -4,7 +4,19 @@ set(SOURCES map.cpp parser.cpp utils.cpp)
 
 include(RoqAutogen)
 
-set(AUTOGEN_SCHEMAS instrument_info.json)
+set(AUTOGEN_SCHEMAS
+  bbo.json bbo_data.json bbo_data_bbo_item.json
+    channel.json
+    error.json
+    instrument_info.json
+    message.json
+    pong.json
+    side.json
+    subscription_response.json
+    subscription_response_data.json
+    subscription_response_data_subscription.json
+    trades.json
+    trades_data_item.json)
 
 roq_autogen_hpp(
   OUTPUT
