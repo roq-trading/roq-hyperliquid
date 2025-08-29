@@ -119,6 +119,9 @@ bool Parser::dispatch(Handler &handler, std::string_view const &message, std::sp
     case TRADES:
       dispatch_helper<Trades>(handler, message, buffer, trace_info);
       return true;
+    case ACTIVE_ASSET_CTX:
+      dispatch_helper<ActiveAssetCtx>(handler, message, buffer, trace_info);
+      return true;
   }
   return false;
 }

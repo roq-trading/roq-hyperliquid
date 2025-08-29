@@ -98,6 +98,7 @@ MarketData::MarketData(Handler &handler, io::Context &context, uint16_t stream_i
           .bbo = create_metrics(shared.settings, name_, "bbo"sv),
           .l2book = create_metrics(shared.settings, name_, "l2book"sv),
           .trades = create_metrics(shared.settings, name_, "trades"sv),
+          .active_asset_ctx = create_metrics(shared.settings, name_, "active_asset_ctx"sv),
       },
       latency_{
           .ping = create_metrics(shared.settings, name_, "ping"sv),
@@ -134,6 +135,7 @@ void MarketData::operator()(metrics::Writer &writer) const {
       .write(profile_.bbo, metrics::Type::PROFILE)
       .write(profile_.l2book, metrics::Type::PROFILE)
       .write(profile_.trades, metrics::Type::PROFILE)
+      .write(profile_.active_asset_ctx, metrics::Type::PROFILE)
       // latency
       .write(latency_.ping, metrics::Type::LATENCY)
       .write(latency_.heartbeat, metrics::Type::LATENCY);
@@ -162,6 +164,8 @@ void MarketData::operator()(web::socket::Client::Ready const &) {
   (*connection_).send_text(L2BOOK);
   auto TRADES = R"({"method":"subscribe","subscription":{"type":"trades","coin":"SOL"}})"sv;
   (*connection_).send_text(TRADES);
+  auto ACTIVE = R"({"method":"subscribe","subscription":{"type":"activeAssetCtx","coin":"SOL"}})"sv;
+  (*connection_).send_text(ACTIVE);
 
   subscribe();
 }
@@ -388,6 +392,42 @@ void MarketData::operator()(Trace<json::Trades> const &event) {
       shared_.trades.emplace_back(std::move(trade));
     }
     dispatch();
+  });
+}
+
+void MarketData::operator()(Trace<json::ActiveAssetCtx> const &event) {
+  profile_.active_asset_ctx([&]() {
+    auto &[trace_info, active_asset_ctx] = event;
+    log::info<2>("active_asset_ctx={}"sv, active_asset_ctx);
+    std::array<Statistics, 4> statistics{{
+        {
+            .type = StatisticsType::OPEN_INTEREST,
+            .value = active_asset_ctx.data.ctx.open_interest,
+        },
+        {
+            .type = StatisticsType::TRADE_VOLUME,
+            .value = active_asset_ctx.data.ctx.day_ntl_vlm,  // XXX FIXME or day_base_vlm ???
+        },
+        {
+            .type = StatisticsType::SETTLEMENT_PRICE,  // XXX ???
+            .value = active_asset_ctx.data.ctx.mark_px,
+        },
+        {
+            .type = StatisticsType::FUNDING_RATE,
+            .value = active_asset_ctx.data.ctx.funding,
+        },
+    }};
+    auto statistics_update = StatisticsUpdate{
+        .stream_id = stream_id_,
+        .exchange = shared_.settings.exchange,
+        .symbol = active_asset_ctx.data.coin,
+        .statistics = statistics,
+        .update_type = UpdateType::INCREMENTAL,
+        .exchange_time_utc = {},
+        .exchange_sequence = {},
+        .sending_time_utc = {},
+    };
+    create_trace_and_dispatch(handler_, trace_info, statistics_update, true);
   });
 }
 

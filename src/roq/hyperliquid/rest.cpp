@@ -26,10 +26,6 @@ using namespace std::literals;
 namespace roq {
 namespace hyperliquid {
 
-// === TODO ===
-// => use rate limiter / request queue
-// => query instrument-info every N seconds
-
 // === CONSTANTS ===
 
 namespace {
@@ -37,7 +33,6 @@ auto const NAME = "rest"sv;
 
 auto const SUPPORTS = Mask{
     SupportType::REFERENCE_DATA,
-    SupportType::MARKET_STATUS,
 };
 }  // namespace
 
@@ -96,8 +91,12 @@ Rest::Rest(Handler &handler, io::Context &context, uint16_t stream_id, Shared &s
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
       profile_{
-          .info = create_metrics(shared.settings, name_, "info"sv),
-          .info_ack = create_metrics(shared.settings, name_, "info_ack"sv),
+          .spot_meta = create_metrics(shared.settings, name_, "spot_meta"sv),
+          .spot_meta_ack = create_metrics(shared.settings, name_, "spot_meta_ack"sv),
+          .perp_dexs = create_metrics(shared.settings, name_, "perp_dexs"sv),
+          .perp_dexs_ack = create_metrics(shared.settings, name_, "perp_dexs_ack"sv),
+          .meta = create_metrics(shared.settings, name_, "meta"sv),
+          .meta_ack = create_metrics(shared.settings, name_, "meta_ack"sv),
       },
       latency_{
           .ping = create_metrics(shared.settings, name_, "ping"sv),
@@ -124,8 +123,12 @@ void Rest::operator()(metrics::Writer &writer) const {
       // counter
       .write(counter_.disconnect, metrics::Type::COUNTER)
       // profile
-      .write(profile_.info, metrics::Type::PROFILE)
-      .write(profile_.info_ack, metrics::Type::PROFILE)
+      .write(profile_.spot_meta, metrics::Type::PROFILE)
+      .write(profile_.spot_meta_ack, metrics::Type::PROFILE)
+      .write(profile_.perp_dexs, metrics::Type::PROFILE)
+      .write(profile_.perp_dexs_ack, metrics::Type::PROFILE)
+      .write(profile_.meta, metrics::Type::PROFILE)
+      .write(profile_.meta_ack, metrics::Type::PROFILE)
       // latency
       .write(latency_.ping, metrics::Type::LATENCY);
 }
@@ -186,8 +189,14 @@ uint32_t Rest::download(RestState state) {
     case UNDEFINED:
       assert(false);
       break;
-    case GET_INFO:
-      get_info();
+    case SPOT_META:
+      get_spot_meta();
+      return 1;
+    case PERP_DEXS:
+      get_perp_dexs();
+      return 1;
+    case META:
+      get_meta();
       return 1;
     case DONE:
       (*this)(ConnectionStatus::READY);
@@ -197,11 +206,149 @@ uint32_t Rest::download(RestState state) {
   return 0;
 }
 
-// market info
+// spot meta
 
-void Rest::get_info() {
-  profile_.info([&]() {
-    auto body = R"({"type":"metaAndAssetCtxs"})"sv;
+void Rest::get_spot_meta() {
+  profile_.spot_meta([&]() {
+    auto body = R"({"type":"spotMeta"})"sv;
+    auto request = web::rest::Request{
+        .method = web::http::Method::POST,
+        .path = shared_.api.market_data.get_info,
+        .query = {},
+        .accept = web::http::Accept::APPLICATION_JSON,
+        .content_type = web::http::ContentType::APPLICATION_JSON,
+        .headers = {},
+        .body = body,
+        .quality_of_service = {},
+    };
+    auto callback = [this, sequence = download_.sequence()]([[maybe_unused]] auto &request_id, auto &response) {
+      TraceInfo trace_spot_meta;
+      Trace event{trace_spot_meta, response};
+      get_spot_meta_ack(event, sequence);
+    };
+    (*connection_)("spot_meta"sv, request, callback);
+  });
+}
+
+void Rest::get_spot_meta_ack(Trace<web::rest::Response> const &event, uint32_t sequence) {
+  auto const STATE = RestState::SPOT_META;
+  profile_.spot_meta_ack([&]() {
+    auto handle_success = [&](auto &body) {
+      if (download_.skip(sequence, STATE)) {
+        log::info("Download state={} has already been processed"sv, STATE);
+      } else {
+        json::SpotMeta spot_meta{body, decode_buffer_};
+        Trace event_2{event, spot_meta};
+        (*this)(event_2);
+        download_.check(STATE);
+      }
+    };
+    auto handle_error = [&]([[maybe_unused]] auto origin, [[maybe_unused]] auto status, auto error, auto text) {
+      log::warn(R"(error={}, text="{}")"sv, error, text);
+      download_.retry(STATE);
+    };
+    process_response(event, handle_success, handle_error);
+  });
+}
+
+void Rest::operator()(Trace<json::SpotMeta> const &event) {
+  auto &[trace_info, spot_meta] = event;
+  log::info<4>("spot_meta={}"sv, spot_meta);
+  for (auto &item : spot_meta.tokens) {
+    auto tick_size = std::pow(10.0, -static_cast<double>(item.sz_decimals));
+    auto reference_data = ReferenceData{
+        .stream_id = stream_id_,
+        .exchange = shared_.settings.exchange,
+        .symbol = item.name,
+        .description = item.full_name,
+        .security_type = SecurityType::SPOT,
+        .cfi_code = {},
+        .base_currency = {},
+        .quote_currency = {},
+        .settlement_currency = {},
+        .margin_currency = {},
+        .commission_currency = {},
+        .tick_size = tick_size,
+        .tick_size_steps = {},
+        .multiplier = NaN,
+        .min_notional = NaN,
+        .min_trade_vol = NaN,
+        .max_trade_vol = NaN,
+        .trade_vol_step_size = NaN,
+        .option_type = {},
+        .strike_currency = {},
+        .strike_price = NaN,
+        .underlying = {},
+        .time_zone = {},
+        .issue_date = {},
+        .settlement_date = {},
+        .expiry_datetime = {},
+        .expiry_datetime_utc = {},
+        .exchange_time_utc = {},
+        .exchange_sequence = {},
+        .sending_time_utc = {},
+        .discard = false,
+    };
+    create_trace_and_dispatch(handler_, trace_info, reference_data, true);
+  }
+}
+
+// spot meta
+
+void Rest::get_perp_dexs() {
+  profile_.perp_dexs([&]() {
+    auto body = R"({"type":"perpDexs"})"sv;
+    auto request = web::rest::Request{
+        .method = web::http::Method::POST,
+        .path = shared_.api.market_data.get_info,
+        .query = {},
+        .accept = web::http::Accept::APPLICATION_JSON,
+        .content_type = web::http::ContentType::APPLICATION_JSON,
+        .headers = {},
+        .body = body,
+        .quality_of_service = {},
+    };
+    auto callback = [this, sequence = download_.sequence()]([[maybe_unused]] auto &request_id, auto &response) {
+      TraceInfo trace_perp_dexs;
+      Trace event{trace_perp_dexs, response};
+      get_perp_dexs_ack(event, sequence);
+    };
+    (*connection_)("perp_dexs"sv, request, callback);
+  });
+}
+
+void Rest::get_perp_dexs_ack(Trace<web::rest::Response> const &event, uint32_t sequence) {
+  auto const STATE = RestState::PERP_DEXS;
+  profile_.perp_dexs_ack([&]() {
+    auto handle_success = [&](auto &body) {
+      if (download_.skip(sequence, STATE)) {
+        log::info("Download state={} has already been processed"sv, STATE);
+      } else {
+        json::PerpDexs perp_dexs{body, decode_buffer_};
+        Trace event_2{event, perp_dexs};
+        (*this)(event_2);
+        download_.check(STATE);
+      }
+    };
+    auto handle_error = [&]([[maybe_unused]] auto origin, [[maybe_unused]] auto status, auto error, auto text) {
+      log::warn(R"(error={}, text="{}")"sv, error, text);
+      download_.retry(STATE);
+    };
+    process_response(event, handle_success, handle_error);
+  });
+}
+
+void Rest::operator()(Trace<json::PerpDexs> const &event) {
+  auto &[trace_info, perp_dexs] = event;
+  log::info<4>("perp_dexs={}"sv, perp_dexs);
+}
+
+// meta
+
+void Rest::get_meta() {
+  profile_.meta([&]() {
+    // auto body = R"({"type":"meta","dex":"SOL"})"sv;
+    auto body = R"({"type":"meta"})"sv;
     auto request = web::rest::Request{
         .method = web::http::Method::POST,
         .path = shared_.api.market_data.get_info,
@@ -215,23 +362,22 @@ void Rest::get_info() {
     auto callback = [this, sequence = download_.sequence()]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
-      get_info_ack(event, sequence);
+      get_meta_ack(event, sequence);
     };
-    (*connection_)("info"sv, request, callback);
+    (*connection_)("meta"sv, request, callback);
   });
 }
 
-void Rest::get_info_ack(Trace<web::rest::Response> const &event, uint32_t sequence) {
-  auto const STATE = RestState::GET_INFO;
-  profile_.info_ack([&]() {
+void Rest::get_meta_ack(Trace<web::rest::Response> const &event, uint32_t sequence) {
+  auto const STATE = RestState::META;
+  profile_.meta_ack([&]() {
     auto handle_success = [&](auto &body) {
       if (download_.skip(sequence, STATE)) {
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
-        // json::InstrumentInfo info{body, decode_buffer_};
-        // Trace event_2{event, info};
-        // (*this)(event_2);
-        // XXX HANS NEW ??? create_trace_and_dispatch(*this, event, info)();
+        json::Meta info{body, decode_buffer_};
+        Trace event_2{event, info};
+        (*this)(event_2);
         download_.check(STATE);
       }
     };
@@ -243,9 +389,46 @@ void Rest::get_info_ack(Trace<web::rest::Response> const &event, uint32_t sequen
   });
 }
 
-void Rest::operator()(Trace<json::InstrumentInfo> const &event) {
-  auto &[trace_info, instrument_info] = event;
-  log::info<4>("instrument_info={}"sv, instrument_info);
+void Rest::operator()(Trace<json::Meta> const &event) {
+  auto &[trace_info, meta] = event;
+  log::info<4>("meta={}"sv, meta);
+  for (auto &item : meta.universe) {
+    auto tick_size = std::pow(10.0, -static_cast<double>(item.sz_decimals));
+    auto reference_data = ReferenceData{
+        .stream_id = stream_id_,
+        .exchange = shared_.settings.exchange,
+        .symbol = item.name,
+        .description = {},
+        .security_type = SecurityType::SWAP,
+        .cfi_code = {},
+        .base_currency = {},
+        .quote_currency = {},
+        .settlement_currency = {},
+        .margin_currency = {},
+        .commission_currency = {},
+        .tick_size = tick_size,
+        .tick_size_steps = {},
+        .multiplier = NaN,
+        .min_notional = NaN,
+        .min_trade_vol = NaN,
+        .max_trade_vol = NaN,
+        .trade_vol_step_size = NaN,
+        .option_type = {},
+        .strike_currency = {},
+        .strike_price = NaN,
+        .underlying = {},
+        .time_zone = {},
+        .issue_date = {},
+        .settlement_date = {},
+        .expiry_datetime = {},
+        .expiry_datetime_utc = {},
+        .exchange_time_utc = {},
+        .exchange_sequence = {},
+        .sending_time_utc = {},
+        .discard = false,
+    };
+    create_trace_and_dispatch(handler_, trace_info, reference_data, true);
+  }
 }
 
 // helpers

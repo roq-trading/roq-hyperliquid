@@ -1,0 +1,14 @@
+{
+  "name": "roq/hyperliquid/json/Meta",
+  "type": "comp",
+  "values": [
+    {
+      "name": "universe",
+      "type": "roq/hyperliquid/json/MetaUniverseItem",
+      "array": "std/span"
+    },
+    {
+      "name": "marginTables"
+    }
+  ]
+}

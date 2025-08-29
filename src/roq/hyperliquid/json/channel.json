@@ -19,6 +19,9 @@
     },
     {
       "name": "trades"
+    },
+    {
+      "name": "activeAssetCtx"
     }
   ]
 }

@@ -23,7 +23,9 @@
 #include "roq/hyperliquid/rest_state.hpp"
 #include "roq/hyperliquid/shared.hpp"
 
-#include "roq/hyperliquid/json/instrument_info.hpp"
+#include "roq/hyperliquid/json/meta.hpp"
+#include "roq/hyperliquid/json/perp_dexs.hpp"
+#include "roq/hyperliquid/json/spot_meta.hpp"
 
 namespace roq {
 namespace hyperliquid {
@@ -63,9 +65,17 @@ struct Rest final : public web::rest::Client::Handler {
 
   uint32_t download(RestState);
 
-  void get_info();
-  void get_info_ack(Trace<web::rest::Response> const &, uint32_t sequence);
-  void operator()(Trace<json::InstrumentInfo> const &);
+  void get_spot_meta();
+  void get_spot_meta_ack(Trace<web::rest::Response> const &, uint32_t sequence);
+  void operator()(Trace<json::SpotMeta> const &);
+
+  void get_perp_dexs();
+  void get_perp_dexs_ack(Trace<web::rest::Response> const &, uint32_t sequence);
+  void operator()(Trace<json::PerpDexs> const &);
+
+  void get_meta();
+  void get_meta_ack(Trace<web::rest::Response> const &, uint32_t sequence);
+  void operator()(Trace<json::Meta> const &);
 
   template <typename SuccessHandler, typename ErrorHandler>
   void process_response(web::rest::Response const &, SuccessHandler, ErrorHandler);
@@ -84,7 +94,7 @@ struct Rest final : public web::rest::Client::Handler {
     utils::metrics::Counter disconnect;
   } counter_;
   struct {
-    utils::metrics::Profile info, info_ack;
+    utils::metrics::Profile spot_meta, spot_meta_ack, perp_dexs, perp_dexs_ack, meta, meta_ack;
   } profile_;
   struct {
     utils::metrics::Latency ping;

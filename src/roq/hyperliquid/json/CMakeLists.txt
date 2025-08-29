@@ -5,21 +5,32 @@ set(SOURCES map.cpp parser.cpp utils.cpp)
 include(RoqAutogen)
 
 set(AUTOGEN_SCHEMAS
-  bbo.json bbo_data.json bbo_data_bbo_item.json
+    active_asset_ctx_data_ctx.json
+    active_asset_ctx_data.json
+    active_asset_ctx.json
+    bbo_data_bbo_item.json
+    bbo_data.json
+    bbo.json
     channel.json
     error.json
-    instrument_info.json
-    l2_book.json
     l2_book_data.json
     l2_book_data_levels_item.json
+    l2_book.json
     message.json
+    meta.json
+    meta_universe_item.json
+    perp_dexs_item.json
+    perp_dexs.json
     pong.json
     side.json
-    subscription_response.json
+    spot_meta.json
+    spot_meta_tokens_item.json
+    spot_meta_universe_item.json
     subscription_response_data.json
     subscription_response_data_subscription.json
-    trades.json
-    trades_data_item.json)
+    subscription_response.json
+    trades_data_item.json
+    trades.json)
 
 roq_autogen_hpp(
   OUTPUT

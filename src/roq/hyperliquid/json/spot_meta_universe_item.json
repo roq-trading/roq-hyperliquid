@@ -1,0 +1,21 @@
+{
+  "name": "roq/hyperliquid/json/SpotMetaUniverseItem",
+  "type": "item",
+  "values": [
+    {
+      "name": "tokens"
+    },
+    {
+      "name": "name",
+      "type": "std/string_view"
+    },
+    {
+      "name": "index",
+      "type": "std/uint32"
+    },
+    {
+      "name": "isCanonical",
+      "type": "std/bool"
+    }
+  ]
+}

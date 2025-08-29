@@ -1,0 +1,14 @@
+{
+  "name": "roq/hyperliquid/json/ActiveAssetCtxData",
+  "type": "comp",
+  "values": [
+    {
+      "name": "coin",
+      "type": "std/string_view"
+    },
+    {
+      "name": "ctx",
+      "type": "roq/hyperliquid/json/ActiveAssetCtxDataCtx"
+    }
+  ]
+}

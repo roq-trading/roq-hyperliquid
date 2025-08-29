@@ -4,13 +4,12 @@
 
 #include "roq/core/json/parser.hpp"
 
-#include "roq/hyperliquid/json/instrument_info.hpp"
+#include "roq/hyperliquid/json/meta.hpp"
 
 using namespace roq;
 using namespace roq::hyperliquid;
 
 using namespace std::literals;
-using namespace std::chrono_literals;
 
 namespace {
 // selective
@@ -129,7 +128,7 @@ auto const MESSAGE = R"([)"
 
 }  // namespace
 
-TEST_CASE("json_meta_and_asset_contexts", "[json_meta_and_asset_contexts]") {
+TEST_CASE("json_meta", "[json_meta]") {
   /*
   std::vector<std::byte> buffer(8192);
   json::InstrumentInfo obj{MESSAGE, buffer};

@@ -6,6 +6,7 @@
 
 #include "roq/trace_info.hpp"
 
+#include "roq/hyperliquid/json/active_asset_ctx.hpp"
 #include "roq/hyperliquid/json/bbo.hpp"
 #include "roq/hyperliquid/json/error.hpp"
 #include "roq/hyperliquid/json/l2_book.hpp"
@@ -25,6 +26,7 @@ struct Parser final {
     virtual void operator()(Trace<json::BBO> const &) = 0;
     virtual void operator()(Trace<json::L2Book> const &) = 0;
     virtual void operator()(Trace<json::Trades> const &) = 0;
+    virtual void operator()(Trace<json::ActiveAssetCtx> const &) = 0;
   };
 
   static bool dispatch(Handler &, std::string_view const &message, std::span<std::byte> const &, TraceInfo const &);

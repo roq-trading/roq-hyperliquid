@@ -3,7 +3,13 @@
   "type": "enum",
   "values": [
     {
-      "name": "get_info"
+      "name": "spot_meta"
+    },
+    {
+      "name": "perp_dexs"
+    },
+    {
+      "name": "meta"
     },
     {
       "name": "done"

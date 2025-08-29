@@ -1,0 +1,41 @@
+{
+  "name": "roq/hyperliquid/json/SpotMetaTokensItem",
+  "type": "item",
+  "values": [
+    {
+      "name": "name",
+      "type": "std/string_view"
+    },
+    {
+      "name": "szDecimals",
+      "type": "std/uint32"
+    },
+    {
+      "name": "weiDecimals",
+      "type": "std/uint32"
+    },
+    {
+      "name": "index",
+      "type": "std/uint32"
+    },
+    {
+      "name": "tokenId",
+      "type": "std/string_view"
+    },
+    {
+      "name": "isCanonical",
+      "type": "std/bool"
+    },
+    {
+      "name": "evmContract"
+    },
+    {
+      "name": "fullName",
+      "type": "std/string_view"
+    },
+    {
+      "name": "deployerTradingFeeShare",
+      "type": "std/double"
+    }
+  ]
+}

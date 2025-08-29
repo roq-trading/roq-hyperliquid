@@ -1,0 +1,11 @@
+{
+  "name": "roq/hyperliquid/json/PerpDexs",
+  "type": "array",
+  "values": [
+    {
+      "name": "data",
+      "type": "roq/hyperliquid/json/PerpDexsItem",
+      "array": "std/span"
+    }
+  ]
+}

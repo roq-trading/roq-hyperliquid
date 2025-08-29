@@ -81,6 +81,7 @@ struct MarketData final : public web::socket::Client::Handler, public json::Pars
   void operator()(Trace<json::BBO> const &) override;
   void operator()(Trace<json::L2Book> const &) override;
   void operator()(Trace<json::Trades> const &) override;
+  void operator()(Trace<json::ActiveAssetCtx> const &) override;
 
  private:
   Handler &handler_;
@@ -100,7 +101,7 @@ struct MarketData final : public web::socket::Client::Handler, public json::Pars
     utils::metrics::Counter disconnect;
   } counter_;
   struct {
-    utils::metrics::Profile parse, pong, error, subscription_response, bbo, l2book, trades;
+    utils::metrics::Profile parse, pong, error, subscription_response, bbo, l2book, trades, active_asset_ctx;
   } profile_;
   struct {
     utils::metrics::Latency ping, heartbeat;

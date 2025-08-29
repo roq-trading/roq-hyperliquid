@@ -1,0 +1,22 @@
+{
+  "name": "roq/hyperliquid/json/PerpDexsItem",
+  "type": "item",
+  "values": [
+    {
+      "name": "name",
+      "type": "std/string_view"
+    },
+    {
+      "name": "full_name",
+      "type": "std/string_view"
+    },
+    {
+      "name": "deployer",
+      "type": "std/string_view"
+    },
+    {
+      "name": "oracle_updater",
+      "type": "std/string_view"
+    }
+  ]
+}

@@ -2,7 +2,7 @@ include(RoqAutogen)
 
 set(TARGET_NAME ${PROJECT_NAME}-test)
 
-set(SOURCES json_meta_and_asset_contexts.cpp main.cpp)
+set(SOURCES json_meta.cpp main.cpp)
 
 roq_gitignore(OUTPUT .gitignore SOURCES ${TARGET_NAME})
 
