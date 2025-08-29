@@ -6,6 +6,9 @@ bbo_data_bbo_item.hpp
 channel.hpp
 error.hpp
 instrument_info.hpp
+l2_book.hpp
+l2_book_data.hpp
+l2_book_data_levels_item.hpp
 message.hpp
 pong.hpp
 side.hpp
@@ -20,6 +23,9 @@ bbo_data_bbo_item.cpp
 channel.cpp
 error.cpp
 instrument_info.cpp
+l2_book.cpp
+l2_book_data.cpp
+l2_book_data_levels_item.cpp
 message.cpp
 pong.cpp
 side.cpp

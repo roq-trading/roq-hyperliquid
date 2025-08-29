@@ -9,6 +9,14 @@
     {
       "name": "coin",
       "type": "std/string_view"
+    },
+    {
+      "name": "nSigFigs",
+      "type": "std/uint32"
+    },
+    {
+      "name": "mantissa",
+      "type": "std/uint32"
     }
   ]
 }

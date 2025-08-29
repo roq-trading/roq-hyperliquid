@@ -8,6 +8,7 @@
 
 #include "roq/hyperliquid/json/bbo.hpp"
 #include "roq/hyperliquid/json/error.hpp"
+#include "roq/hyperliquid/json/l2_book.hpp"
 #include "roq/hyperliquid/json/pong.hpp"
 #include "roq/hyperliquid/json/subscription_response.hpp"
 #include "roq/hyperliquid/json/trades.hpp"
@@ -22,6 +23,7 @@ struct Parser final {
     virtual void operator()(Trace<json::Error> const &) = 0;
     virtual void operator()(Trace<json::SubscriptionResponse> const &) = 0;
     virtual void operator()(Trace<json::BBO> const &) = 0;
+    virtual void operator()(Trace<json::L2Book> const &) = 0;
     virtual void operator()(Trace<json::Trades> const &) = 0;
   };
 

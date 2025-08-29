@@ -96,6 +96,7 @@ MarketData::MarketData(Handler &handler, io::Context &context, uint16_t stream_i
           .error = create_metrics(shared.settings, name_, "error"sv),
           .subscription_response = create_metrics(shared.settings, name_, "subscription_response"sv),
           .bbo = create_metrics(shared.settings, name_, "bbo"sv),
+          .l2book = create_metrics(shared.settings, name_, "l2book"sv),
           .trades = create_metrics(shared.settings, name_, "trades"sv),
       },
       latency_{
@@ -131,6 +132,7 @@ void MarketData::operator()(metrics::Writer &writer) const {
       .write(profile_.error, metrics::Type::PROFILE)
       .write(profile_.subscription_response, metrics::Type::PROFILE)
       .write(profile_.bbo, metrics::Type::PROFILE)
+      .write(profile_.l2book, metrics::Type::PROFILE)
       .write(profile_.trades, metrics::Type::PROFILE)
       // latency
       .write(latency_.ping, metrics::Type::LATENCY)
@@ -154,10 +156,12 @@ void MarketData::operator()(web::socket::Client::Disconnected const &) {
 void MarketData::operator()(web::socket::Client::Ready const &) {
   (*this)(ConnectionStatus::READY);
 
-  auto TEST = R"({"method":"subscribe","subscription":{"type":"trades","coin":"SOL"}})"sv;
-  (*connection_).send_text(TEST);
-  auto TEST_2 = R"({"method":"subscribe","subscription":{"type":"bbo","coin":"SOL"}})"sv;
-  (*connection_).send_text(TEST_2);
+  auto BBO = R"({"method":"subscribe","subscription":{"type":"bbo","coin":"SOL"}})"sv;
+  (*connection_).send_text(BBO);
+  auto L2BOOK = R"({"method":"subscribe","subscription":{"type":"l2Book","coin":"SOL"}})"sv;
+  (*connection_).send_text(L2BOOK);
+  auto TRADES = R"({"method":"subscribe","subscription":{"type":"trades","coin":"SOL"}})"sv;
+  (*connection_).send_text(TRADES);
 
   subscribe();
 }
@@ -276,7 +280,71 @@ void MarketData::operator()(Trace<json::BBO> const &event) {
   profile_.bbo([&]() {
     auto &[trace_info, bbo] = event;
     log::info<2>("bbo={}"sv, bbo);
-    log::warn("bbo={}"sv, bbo);
+    if (std::size(bbo.data.bbo) == 2) {
+      auto top_of_book = TopOfBook{
+          .stream_id = stream_id_,
+          .exchange = shared_.settings.exchange,
+          .symbol = bbo.data.coin,
+          .layer =
+              {
+                  .bid_price = bbo.data.bbo[0].px,
+                  .bid_quantity = bbo.data.bbo[0].sz,
+                  .ask_price = bbo.data.bbo[1].px,
+                  .ask_quantity = bbo.data.bbo[1].sz,
+              },
+          .update_type = UpdateType::INCREMENTAL,
+          .exchange_time_utc = bbo.data.time,
+          .exchange_sequence = {},
+          .sending_time_utc = {},
+      };
+      create_trace_and_dispatch(handler_, trace_info, top_of_book, true);
+    } else {
+      log::warn("bbo={}"sv, bbo);
+    }
+  });
+}
+
+void MarketData::operator()(Trace<json::L2Book> const &event) {
+  profile_.bbo([&]() {
+    auto &[trace_info, l2book] = event;
+    log::info<2>("l2book={}"sv, l2book);
+    auto helper = [&](auto &result, auto &item) {
+      auto mbp_update = MBPUpdate{
+          .price = item.px,
+          .quantity = item.sz,
+          .implied_quantity = NaN,
+          .number_of_orders = utils::safe_cast(item.n),
+          .update_action = {},
+          .price_level = {},
+      };
+      result.emplace_back(std::move(mbp_update));
+    };
+    shared_.bids.clear();
+    for (auto &item : l2book.data.bids) {
+      helper(shared_.bids, item);
+    }
+    shared_.asks.clear();
+    for (auto &item : l2book.data.asks) {
+      helper(shared_.asks, item);
+    }
+    if (!(std::empty(shared_.bids) && std::empty(shared_.asks))) {
+      auto market_by_price_update = MarketByPriceUpdate{
+          .stream_id = stream_id_,
+          .exchange = shared_.settings.exchange,
+          .symbol = l2book.data.coin,
+          .bids = shared_.bids,
+          .asks = shared_.asks,
+          .update_type = UpdateType::SNAPSHOT,  // note!
+          .exchange_time_utc = l2book.data.time,
+          .exchange_sequence = {},
+          .sending_time_utc = {},
+          .price_precision = {},
+          .quantity_precision = {},
+          .max_depth = {},
+          .checksum = {},
+      };
+      create_trace_and_dispatch(handler_, trace_info, market_by_price_update, true);
+    }
   });
 }
 

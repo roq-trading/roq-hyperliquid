@@ -1,0 +1,24 @@
+{
+  "name": "roq/hyperliquid/json/L2BookData",
+  "type": "comp",
+  "values": [
+    {
+      "name": "coin",
+      "type": "std/string_view"
+    },
+    {
+      "name": "time",
+      "type": "std/milliseconds"
+    },
+    {
+      "name": "bids",
+      "type": "roq/hyperliquid/json/L2BookDataLevelsItem",
+      "array": "std/span"
+    },
+    {
+      "name": "asks",
+      "type": "roq/hyperliquid/json/L2BookDataLevelsItem",
+      "array": "std/span"
+    }
+  ]
+}

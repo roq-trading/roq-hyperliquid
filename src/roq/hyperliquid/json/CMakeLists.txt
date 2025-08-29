@@ -9,6 +9,9 @@ set(AUTOGEN_SCHEMAS
     channel.json
     error.json
     instrument_info.json
+    l2_book.json
+    l2_book_data.json
+    l2_book_data_levels_item.json
     message.json
     pong.json
     side.json
