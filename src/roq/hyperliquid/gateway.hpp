@@ -82,7 +82,7 @@ struct Gateway final : public server::Handler, public Rest::Handler, public Mark
   uint16_t stream_id_ = {};
   // streams
   Rest rest_;
-  MarketData market_data_;
+  std::vector<std::unique_ptr<MarketData>> market_data_;
   // cache
   std::vector<MBPUpdate> bids_, asks_;
 };

@@ -255,6 +255,7 @@ void Rest::operator()(Trace<json::SpotMeta> const &event) {
   auto &[trace_info, spot_meta] = event;
   log::info<4>("spot_meta={}"sv, spot_meta);
   for (auto &item : spot_meta.tokens) {
+    auto discard = shared_.discard_symbol(item.name);
     auto tick_size = std::pow(10.0, -static_cast<double>(item.sz_decimals));
     auto reference_data = ReferenceData{
         .stream_id = stream_id_,
@@ -287,7 +288,7 @@ void Rest::operator()(Trace<json::SpotMeta> const &event) {
         .exchange_time_utc = {},
         .exchange_sequence = {},
         .sending_time_utc = {},
-        .discard = false,
+        .discard = discard,
     };
     create_trace_and_dispatch(handler_, trace_info, reference_data, true);
   }
@@ -393,7 +394,11 @@ void Rest::get_meta_ack(Trace<web::rest::Response> const &event, uint32_t sequen
 void Rest::operator()(Trace<json::Meta> const &event) {
   auto &[trace_info, meta] = event;
   log::info<4>("meta={}"sv, meta);
+  std::vector<Symbol> symbols;
+  symbols.reserve(std::size(meta.universe));  // alloc
+  size_t counter = 0;
   for (auto &item : meta.universe) {
+    auto discard = shared_.discard_symbol(item.name);
     auto tick_size = std::pow(10.0, -static_cast<double>(item.sz_decimals));
     auto reference_data = ReferenceData{
         .stream_id = stream_id_,
@@ -426,9 +431,25 @@ void Rest::operator()(Trace<json::Meta> const &event) {
         .exchange_time_utc = {},
         .exchange_sequence = {},
         .sending_time_utc = {},
-        .discard = false,
+        .discard = discard,
     };
     create_trace_and_dispatch(handler_, trace_info, reference_data, true);
+    if (discard) {
+      continue;
+    }
+    if (symbols_.emplace(item.name).second) {  // only include new
+      symbols.emplace_back(item.name);
+    }
+    ++counter;
+  }
+  if (!std::empty(symbols)) {
+    auto symbols_update = SymbolsUpdate{
+        .symbols = symbols,
+    };
+    handler_(symbols_update);
+  }
+  if (counter > 0) {
+    log::info("Symbols {} / {}"sv, counter, std::size(meta.universe));
   }
 }
 

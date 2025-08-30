@@ -157,16 +157,6 @@ void MarketData::operator()(web::socket::Client::Disconnected const &) {
 
 void MarketData::operator()(web::socket::Client::Ready const &) {
   (*this)(ConnectionStatus::READY);
-
-  auto BBO = R"({"method":"subscribe","subscription":{"type":"bbo","coin":"SOL"}})"sv;
-  (*connection_).send_text(BBO);
-  auto L2BOOK = R"({"method":"subscribe","subscription":{"type":"l2Book","coin":"SOL"}})"sv;
-  (*connection_).send_text(L2BOOK);
-  auto TRADES = R"({"method":"subscribe","subscription":{"type":"trades","coin":"SOL"}})"sv;
-  (*connection_).send_text(TRADES);
-  auto ACTIVE = R"({"method":"subscribe","subscription":{"type":"activeAssetCtx","coin":"SOL"}})"sv;
-  (*connection_).send_text(ACTIVE);
-
   subscribe();
 }
 
@@ -218,21 +208,27 @@ void MarketData::subscribe(std::span<Symbol const> const &symbols) {
   if (std::empty(symbols)) {
     return;
   }
+  subscribe("bbo", symbols);
+  subscribe("l2Book", symbols);
+  subscribe("trades", symbols);
+  subscribe("activeAssetCtx", symbols);
 }
 
-void MarketData::subscribe(std::string_view const &topic, std::span<Symbol const> const &symbols) {
+void MarketData::subscribe(std::string_view const &channel, std::span<Symbol const> const &symbols) {
   assert(!std::empty(symbols));
-  auto separator = fmt::format(R"(","{}.)"sv, topic);
-  auto message = fmt::format(
-      R"({{)"
-      R"("req_id":"{}",)"
-      R"("op":"subscribe",)"
-      R"("args":["{}.{}"])"
-      R"(}})"sv,
-      ++request_id_,
-      topic,
-      fmt::join(symbols, separator));
-  (*connection_).send_text(message);
+  for (auto &item : symbols) {
+    auto message = fmt::format(
+        R"({{)"
+        R"("method":"subscribe",)"
+        R"("subscription":{{)"
+        R"("type":"{}",)"
+        R"("coin":"{}")"
+        R"(}})"
+        R"(}})"sv,
+        channel,
+        item);
+    (*connection_).send_text(message);
+  }
 }
 
 void MarketData::send_ping(std::chrono::nanoseconds now) {

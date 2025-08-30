@@ -68,7 +68,7 @@ struct MarketData final : public web::socket::Client::Handler, public json::Pars
   void operator()(ConnectionStatus);
 
   void subscribe(std::span<Symbol const> const &symbols);
-  void subscribe(std::string_view const &topic, std::span<Symbol const> const &symbols);
+  void subscribe(std::string_view const &channel, std::span<Symbol const> const &symbols);
 
   void send_ping(std::chrono::nanoseconds now);
 
