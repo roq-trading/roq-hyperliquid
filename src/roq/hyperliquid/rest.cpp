@@ -389,6 +389,7 @@ void Rest::get_meta_ack(Trace<web::rest::Response> const &event, uint32_t sequen
   });
 }
 
+// XXX TODO symbols update => trigger market data connection
 void Rest::operator()(Trace<json::Meta> const &event) {
   auto &[trace_info, meta] = event;
   log::info<4>("meta={}"sv, meta);
