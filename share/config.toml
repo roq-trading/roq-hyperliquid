@@ -1,6 +1,7 @@
 symbols = [
-  "^BTCUSD[A-Z]?$",  # spot + linear + inverse
-  "^BTC-.*-.*-[PC]$"  # options (e.g. "BTC-26SEP25-300000-P")
+  "^BTC$",
+  "^ETH$",
+  "^SOL$"
 ]
 
 [accounts]
