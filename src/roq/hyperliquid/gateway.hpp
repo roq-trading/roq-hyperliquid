@@ -70,6 +70,9 @@ struct Gateway final : public server::Handler, public Rest::Handler, public Mark
   template <typename... Args>
   void dispatch(Args &&...);
 
+  template <typename... Args>
+  static void dispatch_helper(auto &self, Args &&...);
+
  private:
   server::Dispatcher &dispatcher_;
   // accounts

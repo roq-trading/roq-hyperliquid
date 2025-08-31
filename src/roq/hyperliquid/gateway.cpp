@@ -171,9 +171,14 @@ void Gateway::operator()(metrics::Writer &writer) const {
 
 template <typename... Args>
 void Gateway::dispatch(Args &&...args) {
+  dispatch_helper(*this, std::forward<Args>(args)...);
+}
+
+template <typename... Args>
+void Gateway::dispatch_helper(auto &self, Args &&...args) {
   auto helper = [&](auto &target) { target(std::forward<Args>(args)...); };
-  helper(rest_);
-  for (auto &item : market_data_) {
+  helper(self.rest_);
+  for (auto &item : self.market_data_) {
     helper(*item);
   }
 }
