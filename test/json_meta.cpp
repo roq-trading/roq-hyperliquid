@@ -4,6 +4,8 @@
 
 #include "roq/core/json/parser.hpp"
 
+#include "roq/core/json/buffer_stack.hpp"
+
 #include "roq/hyperliquid/json/meta.hpp"
 
 using namespace roq;
@@ -130,7 +132,7 @@ auto const MESSAGE = R"([)"
 
 TEST_CASE("json_meta", "[json_meta]") {
   /*
-  std::vector<std::byte> buffer(8192);
+  core::json::BufferStack buffer{8192, 1};
   json::InstrumentInfo obj{MESSAGE, buffer};
   CHECK(obj.ret_code == 0);
   */
