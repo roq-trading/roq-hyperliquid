@@ -1,6 +1,6 @@
 {
   "name": "roq/hyperliquid/json/TradesDataItem",
-  "type": "item",
+  "type": "dictionary",
   "values": [
     {
       "name": "coin",

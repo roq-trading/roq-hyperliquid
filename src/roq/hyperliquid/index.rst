@@ -6,20 +6,20 @@
 roq-hyperliquid
 ===============
 
-.. tab:: Stable
-
-  .. code-block:: shell
-
-     $ conda install \
-           --channel https://roq-trading.com/conda/stable \
-           roq-hyperliquid
-
 .. tab:: Unstable
 
   .. code-block:: shell
 
      $ conda install \
            --channel https://roq-trading.com/conda/unstable \
+           roq-hyperliquid
+
+.. tab:: Stable
+
+  .. code-block:: shell
+
+     $ conda install \
+           --channel https://roq-trading.com/conda/stable \
            roq-hyperliquid
 
 

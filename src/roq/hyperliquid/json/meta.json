@@ -1,6 +1,6 @@
 {
   "name": "roq/hyperliquid/json/Meta",
-  "type": "comp",
+  "type": "dictionary",
   "values": [
     {
       "name": "universe",

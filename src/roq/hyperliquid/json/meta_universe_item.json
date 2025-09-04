@@ -1,6 +1,6 @@
 {
   "name": "roq/hyperliquid/json/MetaUniverseItem",
-  "type": "item",
+  "type": "dictionary",
   "values": [
     {
       "name": "name",

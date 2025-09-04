@@ -1,6 +1,6 @@
 {
   "name": "roq/hyperliquid/json/SpotMetaTokensItem",
-  "type": "item",
+  "type": "dictionary",
   "values": [
     {
       "name": "name",

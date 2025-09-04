@@ -1,6 +1,6 @@
 {
   "name": "roq/hyperliquid/json/BBODataBBOItem",
-  "type": "item",
+  "type": "dictionary",
   "values": [
     {
       "name": "px",

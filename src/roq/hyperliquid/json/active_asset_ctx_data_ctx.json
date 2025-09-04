@@ -1,6 +1,6 @@
 {
   "name": "roq/hyperliquid/json/ActiveAssetCtxDataCtx",
-  "type": "comp",
+  "type": "dictionary",
   "values": [
     {
       "name": "funding",

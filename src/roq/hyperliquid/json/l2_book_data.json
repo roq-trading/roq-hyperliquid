@@ -1,6 +1,6 @@
 {
   "name": "roq/hyperliquid/json/L2BookData",
-  "type": "comp",
+  "type": "dictionary",
   "values": [
     {
       "name": "coin",

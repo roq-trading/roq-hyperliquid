@@ -1,6 +1,6 @@
 {
   "name": "roq/hyperliquid/json/BBOData",
-  "type": "comp",
+  "type": "dictionary",
   "values": [
     {
       "name": "coin",

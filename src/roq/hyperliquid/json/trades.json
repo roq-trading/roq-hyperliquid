@@ -1,6 +1,6 @@
 {
   "name": "roq/hyperliquid/json/Trades",
-  "type": "comp",
+  "type": "dictionary",
   "values": [
     {
       "name": "channel",

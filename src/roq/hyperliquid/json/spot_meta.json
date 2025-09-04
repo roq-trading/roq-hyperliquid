@@ -1,6 +1,6 @@
 {
   "name": "roq/hyperliquid/json/SpotMeta",
-  "type": "comp",
+  "type": "dictionary",
   "values": [
     {
       "name": "tokens",

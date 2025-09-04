@@ -1,6 +1,6 @@
 {
   "name": "roq/hyperliquid/json/SubscriptionResponseDataSubscription",
-  "type": "comp",
+  "type": "dictionary",
   "values": [
     {
       "name": "type",

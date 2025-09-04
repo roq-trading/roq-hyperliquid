@@ -1,6 +1,6 @@
 {
   "name": "roq/hyperliquid/json/L2Book",
-  "type": "comp",
+  "type": "dictionary",
   "values": [
     {
       "name": "channel",

@@ -1,6 +1,6 @@
 {
   "name": "roq/hyperliquid/json/SpotMetaUniverseItem",
-  "type": "item",
+  "type": "dictionary",
   "values": [
     {
       "name": "tokens"
