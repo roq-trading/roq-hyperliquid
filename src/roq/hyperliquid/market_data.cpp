@@ -43,7 +43,7 @@ auto const SUPPORTS = Mask{
 
 uint64_t const REQUEST_ID = 1'000'000;
 
-size_t const MAX_DECODE_BUFFER_DEPTH = 1;
+size_t const MAX_DECODE_BUFFER_DEPTH = 2;
 }  // namespace
 
 // === HELPERS ===
@@ -321,12 +321,15 @@ void MarketData::operator()(Trace<json::L2Book> const &event) {
       };
       result.emplace_back(std::move(mbp_update));
     };
+    if (std::size(l2book.data.levels) != 2) {
+      log::fatal("Unexpected: l2book={}"sv);
+    }
     shared_.bids.clear();
-    for (auto &item : l2book.data.bids) {
+    for (auto &item : l2book.data.levels[0].data) {
       helper(shared_.bids, item);
     }
     shared_.asks.clear();
-    for (auto &item : l2book.data.asks) {
+    for (auto &item : l2book.data.levels[1].data) {
       helper(shared_.asks, item);
     }
     if (!(std::empty(shared_.bids) && std::empty(shared_.asks))) {

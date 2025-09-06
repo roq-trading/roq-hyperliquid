@@ -1,18 +1,11 @@
 {
   "name": "roq/hyperliquid/json/L2BookDataLevelsItem",
-  "type": "dictionary",
+  "type": "array",
   "values": [
     {
-      "name": "px",
-      "type": "std/double"
-    },
-    {
-      "name": "sz",
-      "type": "std/double"
-    },
-    {
-      "name": "n",
-      "type": "std/uint32"
+      "name": "data",
+      "type": "roq/hyperliquid/json/L2BookDataLevelsItemItem",
+      "array": "std/span"
     }
   ]
 }

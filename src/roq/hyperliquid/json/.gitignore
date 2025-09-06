@@ -9,10 +9,13 @@ bbo.hpp
 channel.hpp
 error.hpp
 l2_book_data.hpp
+l2_book_data_levels_item_item.hpp
 l2_book_data_levels_item.hpp
 l2_book.hpp
 message.hpp
 meta.hpp
+meta_margin_tables_item.hpp
+meta_margin_tables_item_margin_table.hpp
 meta_universe_item.hpp
 perp_dexs_item.hpp
 perp_dexs.hpp
@@ -35,10 +38,13 @@ bbo.cpp
 channel.cpp
 error.cpp
 l2_book_data.cpp
+l2_book_data_levels_item_item.cpp
 l2_book_data_levels_item.cpp
 l2_book.cpp
 message.cpp
 meta.cpp
+meta_margin_tables_item.cpp
+meta_margin_tables_item_margin_table.cpp
 meta_universe_item.cpp
 perp_dexs_item.cpp
 perp_dexs.cpp

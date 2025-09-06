@@ -1,0 +1,15 @@
+{
+  "name": "roq/hyperliquid/json/MetaMarginTablesItem",
+  "type": "key_value",
+  "values": [
+    {
+      "name": "name",
+      "type": "std/string_view"
+    },
+    {
+      "name": "margin_table",
+      "type": "roq/hyperliquid/json/MetaMarginTablesItemMarginTable",
+      "array": "std/span"
+    }
+  ]
+}

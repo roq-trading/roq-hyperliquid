@@ -8,7 +8,8 @@
       "array": "std/span"
     },
     {
-      "name": "marginTables"
+      "name": "marginTables",
+      "comment": "TODO can't parse key-value array -- need something new"
     }
   ]
 }

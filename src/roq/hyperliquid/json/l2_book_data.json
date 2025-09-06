@@ -11,12 +11,7 @@
       "type": "std/milliseconds"
     },
     {
-      "name": "bids",
-      "type": "roq/hyperliquid/json/L2BookDataLevelsItem",
-      "array": "std/span"
-    },
-    {
-      "name": "asks",
+      "name": "levels",
       "type": "roq/hyperliquid/json/L2BookDataLevelsItem",
       "array": "std/span"
     }

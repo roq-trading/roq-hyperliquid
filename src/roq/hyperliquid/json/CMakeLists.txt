@@ -14,10 +14,13 @@ set(AUTOGEN_SCHEMAS
     channel.json
     error.json
     l2_book_data.json
+    l2_book_data_levels_item_item.json
     l2_book_data_levels_item.json
     l2_book.json
     message.json
     meta.json
+    meta_margin_tables_item.json
+    meta_margin_tables_item_margin_table.json
     meta_universe_item.json
     perp_dexs_item.json
     perp_dexs.json
