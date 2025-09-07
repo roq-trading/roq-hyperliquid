@@ -24,13 +24,18 @@ void dispatch_helper(auto &handler, auto &message, auto &buffer_stack, auto &tra
 
 // === IMPLEMENTATION ===
 
-bool Parser::dispatch(Handler &handler, std::string_view const &message, core::json::BufferStack &buffer_stack, TraceInfo const &trace_info) {
-  Message message_{message, buffer_stack};
-  switch (message_.channel) {
+bool Parser::dispatch(
+    Handler &handler, std::string_view const &message, core::json::BufferStack &buffer_stack, TraceInfo const &trace_info, bool allow_unknown_event_types) {
+  Message message_2{message, buffer_stack};
+  switch (message_2.channel) {
     using enum Channel::type_t;
     case UNDEFINED_INTERNAL:
+      break;
     case UNKNOWN_INTERNAL:
-      log::fatal("Unexpected"sv);
+      if (allow_unknown_event_types) {
+        return false;
+      }
+      break;
     case PONG:
       dispatch_helper<Pong>(handler, message, buffer_stack, trace_info);
       return true;
@@ -53,7 +58,7 @@ bool Parser::dispatch(Handler &handler, std::string_view const &message, core::j
       dispatch_helper<ActiveAssetCtx>(handler, message, buffer_stack, trace_info);
       return true;
   }
-  return false;
+  log::fatal(R"(Unexpected: message="{}")"sv, message);
 }
 
 }  // namespace json

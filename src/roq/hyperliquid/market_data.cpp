@@ -242,10 +242,10 @@ void MarketData::send_ping(std::chrono::nanoseconds now) {
 
 void MarketData::parse(std::string_view const &message) {
   profile_.parse([&]() {
-    auto log_message = [&]() { log::warn(R"(message="{}")"sv, message); };
+    auto log_message = [&]() { log::warn(R"(*** PLEASE REPORT *** message="{}")"sv, message); };
     try {
       TraceInfo trace_info;
-      if (!json::Parser::dispatch(*this, message, decode_buffer_, trace_info)) {
+      if (!json::Parser::dispatch(*this, message, decode_buffer_, trace_info, shared_.settings.experimental.allow_unknown_event_types)) {
         log_message();
       }
     } catch (...) {
@@ -261,6 +261,7 @@ void MarketData::operator()(Trace<json::Pong> const &event) {
   profile_.pong([&]() {
     auto &[trace_info, pong] = event;
     log::info<5>("pong={}"sv, pong);
+    (*connection_).touch(trace_info.source_receive_time);
   });
 }
 
@@ -268,6 +269,7 @@ void MarketData::operator()(Trace<json::Error> const &event) {
   profile_.error([&]() {
     auto &[trace_info, error] = event;
     log::error("error={}"sv, error);
+    (*connection_).touch(trace_info.source_receive_time);
   });
 }
 
@@ -275,6 +277,7 @@ void MarketData::operator()(Trace<json::SubscriptionResponse> const &event) {
   profile_.subscription_response([&]() {
     auto &[trace_info, subscription_response] = event;
     log::info<2>("subscription_response={}"sv, subscription_response);
+    (*connection_).touch(trace_info.source_receive_time);
   });
 }
 
@@ -282,6 +285,7 @@ void MarketData::operator()(Trace<json::BBO> const &event) {
   profile_.bbo([&]() {
     auto &[trace_info, bbo] = event;
     log::info<2>("bbo={}"sv, bbo);
+    (*connection_).touch(trace_info.source_receive_time);
     if (std::size(bbo.data.bbo) == 2) {
       auto top_of_book = TopOfBook{
           .stream_id = stream_id_,
@@ -310,6 +314,7 @@ void MarketData::operator()(Trace<json::L2Book> const &event) {
   profile_.bbo([&]() {
     auto &[trace_info, l2book] = event;
     log::info<2>("l2book={}"sv, l2book);
+    (*connection_).touch(trace_info.source_receive_time);
     auto helper = [&](auto &result, auto &item) {
       auto mbp_update = MBPUpdate{
           .price = item.px,
@@ -357,6 +362,7 @@ void MarketData::operator()(Trace<json::Trades> const &event) {
   profile_.trades([&]() {
     auto &[trace_info, trades] = event;
     log::info<2>("trades={}"sv, trades);
+    (*connection_).touch(trace_info.source_receive_time);
     std::chrono::nanoseconds time = {};
     std::string_view coin;
     shared_.trades.clear();
@@ -400,6 +406,7 @@ void MarketData::operator()(Trace<json::ActiveAssetCtx> const &event) {
   profile_.active_asset_ctx([&]() {
     auto &[trace_info, active_asset_ctx] = event;
     log::info<2>("active_asset_ctx={}"sv, active_asset_ctx);
+    (*connection_).touch(trace_info.source_receive_time);
     std::array<Statistics, 4> statistics{{
         {
             .type = StatisticsType::OPEN_INTEREST,
