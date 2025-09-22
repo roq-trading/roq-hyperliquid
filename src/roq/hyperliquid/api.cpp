@@ -13,7 +13,7 @@ namespace hyperliquid {
 
 // === IMPLEMENTATION ===
 
-API API::create(Settings const &settings) {
+API API::create(Settings const &) {
   return {
       .market_data{
           .get_info = "/info"sv,

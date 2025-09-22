@@ -8,7 +8,6 @@
 
 #include "roq/server/flags/settings.hpp"
 
-#include "roq/hyperliquid/flags/download.hpp"
 #include "roq/hyperliquid/flags/flags.hpp"
 #include "roq/hyperliquid/flags/mbp.hpp"
 #include "roq/hyperliquid/flags/misc.hpp"
@@ -27,7 +26,6 @@ struct Settings final : public server::flags::Settings {
   flags::Misc misc;
   flags::REST rest;
   flags::WS ws;
-  flags::Download download;
   flags::MBP mbp;
   flags::Request request;
 
@@ -50,7 +48,6 @@ struct fmt::formatter<roq::hyperliquid::Settings> {
         R"(misc={}, )"
         R"(rest={}, )"
         R"(ws={}, )"
-        R"(download={}, )"
         R"(mbp={}, )"
         R"(request={}, )"
         R"(server={})"
