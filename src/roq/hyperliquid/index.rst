@@ -26,6 +26,10 @@ roq-hyperliquid
 :code:`roq-hyperliquid`
 -----------------------
 
+.. code-block:: shell
+
+   $ roq-hyperliquid [FLAGS]
+
 
 Description
 ~~~~~~~~~~~
