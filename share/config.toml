@@ -1,3 +1,5 @@
+# config template for the roq-hyperliquid gateway
+
 symbols = [
   "^BTC$",
   "^ETH$",
