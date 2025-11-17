@@ -10,6 +10,10 @@
     {
       "name": "marginTables",
       "comment": "TODO can't parse key-value array -- need something new"
+    },
+    {
+      "name": "collateralToken",
+      "comment": "TODO looks like nuber, but shouldn't it be string?"
     }
   ]
 }

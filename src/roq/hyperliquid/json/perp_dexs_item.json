@@ -7,7 +7,7 @@
       "type": "std/string_view"
     },
     {
-      "name": "full_name",
+      "name": "fullName",
       "type": "std/string_view"
     },
     {
@@ -15,7 +15,27 @@
       "type": "std/string_view"
     },
     {
-      "name": "oracle_updater",
+      "name": "oracleUpdater",
+      "type": "std/string_view"
+    },
+    {
+      "name": "feeRecipient",
+      "type": "std/string_view"
+    },
+    {
+      "name": "assetToStreamingOiCap",
+      "comment": "array"
+    },
+    {
+      "name": "subDeployers",
+      "comment": "array"
+    },
+    {
+      "name": "deployerFeeScale",
+      "type": "std/double"
+    },
+    {
+      "name": "lastDeployerFeeScaleChangeTime",
       "type": "std/string_view"
     }
   ]

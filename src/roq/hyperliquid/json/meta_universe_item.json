@@ -25,6 +25,10 @@
     {
       "name": "marginTableId",
       "type": "std/uint32"
+    },
+    {
+      "name": "marginMode",
+      "type": "std/string_view"
     }
   ]
 }
