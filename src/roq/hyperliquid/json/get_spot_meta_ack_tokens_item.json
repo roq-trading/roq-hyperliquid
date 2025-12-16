@@ -1,5 +1,5 @@
 {
-  "name": "roq/hyperliquid/json/SpotMetaTokensItem",
+  "name": "roq/hyperliquid/json/GetSpotMetaAckTokensItem",
   "type": "dictionary",
   "values": [
     {

@@ -1,10 +1,10 @@
 {
-  "name": "roq/hyperliquid/json/Meta",
+  "name": "roq/hyperliquid/json/GetMetaAck",
   "type": "dictionary",
   "values": [
     {
       "name": "universe",
-      "type": "roq/hyperliquid/json/MetaUniverseItem",
+      "type": "roq/hyperliquid/json/GetMetaAckUniverseItem",
       "array": "std/span"
     },
     {

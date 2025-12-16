@@ -58,6 +58,7 @@ struct MarketData final : public web::socket::Client::Handler, public json::Pars
 
  protected:
   // web::socket::Client::Handler
+
   void operator()(web::socket::Client::Connected const &) override;
   void operator()(web::socket::Client::Disconnected const &) override;
   void operator()(web::socket::Client::Ready const &) override;
@@ -77,6 +78,7 @@ struct MarketData final : public web::socket::Client::Handler, public json::Pars
   void parse(std::string_view const &message);
 
   // json::Parser::Handler
+
   void operator()(Trace<json::Pong> const &) override;
   void operator()(Trace<json::Error> const &) override;
   void operator()(Trace<json::SubscriptionResponse> const &) override;

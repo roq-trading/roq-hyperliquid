@@ -25,9 +25,9 @@
 #include "roq/hyperliquid/rest_state.hpp"
 #include "roq/hyperliquid/shared.hpp"
 
-#include "roq/hyperliquid/json/meta.hpp"
-#include "roq/hyperliquid/json/perp_dexs.hpp"
-#include "roq/hyperliquid/json/spot_meta.hpp"
+#include "roq/hyperliquid/json/get_meta_ack.hpp"
+#include "roq/hyperliquid/json/get_perp_dexs_ack.hpp"
+#include "roq/hyperliquid/json/get_spot_meta_ack.hpp"
 
 namespace roq {
 namespace hyperliquid {
@@ -59,6 +59,8 @@ struct Rest final : public web::rest::Client::Handler {
   void operator()(metrics::Writer &) const;
 
  protected:
+  // web::rest::Client::Handler
+
   void operator()(Trace<web::rest::Client::Connected> const &) override;
   void operator()(Trace<web::rest::Client::Disconnected> const &) override;
   void operator()(Trace<web::rest::Client::Latency> const &) override;
@@ -67,17 +69,23 @@ struct Rest final : public web::rest::Client::Handler {
 
   uint32_t download(RestState);
 
+  // spot-meta
+
   void get_spot_meta();
   void get_spot_meta_ack(Trace<web::rest::Response> const &, uint32_t sequence);
-  void operator()(Trace<json::SpotMeta> const &);
+  void operator()(Trace<json::GetSpotMetaAck> const &);
+
+  // perp-dexs
 
   void get_perp_dexs();
   void get_perp_dexs_ack(Trace<web::rest::Response> const &, uint32_t sequence);
-  void operator()(Trace<json::PerpDexs> const &);
+  void operator()(Trace<json::GetPerpDexsAck> const &);
+
+  // meta
 
   void get_meta();
   void get_meta_ack(Trace<web::rest::Response> const &, uint32_t sequence);
-  void operator()(Trace<json::Meta> const &);
+  void operator()(Trace<json::GetMetaAck> const &);
 
   void process_response(web::rest::Response const &, auto error_handler, auto success_handler);
 

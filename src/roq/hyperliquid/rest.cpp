@@ -153,6 +153,8 @@ void Rest::operator()(ConnectionStatus status) {
   }
 }
 
+// web::rest::Client::Handler
+
 void Rest::operator()(Trace<web::rest::Client::Connected> const &) {
   if (download_.downloading()) {
     download_.bump();
@@ -204,7 +206,7 @@ uint32_t Rest::download(RestState state) {
   return 0;
 }
 
-// spot meta
+// spot-meta
 
 void Rest::get_spot_meta() {
   profile_.spot_meta([&]() {
@@ -224,7 +226,7 @@ void Rest::get_spot_meta() {
       Trace event{trace_spot_meta, response};
       get_spot_meta_ack(event, sequence);
     };
-    (*connection_)("spot_meta"sv, request, callback);
+    (*connection_)("spot-meta"sv, request, callback);
   });
 }
 
@@ -239,8 +241,8 @@ void Rest::get_spot_meta_ack(Trace<web::rest::Response> const &event, uint32_t s
       if (download_.skip(sequence, STATE)) {
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
-        json::SpotMeta spot_meta{body, decode_buffer_};
-        Trace event_2{event, spot_meta};
+        json::GetSpotMetaAck spot_meta_ack{body, decode_buffer_};
+        Trace event_2{event, spot_meta_ack};
         (*this)(event_2);
         download_.check(STATE);
       }
@@ -249,10 +251,10 @@ void Rest::get_spot_meta_ack(Trace<web::rest::Response> const &event, uint32_t s
   });
 }
 
-void Rest::operator()(Trace<json::SpotMeta> const &event) {
-  auto &[trace_info, spot_meta] = event;
-  log::info<4>("spot_meta={}"sv, spot_meta);
-  for (auto &item : spot_meta.tokens) {
+void Rest::operator()(Trace<json::GetSpotMetaAck> const &event) {
+  auto &[trace_info, spot_meta_ack] = event;
+  log::info<4>("spot_meta_ack={}"sv, spot_meta_ack);
+  for (auto &item : spot_meta_ack.tokens) {
     auto discard = shared_.discard_symbol(item.name);
     auto tick_size = std::pow(10.0, -static_cast<double>(item.sz_decimals));
     auto reference_data = ReferenceData{
@@ -296,7 +298,7 @@ void Rest::operator()(Trace<json::SpotMeta> const &event) {
   }
 }
 
-// spot meta
+// perp-dexs
 
 void Rest::get_perp_dexs() {
   profile_.perp_dexs([&]() {
@@ -316,7 +318,7 @@ void Rest::get_perp_dexs() {
       Trace event{trace_perp_dexs, response};
       get_perp_dexs_ack(event, sequence);
     };
-    (*connection_)("perp_dexs"sv, request, callback);
+    (*connection_)("perp-dexs"sv, request, callback);
   });
 }
 
@@ -331,8 +333,8 @@ void Rest::get_perp_dexs_ack(Trace<web::rest::Response> const &event, uint32_t s
       if (download_.skip(sequence, STATE)) {
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
-        json::PerpDexs perp_dexs{body, decode_buffer_};
-        Trace event_2{event, perp_dexs};
+        json::GetPerpDexsAck perp_dexs_ack{body, decode_buffer_};
+        Trace event_2{event, perp_dexs_ack};
         (*this)(event_2);
         download_.check(STATE);
       }
@@ -341,9 +343,9 @@ void Rest::get_perp_dexs_ack(Trace<web::rest::Response> const &event, uint32_t s
   });
 }
 
-void Rest::operator()(Trace<json::PerpDexs> const &event) {
-  auto &[trace_info, perp_dexs] = event;
-  log::info<4>("perp_dexs={}"sv, perp_dexs);
+void Rest::operator()(Trace<json::GetPerpDexsAck> const &event) {
+  auto &[trace_info, perp_dexs_ack] = event;
+  log::info<4>("perp_dexs_ack={}"sv, perp_dexs_ack);
 }
 
 // meta
@@ -382,8 +384,8 @@ void Rest::get_meta_ack(Trace<web::rest::Response> const &event, uint32_t sequen
       if (download_.skip(sequence, STATE)) {
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
-        json::Meta info{body, decode_buffer_};
-        Trace event_2{event, info};
+        json::GetMetaAck meta_ack{body, decode_buffer_};
+        Trace event_2{event, meta_ack};
         (*this)(event_2);
         download_.check(STATE);
       }
@@ -393,13 +395,13 @@ void Rest::get_meta_ack(Trace<web::rest::Response> const &event, uint32_t sequen
 }
 
 // XXX TODO symbols update => trigger market data connection
-void Rest::operator()(Trace<json::Meta> const &event) {
-  auto &[trace_info, meta] = event;
-  log::info<4>("meta={}"sv, meta);
+void Rest::operator()(Trace<json::GetMetaAck> const &event) {
+  auto &[trace_info, meta_ack] = event;
+  log::info<4>("meta_ack={}"sv, meta_ack);
   std::vector<Symbol> symbols;
-  symbols.reserve(std::size(meta.universe));  // alloc
+  symbols.reserve(std::size(meta_ack.universe));  // alloc
   size_t counter = 0;
-  for (auto &item : meta.universe) {
+  for (auto &item : meta_ack.universe) {
     auto discard = shared_.discard_symbol(item.name);
     auto tick_size = std::pow(10.0, -static_cast<double>(item.sz_decimals));
     auto reference_data = ReferenceData{
@@ -452,7 +454,7 @@ void Rest::operator()(Trace<json::Meta> const &event) {
     handler_(symbols_update);
   }
   if (counter > 0) {
-    log::info("Symbols {} / {}"sv, counter, std::size(meta.universe));
+    log::info("Symbols {} / {}"sv, counter, std::size(meta_ack.universe));
   }
 }
 

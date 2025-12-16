@@ -1,5 +1,5 @@
 {
-  "name": "roq/hyperliquid/json/PerpDexsItem",
+  "name": "roq/hyperliquid/json/GetPerpDexsAckItem",
   "type": "dictionary",
   "values": [
     {
@@ -37,6 +37,9 @@
     {
       "name": "lastDeployerFeeScaleChangeTime",
       "type": "std/string_view"
+    },
+    {
+      "name": "assetToFundingMultiplier"
     }
   ]
 }

@@ -1,5 +1,5 @@
 {
-  "name": "roq/hyperliquid/json/MetaMarginTablesItem",
+  "name": "roq/hyperliquid/json/GetMetaAckMarginTablesItem",
   "type": "key_value",
   "values": [
     {
@@ -8,7 +8,7 @@
     },
     {
       "name": "margin_table",
-      "type": "roq/hyperliquid/json/MetaMarginTablesItemMarginTable",
+      "type": "roq/hyperliquid/json/GetMetaAckMarginTablesItemMarginTable",
       "array": "std/span"
     }
   ]

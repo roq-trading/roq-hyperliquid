@@ -1,5 +1,5 @@
 {
-  "name": "roq/hyperliquid/json/MetaMarginTablesItemMarginTable",
+  "name": "roq/hyperliquid/json/GetMetaAckMarginTablesItemMarginTable",
   "type": "dictionary",
   "values": [
     {

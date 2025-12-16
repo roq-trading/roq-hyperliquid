@@ -1,5 +1,5 @@
 {
-  "name": "roq/hyperliquid/json/MetaUniverseItem",
+  "name": "roq/hyperliquid/json/GetMetaAckUniverseItem",
   "type": "dictionary",
   "values": [
     {

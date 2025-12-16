@@ -13,22 +13,22 @@ set(AUTOGEN_SCHEMAS
     bbo.json
     channel.json
     error.json
+    get_meta_ack.json
+    get_meta_ack_margin_tables_item.json
+    get_meta_ack_margin_tables_item_margin_table.json
+    get_meta_ack_universe_item.json
+    get_perp_dexs_ack_item.json
+    get_perp_dexs_ack.json
+    get_spot_meta_ack.json
+    get_spot_meta_ack_tokens_item.json
+    get_spot_meta_ack_universe_item.json
     l2_book_data.json
     l2_book_data_levels_item_item.json
     l2_book_data_levels_item.json
     l2_book.json
     message.json
-    meta.json
-    meta_margin_tables_item.json
-    meta_margin_tables_item_margin_table.json
-    meta_universe_item.json
-    perp_dexs_item.json
-    perp_dexs.json
     pong.json
     side.json
-    spot_meta.json
-    spot_meta_tokens_item.json
-    spot_meta_universe_item.json
     subscription_response_data.json
     subscription_response_data_subscription.json
     subscription_response.json
