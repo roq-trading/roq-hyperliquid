@@ -1,0 +1,14 @@
+{
+  "name": "roq/hyperliquid/json/SpotMetaDataResponsePayload",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "type",
+      "type": "roq/hyperliquid/json/PayloadType"
+    },
+    {
+      "name": "data",
+      "type": "roq/hyperliquid/json/SpotMetaDataResponsePayloadData"
+    }
+  ]
+}

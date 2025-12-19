@@ -101,6 +101,7 @@ MarketData::MarketData(Handler &handler, io::Context &context, uint16_t stream_i
           .l2book = create_metrics(shared.settings, name_, "l2book"sv),
           .trades = create_metrics(shared.settings, name_, "trades"sv),
           .active_asset_ctx = create_metrics(shared.settings, name_, "active_asset_ctx"sv),
+          .spot_meta = create_metrics(shared.settings, name_, "spot_meta"sv),
       },
       latency_{
           .ping = create_metrics(shared.settings, name_, "ping"sv),
@@ -138,6 +139,7 @@ void MarketData::operator()(metrics::Writer &writer) const {
       .write(profile_.l2book, metrics::Type::PROFILE)
       .write(profile_.trades, metrics::Type::PROFILE)
       .write(profile_.active_asset_ctx, metrics::Type::PROFILE)
+      .write(profile_.spot_meta, metrics::Type::PROFILE)
       // latency
       .write(latency_.ping, metrics::Type::LATENCY)
       .write(latency_.heartbeat, metrics::Type::LATENCY);
@@ -159,6 +161,8 @@ void MarketData::operator()(web::socket::Client::Disconnected const &) {
 
 void MarketData::operator()(web::socket::Client::Ready const &) {
   (*this)(ConnectionStatus::READY);
+  // note! we can request reference data through WS -- however, this is not great because we want to slice symbols
+  // get_spot_meta();
   subscribe();
 }
 
@@ -204,6 +208,22 @@ void MarketData::operator()(ConnectionStatus status) {
     log::info("stream_status={}"sv, stream_status);
     create_trace_and_dispatch(handler_, trace_info, stream_status);
   }
+}
+
+void MarketData::get_spot_meta() {
+  auto message = fmt::format(
+      R"({{)"
+      R"("method":"post",)"
+      R"("id":{},)"
+      R"("request":{{)"
+      R"("type":"info",)"
+      R"("payload":{{)"
+      R"("type":"spotMeta")"
+      R"(}})"
+      R"(}})"
+      R"(}})"sv,
+      ++request_id_);
+  (*connection_).send_text(message);
 }
 
 void MarketData::subscribe(std::span<Symbol const> const &symbols) {
@@ -437,6 +457,10 @@ void MarketData::operator()(Trace<json::ActiveAssetCtx> const &event) {
     };
     create_trace_and_dispatch(handler_, trace_info, statistics_update, true);
   });
+}
+
+void MarketData::operator()(Trace<json::SpotMeta> const &event) {
+  profile_.spot_meta([&]() { log::warn("DEBUG"sv); });
 }
 
 }  // namespace hyperliquid

@@ -70,6 +70,8 @@ struct MarketData final : public web::socket::Client::Handler, public json::Pars
  private:
   void operator()(ConnectionStatus);
 
+  void get_spot_meta();
+
   void subscribe(std::span<Symbol const> const &symbols);
   void subscribe(std::string_view const &channel, std::span<Symbol const> const &symbols);
 
@@ -82,10 +84,13 @@ struct MarketData final : public web::socket::Client::Handler, public json::Pars
   void operator()(Trace<json::Pong> const &) override;
   void operator()(Trace<json::Error> const &) override;
   void operator()(Trace<json::SubscriptionResponse> const &) override;
+  //
   void operator()(Trace<json::BBO> const &) override;
   void operator()(Trace<json::L2Book> const &) override;
   void operator()(Trace<json::Trades> const &) override;
   void operator()(Trace<json::ActiveAssetCtx> const &) override;
+  //
+  void operator()(Trace<json::SpotMeta> const &) override;
 
  private:
   Handler &handler_;
@@ -105,7 +110,7 @@ struct MarketData final : public web::socket::Client::Handler, public json::Pars
     utils::metrics::Counter disconnect;
   } counter_;
   struct {
-    utils::metrics::Profile parse, pong, error, subscription_response, bbo, l2book, trades, active_asset_ctx;
+    utils::metrics::Profile parse, pong, error, subscription_response, bbo, l2book, trades, active_asset_ctx, spot_meta;
   } profile_;
   struct {
     utils::metrics::Latency ping, heartbeat;

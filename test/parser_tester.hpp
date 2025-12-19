@@ -32,10 +32,13 @@ struct ParserTester final : public json::Parser::Handler {
   void operator()(Trace<json::Pong> const &event) override { dispatch_helper(event); }
   void operator()(Trace<json::Error> const &event) override { dispatch_helper(event); }
   void operator()(Trace<json::SubscriptionResponse> const &event) override { dispatch_helper(event); }
+  //
   void operator()(Trace<json::BBO> const &event) override { dispatch_helper(event); }
   void operator()(Trace<json::L2Book> const &event) override { dispatch_helper(event); }
   void operator()(Trace<json::Trades> const &event) override { dispatch_helper(event); }
   void operator()(Trace<json::ActiveAssetCtx> const &event) override { dispatch_helper(event); }
+  //
+  void operator()(Trace<json::SpotMeta> const &event) override { dispatch_helper(event); }
 
   template <typename U>
   void dispatch_helper(Trace<U> const &event) {

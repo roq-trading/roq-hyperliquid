@@ -1,5 +1,5 @@
 {
-  "name": "roq/hyperliquid/json/Message",
+  "name": "roq/hyperliquid/json/SpotMeta",
   "type": "dictionary",
   "values": [
     {
@@ -7,7 +7,8 @@
       "type": "roq/hyperliquid/json/Channel"
     },
     {
-      "name": "data"
+      "name": "data",
+      "type": "roq/hyperliquid/json/SpotMetaData"
     }
   ]
 }

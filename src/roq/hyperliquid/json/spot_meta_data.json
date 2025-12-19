@@ -1,0 +1,14 @@
+{
+  "name": "roq/hyperliquid/json/SpotMetaData",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "id",
+      "type": "std/int64"
+    },
+    {
+      "name": "response",
+      "type": "roq/hyperliquid/json/SpotMetaDataResponse"
+    }
+  ]
+}

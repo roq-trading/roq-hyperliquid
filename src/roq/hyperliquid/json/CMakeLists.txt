@@ -26,9 +26,15 @@ set(AUTOGEN_SCHEMAS
     l2_book_data_levels_item_item.json
     l2_book_data_levels_item.json
     l2_book.json
-    message.json
+    payload_type.json
     pong.json
+    response_type.json
     side.json
+    spot_meta_data.json
+    spot_meta_data_response.json
+    spot_meta_data_response_payload_data.json
+    spot_meta_data_response_payload.json
+    spot_meta.json
     subscription_response_data.json
     subscription_response_data_subscription.json
     subscription_response.json

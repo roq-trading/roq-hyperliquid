@@ -11,6 +11,7 @@ set(SOURCES
     json_get_spot_meta_ack.cpp
     json_l2_book.cpp
     json_pong.cpp
+    json_spot_meta.cpp
     json_subscription_response.cpp
     json_trades.cpp
     main.cpp)
