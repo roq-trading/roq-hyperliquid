@@ -459,7 +459,7 @@ void MarketData::operator()(Trace<json::ActiveAssetCtx> const &event) {
   });
 }
 
-void MarketData::operator()(Trace<json::SpotMeta> const &event) {
+void MarketData::operator()(Trace<json::SpotMeta> const &) {
   profile_.spot_meta([&]() { log::warn("DEBUG"sv); });
 }
 
