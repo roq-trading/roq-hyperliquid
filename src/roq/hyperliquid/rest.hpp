@@ -34,7 +34,7 @@ namespace hyperliquid {
 
 struct Rest final : public web::rest::Client::Handler {
   struct SymbolsUpdate final {
-    std::vector<Symbol> &symbols;
+    std::span<Symbol const> symbols;
   };
 
   struct Handler {
@@ -110,7 +110,6 @@ struct Rest final : public web::rest::Client::Handler {
   } latency_;
   // cache
   Shared &shared_;
-  utils::unordered_set<std::string> symbols_;
   // state
   ConnectionStatus status_ = {};
   core::Download<RestState> download_;

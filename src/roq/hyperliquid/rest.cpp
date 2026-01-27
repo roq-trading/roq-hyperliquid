@@ -442,7 +442,7 @@ void Rest::operator()(Trace<json::GetMetaAck> const &event) {
       log::info<1>(R"(Drop symbol="{}")"sv, item.name);
       continue;
     }
-    if (symbols_.emplace(item.name).second) {  // only include new
+    if (shared_.all_symbols.emplace(item.name).second) {  // only include new
       symbols.emplace_back(item.name);
     }
     ++counter;
