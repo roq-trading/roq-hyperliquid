@@ -7,8 +7,10 @@ set(SOURCES
     json_active_asset_ctx.cpp
     json_bbo.cpp
     json_error.cpp
+    json_get_clearing_house_state_ack.cpp
     json_get_meta_ack.cpp
     json_get_perp_dexs_ack.cpp
+    json_get_spot_clearing_house_state_ack.cpp
     json_get_spot_meta_ack.cpp
     json_l2_book.cpp
     json_pong.cpp

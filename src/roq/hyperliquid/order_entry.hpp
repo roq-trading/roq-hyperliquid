@@ -29,6 +29,7 @@
 #include "roq/hyperliquid/json/get_clearing_house_state_ack.hpp"
 #include "roq/hyperliquid/json/get_open_orders_ack.hpp"
 #include "roq/hyperliquid/json/get_spot_clearing_house_state_ack.hpp"
+#include "roq/hyperliquid/json/get_user_fills_ack.hpp"
 
 namespace roq {
 namespace hyperliquid {
@@ -90,6 +91,12 @@ struct OrderEntry final : public web::rest::Client::Handler {
   void get_open_orders_ack(Trace<web::rest::Response> const &, uint32_t sequence);
   void operator()(Trace<json::GetOpenOrdersAck> const &);
 
+  // user-fills
+
+  void get_user_fills();
+  void get_user_fills_ack(Trace<web::rest::Response> const &, uint32_t sequence);
+  void operator()(Trace<json::GetUserFillsAck> const &);
+
   // helpers
 
   void process_response(web::rest::Response const &, auto error_handler, auto success_handler);
@@ -109,7 +116,7 @@ struct OrderEntry final : public web::rest::Client::Handler {
   } counter_;
   struct {
     utils::metrics::Profile clearing_house_state, clearing_house_state_ack, spot_clearing_house_state, spot_clearing_house_state_ack, open_orders,
-        open_orders_ack;
+        open_orders_ack, user_fills, user_fills_ack;
   } profile_;
   struct {
     utils::metrics::Latency ping;

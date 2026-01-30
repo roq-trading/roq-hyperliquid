@@ -1,31 +1,27 @@
-/* Copyright (c) 2017-2026, Hans Erik Thrane */
-
-#include "roq/hyperliquid/tools/wallet.hpp"
-
+#include <openssl/bn.h>
+#include <openssl/core_names.h>
+#include <openssl/ec.h>
+#include <openssl/ecdsa.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
-
+#include <openssl/obj_mac.h>
+#include <openssl/param_build.h>
+#include <cstring>
 #include <iomanip>
 #include <sstream>
+#include <stdexcept>
+#include <string>
 #include <vector>
-
-#include "roq/exceptions.hpp"
-
-#include "roq/hyperliquid/tools/bignum.hpp"
-#include "roq/hyperliquid/tools/point.hpp"
-
-#define MSGPACK_NO_BOOST
-#include <msgpack.hpp>
-
-using namespace std::literals;
+#include "roq/hyperliquid/crypto/conversions.hpp"
+#include "roq/hyperliquid/crypto/types.hpp"
 
 namespace roq {
 namespace hyperliquid {
-namespace tools {
+namespace crypto {
 
-// === HELPERS ===
+// Forward declare keccak256
+std::vector<uint8_t> keccak256(uint8_t const *data, size_t len);
 
-namespace {
 std::string bnToHex(const BIGNUM *bn, int min_bytes = 32) {
   int num_bytes = BN_num_bytes(bn);
   std::vector<uint8_t> bytes(std::max(num_bytes, min_bytes), 0);
@@ -51,16 +47,105 @@ std::string bnToHex(const BIGNUM *bn, int min_bytes = 32) {
   return oss.str();
 }
 
+void *createKeyFromPrivate(std::string const &private_key_hex) {
+  // Remove "0x" prefix if present
+  std::string key_hex = private_key_hex;
+  if (key_hex.substr(0, 2) == "0x") {
+    key_hex = key_hex.substr(2);
+  }
+
+  // Create EC_KEY with secp256k1 curve
+  EC_KEY *ec_key = EC_KEY_new_by_curve_name(NID_secp256k1);
+  if (!ec_key) {
+    throw std::runtime_error("Failed to create EC_KEY");
+  }
+
+  // Convert hex to BIGNUM
+  BIGNUM *priv_bn = BN_new();
+  if (BN_hex2bn(&priv_bn, key_hex.c_str()) == 0) {
+    BN_free(priv_bn);
+    EC_KEY_free(ec_key);
+    throw std::runtime_error("Invalid private key hex");
+  }
+
+  // Set private key
+  if (EC_KEY_set_private_key(ec_key, priv_bn) != 1) {
+    BN_free(priv_bn);
+    EC_KEY_free(ec_key);
+    throw std::runtime_error("Failed to set private key");
+  }
+
+  // Derive and set public key
+  const EC_GROUP *group = EC_KEY_get0_group(ec_key);
+  EC_POINT *pub_key = EC_POINT_new(group);
+  if (!pub_key) {
+    BN_free(priv_bn);
+    EC_KEY_free(ec_key);
+    throw std::runtime_error("Failed to create public key point");
+  }
+
+  if (EC_POINT_mul(group, pub_key, priv_bn, nullptr, nullptr, nullptr) != 1) {
+    EC_POINT_free(pub_key);
+    BN_free(priv_bn);
+    EC_KEY_free(ec_key);
+    throw std::runtime_error("Failed to derive public key");
+  }
+
+  if (EC_KEY_set_public_key(ec_key, pub_key) != 1) {
+    EC_POINT_free(pub_key);
+    BN_free(priv_bn);
+    EC_KEY_free(ec_key);
+    throw std::runtime_error("Failed to set public key");
+  }
+
+  EC_POINT_free(pub_key);
+  BN_free(priv_bn);
+
+  // Validate key
+  if (EC_KEY_check_key(ec_key) != 1) {
+    EC_KEY_free(ec_key);
+    throw std::runtime_error("Invalid EC key");
+  }
+
+  return static_cast<void *>(ec_key);
+}
+
+std::string deriveAddress(void const *ec_key_ptr) {
+  const EC_KEY *ec_key = static_cast<const EC_KEY *>(ec_key_ptr);
+  const EC_GROUP *group = EC_KEY_get0_group(ec_key);
+  const EC_POINT *pub_key = EC_KEY_get0_public_key(ec_key);
+
+  // Convert public key to uncompressed format (65 bytes: 0x04 + x + y)
+  std::vector<uint8_t> pub_key_bytes(65);
+  size_t len = EC_POINT_point2oct(group, pub_key, POINT_CONVERSION_UNCOMPRESSED, pub_key_bytes.data(), 65, nullptr);
+
+  if (len != 65) {
+    throw std::runtime_error("Failed to convert public key");
+  }
+
+  // Hash public key (skip first byte 0x04)
+  std::vector<uint8_t> hash = keccak256(pub_key_bytes.data() + 1, 64);
+
+  // Take last 20 bytes for address
+  std::string address = "0x";
+  for (size_t i = 12; i < 32; ++i) {
+    char buf[3];
+    snprintf(buf, sizeof(buf), "%02x", hash[i]);
+    address += buf;
+  }
+
+  return address;
+}
+
 // RFC 6979 deterministic k generation
-BIGNUM *generateDeterministicK(const BIGNUM *priv_key, std::span<uint8_t const> const &hash, const EC_GROUP *group) {
+BIGNUM *generateDeterministicK(const BIGNUM *priv_key, std::vector<uint8_t> const &hash, const EC_GROUP *group) {
   // Get curve order
-  BigNum order;
+  BIGNUM *order = BN_new();
   EC_GROUP_get_order(group, order, nullptr);
 
   // Convert private key and hash to bytes
   std::vector<uint8_t> priv_bytes(32);
-  std::vector<uint8_t> hash_bytes;
-  hash_bytes.assign_range(hash);
+  std::vector<uint8_t> hash_bytes = hash;
 
   BN_bn2binpad(priv_key, priv_bytes.data(), 32);
 
@@ -131,23 +216,23 @@ BIGNUM *generateDeterministicK(const BIGNUM *priv_key, std::span<uint8_t const> 
     }
   }
 
-  // BN_free(order);
+  BN_free(order);
   return k;
 }
 
-int calculateRecoveryId(auto &key, std::span<uint8_t const> const &hash, const ECDSA_SIG *sig) {
-  auto group = static_cast<EC_GROUP const *>(key);
-  auto pub_key = key.get_public_key();
+int calculateRecoveryId(const EC_KEY *ec_key, std::vector<uint8_t> const &hash, const ECDSA_SIG *sig) {
+  const EC_GROUP *group = EC_KEY_get0_group(ec_key);
+  const EC_POINT *pub_key = EC_KEY_get0_public_key(ec_key);
 
   const BIGNUM *r, *s;
   ECDSA_SIG_get0(sig, &r, &s);
 
   // Get the order of the curve
-  BigNum order;
+  BIGNUM *order = BN_new();
   EC_GROUP_get_order(group, order, nullptr);
 
   // Get curve parameters
-  BigNum p;
+  BIGNUM *p = BN_new();
   EC_GROUP_get_curve(group, p, nullptr, nullptr, nullptr);
 
   BN_CTX *ctx = BN_CTX_new();
@@ -155,13 +240,13 @@ int calculateRecoveryId(auto &key, std::span<uint8_t const> const &hash, const E
   // Try both recovery IDs (0 and 1)
   for (int recovery_id = 0; recovery_id < 2; ++recovery_id) {
     // Calculate x coordinate of R (which is r)
-    BigNum x{r};
+    BIGNUM *x = BN_dup(r);
 
     // Calculate y from x
     // y^2 = x^3 + 7 (for secp256k1)
-    BigNum y_squared;
-    BigNum y;
-    BigNum tmp;
+    BIGNUM *y_squared = BN_new();
+    BIGNUM *y = BN_new();
+    BIGNUM *tmp = BN_new();
 
     // y_squared = x^3
     BN_mod_mul(tmp, x, x, p, ctx);
@@ -180,22 +265,22 @@ int calculateRecoveryId(auto &key, std::span<uint8_t const> const &hash, const E
     }
 
     // Create point R = (x, y)
-    Point R{group};
+    EC_POINT *R = EC_POINT_new(group);
     EC_POINT_set_affine_coordinates(group, R, x, y, ctx);
 
     // Recover public key: Q = r^-1 * (s*R - e*G)
-    BigNum r_inv;
+    BIGNUM *r_inv = BN_new();
     BN_mod_inverse(r_inv, r, order, ctx);
 
     BIGNUM *e = BN_bin2bn(hash.data(), hash.size(), nullptr);
 
-    Point sR{group};
+    EC_POINT *sR = EC_POINT_new(group);
     EC_POINT_mul(group, sR, nullptr, R, s, ctx);
 
-    Point eG{group};
+    EC_POINT *eG = EC_POINT_new(group);
     EC_POINT_mul(group, eG, e, nullptr, nullptr, ctx);
 
-    Point Q{group};
+    EC_POINT *Q = EC_POINT_new(group);
     EC_POINT_invert(group, eG, ctx);
     EC_POINT_add(group, Q, sR, eG, ctx);
     EC_POINT_mul(group, Q, nullptr, Q, r_inv, ctx);
@@ -204,170 +289,62 @@ int calculateRecoveryId(auto &key, std::span<uint8_t const> const &hash, const E
     int match = (EC_POINT_cmp(group, Q, pub_key, ctx) == 0);
 
     // Cleanup
-    // EC_POINT_free(R);
-    // EC_POINT_free(sR);
-    // EC_POINT_free(eG);
-    // EC_POINT_free(Q);
+    EC_POINT_free(R);
+    EC_POINT_free(sR);
+    EC_POINT_free(eG);
+    EC_POINT_free(Q);
     BN_free(x);
     BN_free(y);
     BN_free(y_squared);
     BN_free(tmp);
-    // BN_free(r_inv);
+    BN_free(r_inv);
     BN_free(e);
 
     if (match) {
-      BN_free(order);  // XXX
-      BN_free(p);      // XXX
+      BN_free(order);
+      BN_free(p);
       BN_CTX_free(ctx);
       return recovery_id;
     }
   }
 
-  // BN_free(order);
-  // BN_free(p);
+  BN_free(order);
+  BN_free(p);
   BN_CTX_free(ctx);
 
   // Default to 0 if recovery fails
   return 0;
 }
-}  // namespace
 
-// === IMPLEMENTATION ===
+Signature signHash(void const *ec_key_ptr, std::vector<uint8_t> const &hash) {
+  EC_KEY *ec_key = static_cast<EC_KEY *>(const_cast<void *>(ec_key_ptr));
 
-Wallet::Wallet(std::string_view const &private_key) : key_{private_key}, address_{key_.derive_address()} {
-}
-
-std::vector<uint8_t> Wallet::action_hash(
-    int action, std::string_view const &vault_address, std::chrono::milliseconds nonce, std::chrono::milliseconds expires_after) const {
-  std::vector<uint8_t> data;
-  /*
-
-  // 1. Msgpack serialize the action
-  std::stringstream ss;
-  msgpack::packer<std::stringstream> packer(ss);
-  packJson(packer, action);
-  std::string msgpack_str = ss.str();
-  data.insert(data.end(), msgpack_str.begin(), msgpack_str.end());
-
-  // 2. Append nonce (8 bytes, big-endian)
-  for (int i = 7; i >= 0; --i) {
-    data.push_back(static_cast<uint8_t>((nonce >> (i * 8)) & 0xFF));
-  }
-
-  // 3. Append vault address if present
-  if (!vault_address.has_value()) {
-    data.push_back(0x00);
-  } else {
-    data.push_back(0x01);
-    std::vector<uint8_t> addr_bytes = hexToBytes(vault_address.value());
-    if (addr_bytes.size() != 20) {
-      throw std::runtime_error("Invalid vault address length");
-    }
-    data.insert(data.end(), addr_bytes.begin(), addr_bytes.end());
-  }
-
-  // 4. Append expires_after if present
-  if (expires_after.has_value()) {
-    data.push_back(0x00);
-    int64_t expires = expires_after.value();
-    for (int i = 7; i >= 0; --i) {
-      data.push_back(static_cast<uint8_t>((expires >> (i * 8)) & 0xFF));
-    }
-  }
-
-  // 5. Hash with Keccak-256
-  return crypto::keccak256(data);
-  */
-  return {};
-}
-
-int Wallet::construct_phantom_agent(std::vector<uint8_t> const &hash, bool is_mainnet) const {
-  /*
-  std::string source = is_mainnet ? "a" : "b";
-  std::string connection_id = bytesToHex(hash, true);
-
-  return {{"source", source}, {"connectionId", connection_id}};
-  */
-  return 0;
-}
-
-int Wallet::l1_payload(int phantom_agent) const {
-  /*
-  nlohmann::json payload = {
-      {"domain", {{"name", "Exchange"}, {"version", "1"}, {"chainId", 1337}, {"verifyingContract", "0x0000000000000000000000000000000000000000"}}},
-      {"primaryType", "Agent"},
-      {"types",
-       {{"EIP712Domain",
-         nlohmann::json::array(
-             {{{"name", "name"}, {"type", "string"}},
-              {{"name", "version"}, {"type", "string"}},
-              {{"name", "chainId"}, {"type", "uint256"}},
-              {{"name", "verifyingContract"}, {"type", "address"}}})},
-        {"Agent", nlohmann::json::array({{{"name", "source"}, {"type", "string"}}, {{"name", "connectionId"}, {"type", "bytes32"}}})}}},
-      {"message", phantom_agent}};
-
-  return payload;
-  */
-  return 0;
-}
-
-std::vector<uint8_t> Wallet::encode_typed_data(int typed_data) const {
-  // EIP-712 prefix
-  std::vector<uint8_t> result = {0x19, 0x01};
-  /*
-  // Extract components
-  if (!typed_data.contains("types") || !typed_data.contains("domain") || !typed_data.contains("primaryType") || !typed_data.contains("message")) {
-    throw std::runtime_error("Invalid EIP-712 typed data structure");
-  }
-
-  // Build types map
-  std::map<std::string, std::vector<EIP712Type>> types_map;
-  for (auto &[type_name, fields] : typed_data["types"].items()) {
-    std::vector<EIP712Type> field_list;
-    for (auto &field : fields) {
-      field_list.push_back({field["name"], field["type"]});
-    }
-    types_map[type_name] = field_list;
-  }
-
-  // Domain separator
-  auto domain_hash = hashStruct("EIP712Domain", typed_data["domain"], types_map);
-  result.insert(result.end(), domain_hash.begin(), domain_hash.end());
-
-  // Message hash
-  std::string primary_type = typed_data["primaryType"];
-  auto message_hash = hashStruct(primary_type, typed_data["message"], types_map);
-  result.insert(result.end(), message_hash.begin(), message_hash.end());
-
-  return keccak256(result);
-  */
-  return {};
-}
-
-Signature Wallet::sign_message(std::span<uint8_t const> const &hash) const {
   if (hash.size() != 32) {
     throw std::invalid_argument("Hash must be 32 bytes");
   }
 
-  auto group = static_cast<EC_GROUP const *>(key_);
-  auto priv_key = key_.get_private_key();
+  const EC_GROUP *group = EC_KEY_get0_group(ec_key);
+  const BIGNUM *priv_key = EC_KEY_get0_private_key(ec_key);
+  if (!priv_key) {
+    throw std::runtime_error("Failed to get private key");
+  }
 
   // Generate deterministic k using RFC 6979
   BIGNUM *k = generateDeterministicK(priv_key, hash, group);
 
   // Get curve order
-  BigNum order;
-  EC_GROUP_get_order(group, order, nullptr);  // XXX
+  BIGNUM *order = BN_new();
+  EC_GROUP_get_order(group, order, nullptr);
 
   BN_CTX *ctx = BN_CTX_new();
 
   // Calculate r = (k * G).x mod order
-  Point kG{group};
-  kG.multiply(group, k, nullptr, nullptr, ctx);
+  EC_POINT *kG = EC_POINT_new(group);
+  EC_POINT_mul(group, kG, k, nullptr, nullptr, ctx);
 
-  BigNum r;
-  BigNum y_coord;
-  kG.get_affine_coordinates(group, r, y_coord, ctx);
+  BIGNUM *r = BN_new();
+  BIGNUM *y_coord = BN_new();
+  EC_POINT_get_affine_coordinates(group, kG, r, y_coord, ctx);
   BN_mod(r, r, order, ctx);
 
   // Calculate s = k^-1 * (hash + r * priv_key) mod order
@@ -375,15 +352,15 @@ Signature Wallet::sign_message(std::span<uint8_t const> const &hash) const {
   BN_mod_inverse(k_inv, k, order, ctx);
 
   BIGNUM *e = BN_bin2bn(hash.data(), hash.size(), nullptr);
-  BigNum s;
-  BigNum tmp;
+  BIGNUM *s = BN_new();
+  BIGNUM *tmp = BN_new();
 
   BN_mod_mul(tmp, r, priv_key, order, ctx);  // r * priv_key
   BN_mod_add(tmp, e, tmp, order, ctx);       // hash + r * priv_key
   BN_mod_mul(s, k_inv, tmp, order, ctx);     // k^-1 * (hash + r * priv_key)
 
   // Ensure s is in the lower half (ETH requirement for non-malleability)
-  BigNum half_order;
+  BIGNUM *half_order = BN_new();
   BN_rshift1(half_order, order);
   if (BN_cmp(s, half_order) > 0) {
     BN_sub(s, order, s);
@@ -399,44 +376,32 @@ Signature Wallet::sign_message(std::span<uint8_t const> const &hash) const {
   result.s = "0x" + bnToHex(s, 32);
 
   // Calculate recovery ID (v)
-  int recovery_id = calculateRecoveryId(key_, hash, sig);
+  int recovery_id = calculateRecoveryId(ec_key, hash, sig);
   result.v = recovery_id + 27;  // Ethereum uses 27/28
 
   // Cleanup
   ECDSA_SIG_free(sig);
-  // EC_POINT_free(kG);
+  EC_POINT_free(kG);
   BN_free(k);
-  // BN_free(order);
-  // BN_free(r);
-  // BN_free(s);
-  // BN_free(y_coord);
+  BN_free(order);
+  BN_free(r);
+  BN_free(s);
+  BN_free(y_coord);
   BN_free(k_inv);
   BN_free(e);
-  // BN_free(tmp);
+  BN_free(tmp);
   BN_free(half_order);
   BN_CTX_free(ctx);
 
   return result;
 }
 
-Signature Wallet::sign_l1_action(
-    int action, std::string_view const &vault_address, std::chrono::milliseconds nonce, std::chrono::milliseconds expires_after, bool is_mainnet) const {
-  // Compute action hash
-  auto hash = action_hash(action, vault_address, nonce, expires_after);
-
-  // Construct phantom agent
-  auto phantom_agent = construct_phantom_agent(hash, is_mainnet);
-
-  // Create EIP-712 payload
-  auto payload = l1_payload(phantom_agent);
-
-  // Encode typed data
-  auto message_hash = encode_typed_data(payload);
-
-  // Sign the hash
-  return sign_message(message_hash);
+void freeKey(void *ec_key_ptr) {
+  if (ec_key_ptr) {
+    EC_KEY_free(static_cast<EC_KEY *>(ec_key_ptr));
+  }
 }
 
-}  // namespace tools
+}  // namespace crypto
 }  // namespace hyperliquid
 }  // namespace roq

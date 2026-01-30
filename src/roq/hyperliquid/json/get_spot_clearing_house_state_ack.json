@@ -3,13 +3,8 @@
   "type": "dictionary",
   "values": [
     {
-      "name": "tokens",
-      "type": "roq/hyperliquid/json/GetSpotMetaAckTokensItem",
-      "array": "std/span"
-    },
-    {
-      "name": "universe",
-      "type": "roq/hyperliquid/json/GetSpotMetaAckUniverseItem",
+      "name": "balances",
+      "type": "roq/hyperliquid/json/GetSpotClearingHouseStateAckBalancesItem",
       "array": "std/span"
     }
   ]

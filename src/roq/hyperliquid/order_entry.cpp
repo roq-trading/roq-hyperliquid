@@ -98,6 +98,8 @@ OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_i
           .spot_clearing_house_state_ack = create_metrics(shared.settings, name_, "spot_clearing_house_state_ack"sv),
           .open_orders = create_metrics(shared.settings, name_, "open_orders"sv),
           .open_orders_ack = create_metrics(shared.settings, name_, "open_orders_ack"sv),
+          .user_fills = create_metrics(shared.settings, name_, "user_fills"sv),
+          .user_fills_ack = create_metrics(shared.settings, name_, "user_fills_ack"sv),
       },
       latency_{
           .ping = create_metrics(shared.settings, name_, "ping"sv),
@@ -130,6 +132,8 @@ void OrderEntry::operator()(metrics::Writer &writer) const {
       .write(profile_.spot_clearing_house_state_ack, metrics::Type::PROFILE)
       .write(profile_.open_orders, metrics::Type::PROFILE)
       .write(profile_.open_orders_ack, metrics::Type::PROFILE)
+      .write(profile_.user_fills, metrics::Type::PROFILE)
+      .write(profile_.user_fills_ack, metrics::Type::PROFILE)
       // latency
       .write(latency_.ping, metrics::Type::LATENCY);
 }
@@ -225,6 +229,9 @@ uint32_t OrderEntry::download(OrderEntryState state) {
     case OPEN_ORDERS:
       get_open_orders();
       return 1;
+    case USER_FILLS:
+      get_user_fills();
+      return 1;
     case DONE:
       (*this)(ConnectionStatus::READY);
       return 0;
@@ -288,6 +295,7 @@ void OrderEntry::get_clearing_house_state_ack(Trace<web::rest::Response> const &
 void OrderEntry::operator()(Trace<json::GetClearingHouseStateAck> const &event) {
   auto &[trace_info, clearing_house_state_ack] = event;
   log::info<4>("clearing_house_state_ack={}"sv, clearing_house_state_ack);
+  log::warn("DEBUG clearing_house_state_ack={}"sv, clearing_house_state_ack);
 }
 
 // spot-clearing-house-state
@@ -345,6 +353,7 @@ void OrderEntry::get_spot_clearing_house_state_ack(Trace<web::rest::Response> co
 void OrderEntry::operator()(Trace<json::GetSpotClearingHouseStateAck> const &event) {
   auto &[trace_info, spot_clearing_house_state_ack] = event;
   log::info<4>("spot_clearing_house_state_ack={}"sv, spot_clearing_house_state_ack);
+  log::warn("DEBUG spot_clearing_house_state_ack={}"sv, spot_clearing_house_state_ack);
 }
 
 // open-orders
@@ -389,9 +398,11 @@ void OrderEntry::get_open_orders_ack(Trace<web::rest::Response> const &event, ui
       if (download_.skip(sequence, STATE)) {
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
+        /*
         json::GetOpenOrdersAck open_orders_ack{body, decode_buffer_};
         Trace event_2{event, open_orders_ack};
         (*this)(event_2);
+        */
         download_.check(STATE);
       }
     };
@@ -402,6 +413,65 @@ void OrderEntry::get_open_orders_ack(Trace<web::rest::Response> const &event, ui
 void OrderEntry::operator()(Trace<json::GetOpenOrdersAck> const &event) {
   auto &[trace_info, open_orders_ack] = event;
   log::info<4>("open_orders_ack={}"sv, open_orders_ack);
+}
+
+// user-fills
+
+void OrderEntry::get_user_fills() {
+  profile_.user_fills([&]() {
+    auto body = fmt::format(
+        R"({{)"
+        R"("type":"openOrders",)"
+        R"("user":"{}")"
+        R"(}})"sv,
+        account_.get_key());
+    auto request = web::rest::Request{
+        .method = web::http::Method::POST,
+        .path = shared_.api.market_data.get_info,
+        .query = {},
+        .accept = web::http::Accept::APPLICATION_JSON,
+        .content_type = web::http::ContentType::APPLICATION_JSON,
+        .headers = {},
+        .body = body,
+        .quality_of_service = {},
+    };
+    log::warn("DEBUG request={}"sv, request);
+    auto callback = [this, sequence = download_.sequence()]([[maybe_unused]] auto &request_id, auto &response) {
+      TraceInfo trace_info;
+      Trace event{trace_info, response};
+      get_user_fills_ack(event, sequence);
+    };
+    (*connection_)("open-orders"sv, request, callback);
+  });
+}
+
+void OrderEntry::get_user_fills_ack(Trace<web::rest::Response> const &event, uint32_t sequence) {
+  auto const STATE = OrderEntryState::USER_FILLS;
+  profile_.user_fills_ack([&]() {
+    auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
+      log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
+      download_.retry(STATE);
+    };
+    auto handle_success = [&](auto &body) {
+      log::warn("DEBUG {}"sv, body);
+      if (download_.skip(sequence, STATE)) {
+        log::info("Download state={} has already been processed"sv, STATE);
+      } else {
+        /*
+        json::GetUserFillsAck user_fills_ack{body, decode_buffer_};
+        Trace event_2{event, user_fills_ack};
+        (*this)(event_2);
+        */
+        download_.check(STATE);
+      }
+    };
+    process_response(event, handle_error, handle_success);
+  });
+}
+
+void OrderEntry::operator()(Trace<json::GetUserFillsAck> const &event) {
+  auto &[trace_info, user_fills_ack] = event;
+  log::info<4>("user_fills_ack={}"sv, user_fills_ack);
 }
 
 // helpers

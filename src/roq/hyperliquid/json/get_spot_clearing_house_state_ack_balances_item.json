@@ -1,0 +1,10 @@
+{
+  "name": "roq/hyperliquid/json/GetSpotClearingHouseStateAckBalancesItem",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "xxx",
+      "type": "std/string_view"
+    }
+  ]
+}

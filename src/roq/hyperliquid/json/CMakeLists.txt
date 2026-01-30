@@ -13,7 +13,9 @@ set(AUTOGEN_SCHEMAS
     bbo.json
     channel.json
     error.json
+    get_clearing_house_state_ack_cross_margin_summary.json
     get_clearing_house_state_ack.json
+    get_clearing_house_state_ack_margin_summary.json
     get_meta_ack.json
     get_meta_ack_margin_tables_item.json
     get_meta_ack_margin_tables_item_margin_table.json
@@ -21,10 +23,12 @@ set(AUTOGEN_SCHEMAS
     get_open_orders_ack.json
     get_perp_dexs_ack_item.json
     get_perp_dexs_ack.json
+    get_spot_clearing_house_state_ack_balances_item.json
     get_spot_clearing_house_state_ack.json
     get_spot_meta_ack.json
     get_spot_meta_ack_tokens_item.json
     get_spot_meta_ack_universe_item.json
+    get_user_fills_ack.json
     l2_book_data.json
     l2_book_data_levels_item_item.json
     l2_book_data_levels_item.json

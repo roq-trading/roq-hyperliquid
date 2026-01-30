@@ -6,4 +6,4 @@ add_library(${TARGET_NAME} OBJECT ${SOURCES})
 
 include(RoqAutogen)
 
-target_link_libraries(${TARGET_NAME} PRIVATE roq-utils::roq-utils fmt::fmt OpenSSL::SSL)
+target_link_libraries(${TARGET_NAME} PRIVATE ${PROJECT_NAME}-crypto roq-utils::roq-utils fmt::fmt OpenSSL::SSL)

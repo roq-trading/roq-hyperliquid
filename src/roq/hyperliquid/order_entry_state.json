@@ -12,6 +12,9 @@
       "name": "open_orders"
     },
     {
+      "name": "user_fills"
+    },
+    {
       "name": "done"
     }
   ]

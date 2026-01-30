@@ -26,6 +26,7 @@ requirements:
     - libabseil
     - magic_enum
     - msgpack-cxx
+    - nlohmann_json
     - roq-api
     - roq-cache
     - roq-codec

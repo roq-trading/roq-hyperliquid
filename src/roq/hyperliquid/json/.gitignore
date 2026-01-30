@@ -8,7 +8,9 @@ bbo_data.hpp
 bbo.hpp
 channel.hpp
 error.hpp
+get_clearing_house_state_ack_cross_margin_summary.hpp
 get_clearing_house_state_ack.hpp
+get_clearing_house_state_ack_margin_summary.hpp
 get_meta_ack.hpp
 get_meta_ack_margin_tables_item.hpp
 get_meta_ack_margin_tables_item_margin_table.hpp
@@ -16,10 +18,12 @@ get_meta_ack_universe_item.hpp
 get_open_orders_ack.hpp
 get_perp_dexs_ack_item.hpp
 get_perp_dexs_ack.hpp
+get_spot_clearing_house_state_ack_balances_item.hpp
 get_spot_clearing_house_state_ack.hpp
 get_spot_meta_ack.hpp
 get_spot_meta_ack_tokens_item.hpp
 get_spot_meta_ack_universe_item.hpp
+get_user_fills_ack.hpp
 l2_book_data.hpp
 l2_book_data_levels_item_item.hpp
 l2_book_data_levels_item.hpp
@@ -46,7 +50,9 @@ bbo_data.cpp
 bbo.cpp
 channel.cpp
 error.cpp
+get_clearing_house_state_ack_cross_margin_summary.cpp
 get_clearing_house_state_ack.cpp
+get_clearing_house_state_ack_margin_summary.cpp
 get_meta_ack.cpp
 get_meta_ack_margin_tables_item.cpp
 get_meta_ack_margin_tables_item_margin_table.cpp
@@ -54,10 +60,12 @@ get_meta_ack_universe_item.cpp
 get_open_orders_ack.cpp
 get_perp_dexs_ack_item.cpp
 get_perp_dexs_ack.cpp
+get_spot_clearing_house_state_ack_balances_item.cpp
 get_spot_clearing_house_state_ack.cpp
 get_spot_meta_ack.cpp
 get_spot_meta_ack_tokens_item.cpp
 get_spot_meta_ack_universe_item.cpp
+get_user_fills_ack.cpp
 l2_book_data.cpp
 l2_book_data_levels_item_item.cpp
 l2_book_data_levels_item.cpp

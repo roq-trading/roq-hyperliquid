@@ -3,14 +3,28 @@
   "type": "dictionary",
   "values": [
     {
-      "name": "tokens",
-      "type": "roq/hyperliquid/json/GetSpotMetaAckTokensItem",
-      "array": "std/span"
+      "name": "marginSummary",
+      "type": "roq/hyperliquid/json/GetClearingHouseStateAckMarginSummary"
     },
     {
-      "name": "universe",
-      "type": "roq/hyperliquid/json/GetSpotMetaAckUniverseItem",
-      "array": "std/span"
+      "name": "crossMarginSummary",
+      "type": "roq/hyperliquid/json/GetClearingHouseStateAckCrossMarginSummary"
+    },
+    {
+      "name": "crossMaintenanceMarginUsed",
+      "type": "std/double"
+    },
+    {
+      "name": "withdrawable",
+      "type": "std/double"
+    },
+    {
+      "name": "assetPositions",
+      "comment": "array?"
+    },
+    {
+      "name": "time",
+      "type": "std/milliseconds"
     }
   ]
 }
