@@ -22,17 +22,18 @@
 
 #include "roq/core/limit/rate_limiter.hpp"
 
-#include "roq/hyperliquid/rest_state.hpp"
+#include "roq/hyperliquid/account.hpp"
+#include "roq/hyperliquid/order_entry_state.hpp"
 #include "roq/hyperliquid/shared.hpp"
 
-#include "roq/hyperliquid/json/get_meta_ack.hpp"
-#include "roq/hyperliquid/json/get_perp_dexs_ack.hpp"
-#include "roq/hyperliquid/json/get_spot_meta_ack.hpp"
+#include "roq/hyperliquid/json/get_clearing_house_state_ack.hpp"
+#include "roq/hyperliquid/json/get_open_orders_ack.hpp"
+#include "roq/hyperliquid/json/get_spot_clearing_house_state_ack.hpp"
 
 namespace roq {
 namespace hyperliquid {
 
-struct Rest final : public web::rest::Client::Handler {
+struct OrderEntry final : public web::rest::Client::Handler {
   struct SymbolsUpdate final {
     std::span<Symbol const> symbols;
   };
@@ -40,15 +41,11 @@ struct Rest final : public web::rest::Client::Handler {
   struct Handler {
     virtual void operator()(Trace<StreamStatus> const &) = 0;
     virtual void operator()(Trace<ExternalLatency> const &) = 0;
-    virtual void operator()(Trace<ReferenceData> const &, bool is_last) = 0;
-    virtual void operator()(Trace<MarketStatus> const &, bool is_last) = 0;
-    // cross-communication
-    virtual void operator()(SymbolsUpdate &) = 0;
   };
 
-  Rest(Handler &, io::Context &context, uint16_t stream_id, Shared &);
+  OrderEntry(Handler &, io::Context &context, uint16_t stream_id, Account &, Shared &);
 
-  Rest(Rest const &) = delete;
+  OrderEntry(OrderEntry const &) = delete;
 
   bool ready() const { return status_ == ConnectionStatus::READY; }
 
@@ -57,6 +54,12 @@ struct Rest final : public web::rest::Client::Handler {
   void operator()(Event<Timer> const &);
 
   void operator()(metrics::Writer &) const;
+
+  uint16_t operator()(Event<CreateOrder> const &, server::oms::Order const &, std::string_view const &request_id);
+  uint16_t operator()(Event<ModifyOrder> const &, server::oms::Order const &, std::string_view const &request_id, std::string_view const &previous_request_id);
+  uint16_t operator()(Event<CancelOrder> const &, server::oms::Order const &, std::string_view const &request_id, std::string_view const &previous_request_id);
+
+  uint16_t operator()(Event<CancelAllOrders> const &, std::string_view const &request_id);
 
  protected:
   // web::rest::Client::Handler
@@ -67,25 +70,25 @@ struct Rest final : public web::rest::Client::Handler {
 
   void operator()(ConnectionStatus);
 
-  uint32_t download(RestState);
+  uint32_t download(OrderEntryState);
 
-  // spot-meta
+  // clearing-house-state
 
-  void get_spot_meta();
-  void get_spot_meta_ack(Trace<web::rest::Response> const &, uint32_t sequence);
-  void operator()(Trace<json::GetSpotMetaAck> const &);
+  void get_clearing_house_state();
+  void get_clearing_house_state_ack(Trace<web::rest::Response> const &, uint32_t sequence);
+  void operator()(Trace<json::GetClearingHouseStateAck> const &);
 
-  // perp-dexs
+  // spot-clearing-house-state
 
-  void get_perp_dexs();
-  void get_perp_dexs_ack(Trace<web::rest::Response> const &, uint32_t sequence);
-  void operator()(Trace<json::GetPerpDexsAck> const &);
+  void get_spot_clearing_house_state();
+  void get_spot_clearing_house_state_ack(Trace<web::rest::Response> const &, uint32_t sequence);
+  void operator()(Trace<json::GetSpotClearingHouseStateAck> const &);
 
-  // meta
+  // open-orders
 
-  void get_meta();
-  void get_meta_ack(Trace<web::rest::Response> const &, uint32_t sequence);
-  void operator()(Trace<json::GetMetaAck> const &);
+  void get_open_orders();
+  void get_open_orders_ack(Trace<web::rest::Response> const &, uint32_t sequence);
+  void operator()(Trace<json::GetOpenOrdersAck> const &);
 
   // helpers
 
@@ -105,16 +108,19 @@ struct Rest final : public web::rest::Client::Handler {
     utils::metrics::Counter disconnect;
   } counter_;
   struct {
-    utils::metrics::Profile spot_meta, spot_meta_ack, perp_dexs, perp_dexs_ack, meta, meta_ack;
+    utils::metrics::Profile clearing_house_state, clearing_house_state_ack, spot_clearing_house_state, spot_clearing_house_state_ack, open_orders,
+        open_orders_ack;
   } profile_;
   struct {
     utils::metrics::Latency ping;
   } latency_;
+  // account
+  Account &account_;
   // cache
   Shared &shared_;
   // state
   ConnectionStatus status_ = {};
-  core::Download<RestState> download_;
+  core::Download<OrderEntryState> download_;
   // ...
   core::limit::RateLimiter rate_limiter;
 };

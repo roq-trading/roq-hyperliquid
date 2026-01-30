@@ -3,6 +3,7 @@ include(RoqAutogen)
 set(TARGET_NAME ${PROJECT_NAME}-test)
 
 set(SOURCES
+    crypto.cpp
     json_active_asset_ctx.cpp
     json_bbo.cpp
     json_error.cpp
@@ -20,7 +21,7 @@ roq_gitignore(OUTPUT .gitignore SOURCES ${TARGET_NAME})
 
 add_executable(${TARGET_NAME} ${SOURCES})
 
-target_link_libraries(${TARGET_NAME} PRIVATE ${PROJECT_NAME}-json Catch2::Catch2)
+target_link_libraries(${TARGET_NAME} PRIVATE ${PROJECT_NAME}-json ${PROJECT_NAME}-tools Catch2::Catch2)
 
 if(ROQ_BUILD_TYPE STREQUAL "Release")
   set_target_properties(${TARGET_NAME} PROPERTIES LINK_FLAGS_RELEASE -s)

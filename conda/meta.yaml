@@ -25,6 +25,7 @@ requirements:
     - fmt
     - libabseil
     - magic_enum
+    - msgpack-cxx
     - roq-api
     - roq-cache
     - roq-codec

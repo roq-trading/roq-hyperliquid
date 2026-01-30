@@ -16,6 +16,7 @@
 #include "roq/hyperliquid/account.hpp"
 #include "roq/hyperliquid/config.hpp"
 #include "roq/hyperliquid/market_data.hpp"
+#include "roq/hyperliquid/order_entry.hpp"
 #include "roq/hyperliquid/rest.hpp"
 #include "roq/hyperliquid/settings.hpp"
 #include "roq/hyperliquid/shared.hpp"
@@ -23,7 +24,7 @@
 namespace roq {
 namespace hyperliquid {
 
-struct Gateway final : public server::Handler, public Rest::Handler, public MarketData::Handler {
+struct Gateway final : public server::Handler, public Rest::Handler, public MarketData::Handler, public OrderEntry::Handler {
   Gateway(server::Dispatcher &, Settings const &, Config const &, io::Context &);
 
   Gateway(Gateway const &) = delete;
@@ -75,6 +76,8 @@ struct Gateway final : public server::Handler, public Rest::Handler, public Mark
   template <typename... Args>
   static void dispatch_helper(auto &self, Args &&...);
 
+  OrderEntry &get_order_entry(std::string_view const &account);
+
  private:
   server::Dispatcher &dispatcher_;
   // accounts
@@ -88,6 +91,7 @@ struct Gateway final : public server::Handler, public Rest::Handler, public Mark
   // streams
   Rest rest_;
   std::vector<std::unique_ptr<MarketData>> market_data_;
+  utils::unordered_map<std::string, std::unique_ptr<OrderEntry>> order_entry_;
   // cache
   std::vector<MBPUpdate> bids_, asks_;
 };

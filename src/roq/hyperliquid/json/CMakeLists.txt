@@ -13,12 +13,15 @@ set(AUTOGEN_SCHEMAS
     bbo.json
     channel.json
     error.json
+    get_clearing_house_state_ack.json
     get_meta_ack.json
     get_meta_ack_margin_tables_item.json
     get_meta_ack_margin_tables_item_margin_table.json
     get_meta_ack_universe_item.json
+    get_open_orders_ack.json
     get_perp_dexs_ack_item.json
     get_perp_dexs_ack.json
+    get_spot_clearing_house_state_ack.json
     get_spot_meta_ack.json
     get_spot_meta_ack_tokens_item.json
     get_spot_meta_ack_universe_item.json

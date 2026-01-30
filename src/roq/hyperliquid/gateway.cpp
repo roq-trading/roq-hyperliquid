@@ -32,13 +32,26 @@ R create_accounts(auto &settings, auto &config) {
   }
   return result;
 }
+
+template <typename R>
+R create_order_entry(auto &gateway, auto &context, auto &stream_id, auto &accounts, auto &shared) {
+  using result_type = std::remove_cvref_t<R>;
+  result_type result;
+  for (auto &[_, item] : accounts) {
+    auto &account = *item;
+    auto obj = std::make_unique<OrderEntry>(gateway, context, ++stream_id, account, shared);
+    result.try_emplace(static_cast<std::string_view>(account.name), std::move(obj));
+  }
+  return result;
+}
+
 }  // namespace
 
 // === IMPLEMENTATION ===
 
 Gateway::Gateway(server::Dispatcher &dispatcher, Settings const &settings, Config const &config, io::Context &context)
     : dispatcher_{dispatcher}, accounts_{create_accounts<decltype(accounts_)>(settings, config)}, context_{context}, shared_{dispatcher, settings},
-      rest_{*this, context_, ++stream_id_, shared_} {
+      rest_{*this, context_, ++stream_id_, shared_}, order_entry_{create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, accounts_, shared_)} {
 }
 
 void Gateway::operator()(Event<Start> const &event) {
@@ -146,28 +159,28 @@ void Gateway::operator()(Event<Subscribe> const &event) {
   (*this)(symbols_update);
 }
 
-uint16_t Gateway::operator()(Event<CreateOrder> const &, server::oms::Order const &, [[maybe_unused]] std::string_view const &request_id) {
-  throw server::oms::NotSupported{"not supported"sv};
+uint16_t Gateway::operator()(Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
+  assert(!std::empty(event.value.account));
+  return get_order_entry(event.value.account)(event, order, request_id);
 }
 
 uint16_t Gateway::operator()(
-    Event<ModifyOrder> const &,
-    server::oms::Order const &,
-    [[maybe_unused]] std::string_view const &request_id,
-    [[maybe_unused]] std::string_view const &previous_request_id) {
-  throw server::oms::NotSupported{"not supported"sv};
+    Event<ModifyOrder> const &event, server::oms::Order const &order, std::string_view const &request_id, std::string_view const &previous_request_id) {
+  assert(!std::empty(event.value.account));
+  assert(event.value.account == order.account);
+  return get_order_entry(event.value.account)(event, order, request_id, previous_request_id);
 }
 
 uint16_t Gateway::operator()(
-    Event<CancelOrder> const &,
-    server::oms::Order const &,
-    [[maybe_unused]] std::string_view const &request_id,
-    [[maybe_unused]] std::string_view const &previous_request_id) {
-  throw server::oms::NotSupported{"not supported"sv};
+    Event<CancelOrder> const &event, server::oms::Order const &order, std::string_view const &request_id, std::string_view const &previous_request_id) {
+  assert(!std::empty(event.value.account));
+  assert(event.value.account == order.account);
+  return get_order_entry(event.value.account)(event, order, request_id, previous_request_id);
 }
 
-uint16_t Gateway::operator()(Event<CancelAllOrders> const &, [[maybe_unused]] std::string_view const &request_id) {
-  throw server::oms::NotSupported{"not supported"sv};
+uint16_t Gateway::operator()(Event<CancelAllOrders> const &event, std::string_view const &request_id) {
+  assert(!std::empty(event.value.account));
+  return get_order_entry(event.value.account)(event, request_id);
 }
 
 uint16_t Gateway::operator()(Event<MassQuote> const &) {
@@ -179,10 +192,7 @@ uint16_t Gateway::operator()(Event<CancelQuotes> const &) {
 }
 
 void Gateway::operator()(metrics::Writer &writer) const {
-  rest_(writer);
-  for (auto &item : market_data_) {
-    (*item)(writer);
-  }
+  dispatch_helper(*this, writer);
 }
 
 template <typename... Args>
@@ -197,6 +207,17 @@ void Gateway::dispatch_helper(auto &self, Args &&...args) {
   for (auto &item : self.market_data_) {
     helper(*item);
   }
+  for (auto &[_, item] : self.order_entry_) {
+    helper(*item);
+  }
+}
+
+OrderEntry &Gateway::get_order_entry(std::string_view const &account) {
+  auto iter = order_entry_.find(account);
+  if (iter == std::end(order_entry_)) [[unlikely]] {
+    throw RuntimeError{R"(Unknown account="{}")"sv, account};
+  }
+  return *(*iter).second;
 }
 
 }  // namespace hyperliquid
