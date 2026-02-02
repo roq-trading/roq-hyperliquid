@@ -1,3 +1,5 @@
+#include "roq/hyperliquid/crypto/ecdsa.hpp"
+
 #include <openssl/bn.h>
 #include <openssl/core_names.h>
 #include <openssl/ec.h>
@@ -6,21 +8,20 @@
 #include <openssl/hmac.h>
 #include <openssl/obj_mac.h>
 #include <openssl/param_build.h>
+
 #include <cstring>
 #include <iomanip>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
+
 #include "roq/hyperliquid/crypto/conversions.hpp"
-#include "roq/hyperliquid/crypto/types.hpp"
+#include "roq/hyperliquid/crypto/keccak.hpp"
 
 namespace roq {
 namespace hyperliquid {
 namespace crypto {
-
-// Forward declare keccak256
-std::vector<uint8_t> keccak256(uint8_t const *data, size_t len);
 
 std::string bnToHex(const BIGNUM *bn, int min_bytes = 32) {
   int num_bytes = BN_num_bytes(bn);

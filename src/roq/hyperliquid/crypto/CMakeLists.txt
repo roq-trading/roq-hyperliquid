@@ -1,6 +1,13 @@
 set(TARGET_NAME ${PROJECT_NAME}-crypto)
 
-set(SOURCES conversions.cpp ecdsa.cpp eip712.cpp exchange.cpp keccak.cpp signing.cpp)
+set(SOURCES
+    conversions.cpp
+    ecdsa.cpp
+    eip712.cpp
+    exchange.cpp
+    keccak.cpp
+    signing.cpp
+    wallet.cpp)
 
 add_library(${TARGET_NAME} OBJECT ${SOURCES})
 

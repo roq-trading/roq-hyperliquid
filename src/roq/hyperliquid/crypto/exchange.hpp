@@ -6,6 +6,7 @@
 
 #include "roq/hyperliquid/crypto/signing.hpp"
 #include "roq/hyperliquid/crypto/types.hpp"
+#include "roq/hyperliquid/crypto/wallet.hpp"
 
 namespace roq {
 namespace hyperliquid {
@@ -19,7 +20,7 @@ class Exchange {
   static constexpr double DEFAULT_SLIPPAGE = 0.05;
 
   explicit Exchange(
-      std::shared_ptr<Wallet> wallet,
+      Wallet &wallet,
       std::string const &base_url = "",
       Meta const *meta = nullptr,
       std::string const &vault_address = "",
@@ -76,7 +77,7 @@ class Exchange {
   nlohmann::json cancel(std::string const &coin, int64_t oid);
 
   /**
-   * Cancel an order by client order ID
+   * Cancel an order by client orde// r ID
    */
   nlohmann::json cancelByCloid(std::string const &coin, Cloid const &cloid);
 
@@ -162,7 +163,7 @@ class Exchange {
 
   double slippagePrice(std::string const &name, bool is_buy, double slippage, std::optional<double> px = std::nullopt);
 
-  std::shared_ptr<Wallet> wallet_;
+  Wallet &wallet_;
   std::string base_url_;
   std::string vault_address_;
   std::string account_address_;

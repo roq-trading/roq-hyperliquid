@@ -10,7 +10,7 @@ namespace hyperliquid {
 namespace crypto {
 
 Exchange::Exchange(
-    std::shared_ptr<Wallet> wallet,
+    Wallet &wallet,
     std::string const &base_url,
     Meta const *meta,
     std::string const &vault_address,
@@ -18,7 +18,7 @@ Exchange::Exchange(
     SpotMeta const *spot_meta,
     std::vector<std::string> const *perp_dexs,
     int timeout_ms)
-    : wallet_(wallet), base_url_{base_url}, vault_address_(vault_address), account_address_(account_address), expires_after_(std::nullopt) {
+    : wallet_{wallet}, base_url_{base_url}, vault_address_(vault_address), account_address_(account_address), expires_after_(std::nullopt) {
 }
 
 nlohmann::json Exchange::postAction(nlohmann::json const &action, Signature const &signature, int64_t nonce) {
@@ -125,7 +125,7 @@ nlohmann::json Exchange::bulkOrders(std::vector<OrderRequest> const &orders, std
 
   // Sign action
   std::optional<std::string> vault_opt = vault_address_.empty() ? std::nullopt : std::optional<std::string>(vault_address_);
-  auto signature = signL1Action(*wallet_, action, vault_opt, timestamp, expires_after_, is_mainnet);
+  auto signature = signL1Action(wallet_, action, vault_opt, timestamp, expires_after_, is_mainnet);
 
   return postAction(action, signature, timestamp);
 }
@@ -154,7 +154,7 @@ nlohmann::json Exchange::marketClose(
     std::optional<Cloid> const &cloid,
     std::optional<BuilderInfo> const &builder) {
   // Get user state to determine position size and direction
-  std::string address = wallet_->address();
+  std::string address{wallet_.address()};
   auto user_state = userState(address);
 
   // Find position
@@ -210,7 +210,7 @@ nlohmann::json Exchange::bulkCancel(std::vector<CancelRequest> const &cancels) {
   bool is_mainnet = (base_url_ == MAINNET_API_URL);
 
   std::optional<std::string> vault_opt = vault_address_.empty() ? std::nullopt : std::optional<std::string>(vault_address_);
-  auto signature = signL1Action(*wallet_, action, vault_opt, timestamp, expires_after_, is_mainnet);
+  auto signature = signL1Action(wallet_, action, vault_opt, timestamp, expires_after_, is_mainnet);
 
   return postAction(action, signature, timestamp);
 }
@@ -233,7 +233,7 @@ nlohmann::json Exchange::bulkCancelByCloid(std::vector<CancelByCloidRequest> con
   bool is_mainnet = (base_url_ == MAINNET_API_URL);
 
   std::optional<std::string> vault_opt = vault_address_.empty() ? std::nullopt : std::optional<std::string>(vault_address_);
-  auto signature = signL1Action(*wallet_, action, vault_opt, timestamp, expires_after_, is_mainnet);
+  auto signature = signL1Action(wallet_, action, vault_opt, timestamp, expires_after_, is_mainnet);
 
   return postAction(action, signature, timestamp);
 }
@@ -302,7 +302,7 @@ nlohmann::json Exchange::bulkModifyOrders(std::vector<ModifyRequest> const &modi
   bool is_mainnet = (base_url_ == MAINNET_API_URL);
 
   std::optional<std::string> vault_opt = vault_address_.empty() ? std::nullopt : std::optional<std::string>(vault_address_);
-  auto signature = signL1Action(*wallet_, action, vault_opt, timestamp, expires_after_, is_mainnet);
+  auto signature = signL1Action(wallet_, action, vault_opt, timestamp, expires_after_, is_mainnet);
 
   return postAction(action, signature, timestamp);
 }
@@ -313,7 +313,7 @@ nlohmann::json Exchange::usdTransfer(double amount, std::string const &destinati
   std::vector<EIP712Type> payload_types = {{"hyperliquidChain", "string"}, {"destination", "string"}, {"amount", "string"}, {"time", "uint64"}};
 
   bool is_mainnet = (base_url_ == MAINNET_API_URL);
-  auto signature = signUserSignedAction(*wallet_, action, payload_types, "HyperliquidTransaction:UsdSend", is_mainnet);
+  auto signature = signUserSignedAction(wallet_, action, payload_types, "HyperliquidTransaction:UsdSend", is_mainnet);
 
   return postAction(action, signature, action["time"]);
 }
@@ -325,7 +325,7 @@ nlohmann::json Exchange::spotTransfer(double amount, std::string const &destinat
       {"hyperliquidChain", "string"}, {"destination", "string"}, {"token", "string"}, {"amount", "string"}, {"time", "uint64"}};
 
   bool is_mainnet = (base_url_ == MAINNET_API_URL);
-  auto signature = signUserSignedAction(*wallet_, action, payload_types, "HyperliquidTransaction:SpotSend", is_mainnet);
+  auto signature = signUserSignedAction(wallet_, action, payload_types, "HyperliquidTransaction:SpotSend", is_mainnet);
 
   return postAction(action, signature, action["time"]);
 }
@@ -352,7 +352,7 @@ nlohmann::json Exchange::updateLeverage(int leverage, std::string const &coin, b
   bool is_mainnet = (base_url_ == MAINNET_API_URL);
 
   std::optional<std::string> vault_opt = vault_address_.empty() ? std::nullopt : std::optional<std::string>(vault_address_);
-  auto signature = signL1Action(*wallet_, action, vault_opt, timestamp, expires_after_, is_mainnet);
+  auto signature = signL1Action(wallet_, action, vault_opt, timestamp, expires_after_, is_mainnet);
 
   return postAction(action, signature, timestamp);
 }
@@ -369,7 +369,7 @@ nlohmann::json Exchange::scheduleCancel(std::optional<int64_t> time) {
   bool is_mainnet = (base_url_ == MAINNET_API_URL);
 
   std::optional<std::string> vault_opt = vault_address_.empty() ? std::nullopt : std::optional<std::string>(vault_address_);
-  auto signature = signL1Action(*wallet_, action, vault_opt, timestamp, expires_after_, is_mainnet);
+  auto signature = signL1Action(wallet_, action, vault_opt, timestamp, expires_after_, is_mainnet);
 
   return postAction(action, signature, timestamp);
 }

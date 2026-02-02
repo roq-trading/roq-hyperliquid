@@ -1,6 +1,9 @@
+#include "roq/hyperliquid/crypto/keccak.hpp"
+
 #include <openssl/evp.h>
+
 #include <stdexcept>
-#include <vector>
+
 #include "roq/hyperliquid/crypto/conversions.hpp"
 
 namespace roq {
@@ -49,10 +52,6 @@ std::vector<uint8_t> keccak256(uint8_t const *data, size_t len) {
   }
 
   return hash;
-}
-
-std::vector<uint8_t> keccak256(std::vector<uint8_t> const &data) {
-  return keccak256(data.data(), data.size());
 }
 
 }  // namespace crypto

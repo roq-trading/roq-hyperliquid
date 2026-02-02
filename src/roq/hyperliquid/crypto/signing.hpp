@@ -1,32 +1,32 @@
 #pragma once
 
-#include <memory>
 #include <nlohmann/json.hpp>
+
+#include <memory>
 #include <vector>
+
 #include "roq/hyperliquid/crypto/types.hpp"
+#include "roq/hyperliquid/crypto/wallet.hpp"
 
 namespace roq {
 namespace hyperliquid {
 namespace crypto {
 
+struct Wallet;
+
 /**
  * Wallet class for managing private keys and signing
  */
+/*
 class Wallet {
  public:
-  /**
-   * Create wallet from hex private key (with or without "0x" prefix)
-   */
+   // Create wallet from hex private key (with or without "0x" prefix)
   static std::shared_ptr<Wallet> fromPrivateKey(std::string const &private_key_hex);
 
-  /**
-   * Get the Ethereum address derived from this wallet's public key
-   */
+   // Get the Ethereum address derived from this wallet's public key
   std::string address() const;
 
-  /**
-   * Sign a message hash with ECDSA
-   */
+   // Sign a message hash with ECDSA
   Signature signMessage(std::vector<uint8_t> const &message_hash) const;
 
   ~Wallet();
@@ -37,6 +37,7 @@ class Wallet {
   void *ec_key_;  // OpenSSL EC_KEY*
   std::string address_;
 };
+*/
 
 /**
  * Sign an L1 action (orders, cancels, etc.) using EIP-712

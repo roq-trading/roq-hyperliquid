@@ -1,19 +1,18 @@
+#include "roq/hyperliquid/crypto/eip712.hpp"
+
 #include <algorithm>
-#include <nlohmann/json.hpp>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
+
 #include "roq/hyperliquid/crypto/conversions.hpp"
+#include "roq/hyperliquid/crypto/keccak.hpp"
 #include "roq/hyperliquid/crypto/types.hpp"
 
 namespace roq {
 namespace hyperliquid {
 namespace crypto {
-
-// Forward declare keccak256
-std::vector<uint8_t> keccak256(uint8_t const *data, size_t len);
-std::vector<uint8_t> keccak256(std::vector<uint8_t> const &data);
 
 std::string encodeType(std::string const &primary_type, std::map<std::string, std::vector<EIP712Type>> const &types) {
   auto it = types.find(primary_type);

@@ -1,7 +1,13 @@
 #include "roq/hyperliquid/crypto/signing.hpp"
+
 #include <sstream>
 #include <stdexcept>
+
 #include "roq/hyperliquid/crypto/conversions.hpp"
+#include "roq/hyperliquid/crypto/ecdsa.hpp"
+#include "roq/hyperliquid/crypto/eip712.hpp"
+#include "roq/hyperliquid/crypto/keccak.hpp"
+#include "roq/hyperliquid/crypto/wallet.hpp"
 
 #define MSGPACK_NO_BOOST
 #include <msgpack.hpp>
@@ -12,12 +18,11 @@ namespace crypto {
 
 // Forward declarations from crypto namespace
 namespace crypto {
-std::vector<uint8_t> keccak256(std::vector<uint8_t> const &data);
-void *createKeyFromPrivate(std::string const &private_key_hex);
-std::string deriveAddress(void const *ec_key);
-Signature signHash(void const *ec_key, std::vector<uint8_t> const &hash);
+// void *createKeyFromPrivate(std::string const &private_key_hex);
+// std::string deriveAddress(void const *ec_key);
+// Signature signHash(void const *ec_key, std::vector<uint8_t> const &hash);
 void freeKey(void *ec_key);
-std::vector<uint8_t> encodeTypedData(nlohmann::json const &typed_data);
+// std::vector<uint8_t> encodeTypedData(nlohmann::json const &typed_data);
 }  // namespace crypto
 
 // Helper function to pack JSON to msgpack (works with both json and ordered_json)
@@ -61,6 +66,7 @@ static void packJson(msgpack::packer<std::stringstream> &packer, nlohmann::order
 
 // Wallet implementation
 
+/*
 Wallet::Wallet(void *ec_key) : ec_key_(ec_key) {
   address_ = crypto::deriveAddress(ec_key_);
 }
@@ -81,6 +87,7 @@ std::string Wallet::address() const {
 Signature Wallet::signMessage(std::vector<uint8_t> const &message_hash) const {
   return crypto::signHash(ec_key_, message_hash);
 }
+*/
 
 // Action hash computation
 
@@ -122,7 +129,7 @@ std::vector<uint8_t> actionHash(
   }
 
   // 5. Hash with Keccak-256
-  return crypto::keccak256(data);
+  return keccak256(data);
 }
 
 // Phantom agent construction
@@ -208,7 +215,7 @@ Signature signL1Action(
   auto payload = l1Payload(phantom_agent);
 
   // Encode typed data
-  auto message_hash = crypto::encodeTypedData(payload);
+  auto message_hash = encodeTypedData(payload);
 
   // Sign the hash
   return wallet.signMessage(message_hash);
@@ -226,7 +233,7 @@ Signature signUserSignedAction(
   auto payload = userSignedPayload(primary_type, payload_types, action);
 
   // Encode typed data
-  auto message_hash = crypto::encodeTypedData(payload);
+  auto message_hash = encodeTypedData(payload);
 
   // Sign the hash
   return wallet.signMessage(message_hash);
