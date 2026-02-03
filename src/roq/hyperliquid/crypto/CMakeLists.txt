@@ -7,6 +7,7 @@ set(SOURCES
     exchange.cpp
     keccak.cpp
     signing.cpp
+    types.cpp
     wallet.cpp)
 
 add_library(${TARGET_NAME} OBJECT ${SOURCES})

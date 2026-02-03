@@ -27,7 +27,7 @@ auto const SUPPORTS = Mask{
     SupportType::FUNDS,
 };
 auto const MBP_ALLOW_REMOVE_NON_EXISTING = true;
-auto const OMS_REQUEST_ID_TYPE = RequestIdType::BASE64;
+auto const OMS_REQUEST_ID_TYPE = RequestIdType::HEX32;
 auto const OMS_CANCEL_ALL_ORDERS = Mask<Filter>{
     Filter::ACCOUNT,
     Filter::EXCHANGE,

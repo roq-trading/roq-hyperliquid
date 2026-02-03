@@ -32,7 +32,7 @@ class Exchange {
   /**
    * Place a single order
    */
-  nlohmann::json order(
+  std::string order(
       std::string const &coin,
       bool is_buy,
       double sz,
@@ -45,13 +45,12 @@ class Exchange {
   /**
    * Place multiple orders in a single request
    */
-  nlohmann::json bulkOrders(
-      std::vector<OrderRequest> const &orders, std::optional<BuilderInfo> const &builder = std::nullopt, std::string const &grouping = "na");
+  std::string bulkOrders(std::vector<OrderRequest> const &orders, std::optional<BuilderInfo> const &builder = std::nullopt, std::string const &grouping = "na");
 
   /**
    * Open a market order
    */
-  nlohmann::json marketOpen(
+  std::string marketOpen(
       std::string const &coin,
       bool is_buy,
       double sz,
@@ -63,7 +62,7 @@ class Exchange {
   /**
    * Close a position with market order
    */
-  nlohmann::json marketClose(
+  std::string marketClose(
       std::string const &coin,
       std::optional<double> sz = std::nullopt,
       std::optional<double> px = std::nullopt,
@@ -74,27 +73,27 @@ class Exchange {
   /**
    * Cancel an order by OID
    */
-  nlohmann::json cancel(std::string const &coin, int64_t oid);
+  std::string cancel(std::string const &coin, int64_t oid);
 
   /**
    * Cancel an order by client orde// r ID
    */
-  nlohmann::json cancelByCloid(std::string const &coin, Cloid const &cloid);
+  std::string cancelByCloid(std::string const &coin, Cloid const &cloid);
 
   /**
    * Cancel multiple orders
    */
-  nlohmann::json bulkCancel(std::vector<CancelRequest> const &cancels);
+  std::string bulkCancel(std::vector<CancelRequest> const &cancels);
 
   /**
    * Cancel multiple orders by CLOID
    */
-  nlohmann::json bulkCancelByCloid(std::vector<CancelByCloidRequest> const &cancels);
+  std::string bulkCancelByCloid(std::vector<CancelByCloidRequest> const &cancels);
 
   /**
    * Modify an existing order
    */
-  nlohmann::json modifyOrder(
+  std::string modifyOrder(
       OidOrCloid const &oid,
       std::string const &coin,
       bool is_buy,
@@ -107,22 +106,22 @@ class Exchange {
   /**
    * Modify multiple orders
    */
-  nlohmann::json bulkModifyOrders(std::vector<ModifyRequest> const &modifies);
+  std::string bulkModifyOrders(std::vector<ModifyRequest> const &modifies);
 
   /**
    * Transfer USD to another address
    */
-  nlohmann::json usdTransfer(double amount, std::string const &destination);
+  std::string usdTransfer(double amount, std::string const &destination);
 
   /**
    * Transfer spot tokens to another address
    */
-  nlohmann::json spotTransfer(double amount, std::string const &destination, std::string const &token);
+  std::string spotTransfer(double amount, std::string const &destination, std::string const &token);
 
   /**
    * Update leverage for a coin
    */
-  nlohmann::json updateLeverage(int leverage, std::string const &coin, bool is_cross = true);
+  std::string updateLeverage(int leverage, std::string const &coin, bool is_cross = true);
 
   /**
    * Schedule future cancel of all open orders.
@@ -133,13 +132,13 @@ class Exchange {
    *
    * @param time If provided, set the cancel time (UTC millis). If nullopt, unsets any scheduled cancel.
    */
-  nlohmann::json scheduleCancel(std::optional<int64_t> time = std::nullopt);
+  std::string scheduleCancel(std::optional<int64_t> time = std::nullopt);
 
   /**
    * Query order status by client order ID.
    * Convenience method that delegates to info_.queryOrderByCloid().
    */
-  nlohmann::json queryOrderByCloid(std::string const &user, Cloid const &cloid);
+  std::string queryOrderByCloid(std::string const &user, Cloid const &cloid);
 
   /**
    * Set expiration time for actions (optional)
@@ -159,7 +158,7 @@ class Exchange {
   int coin_to_asset(std::string const &coin);
 
  private:
-  nlohmann::json postAction(nlohmann::json const &action, Signature const &signature, int64_t nonce);
+  std::string postAction(nlohmann::json const &action, Signature const &signature, int64_t nonce);
 
   double slippagePrice(std::string const &name, bool is_buy, double slippage, std::optional<double> px = std::nullopt);
 

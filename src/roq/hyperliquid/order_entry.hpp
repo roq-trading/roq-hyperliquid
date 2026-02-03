@@ -31,6 +31,8 @@
 #include "roq/hyperliquid/json/get_spot_clearing_house_state_ack.hpp"
 #include "roq/hyperliquid/json/get_user_fills_ack.hpp"
 
+#include "roq/hyperliquid/crypto/exchange.hpp"
+
 namespace roq {
 namespace hyperliquid {
 
@@ -97,6 +99,24 @@ struct OrderEntry final : public web::rest::Client::Handler {
   void get_user_fills_ack(Trace<web::rest::Response> const &, uint32_t sequence);
   void operator()(Trace<json::GetUserFillsAck> const &);
 
+  // create-order
+
+  void create_order(Event<CreateOrder> const &, server::oms::Order const &, std::string_view const &request_id);
+  void create_order_ack(Trace<web::rest::Response> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
+  // void operator()(Trace<json::CreateOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
+
+  // modify-order
+
+  void modify_order(Event<ModifyOrder> const &, server::oms::Order const &, std::string_view const &request_id, std::string_view const &previous_request_id);
+  void modify_order_ack(Trace<web::rest::Response> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
+  // void operator()(Trace<json::ModifyOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
+
+  // cancel-order
+
+  void cancel_order(Event<CancelOrder> const &, server::oms::Order const &, std::string_view const &request_id, std::string_view const &previous_request_id);
+  void cancel_order_ack(Trace<web::rest::Response> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
+  // void operator()(Trace<json::CancelOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
+
   // helpers
 
   void process_response(web::rest::Response const &, auto error_handler, auto success_handler);
@@ -116,13 +136,14 @@ struct OrderEntry final : public web::rest::Client::Handler {
   } counter_;
   struct {
     utils::metrics::Profile clearing_house_state, clearing_house_state_ack, spot_clearing_house_state, spot_clearing_house_state_ack, open_orders,
-        open_orders_ack, user_fills, user_fills_ack;
+        open_orders_ack, user_fills, user_fills_ack, create_order, create_order_ack, modify_order, modify_order_ack, cancel_order, cancel_order_ack;
   } profile_;
   struct {
     utils::metrics::Latency ping;
   } latency_;
   // account
   Account &account_;
+  crypto::Exchange exchange_;
   // cache
   Shared &shared_;
   // state

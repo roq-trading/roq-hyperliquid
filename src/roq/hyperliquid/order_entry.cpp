@@ -81,6 +81,16 @@ struct create_metrics final : public utils::metrics::Factory {
 auto create_rate_limiter(auto &settings) {
   return core::limit::RateLimiter{settings.request.limit, settings.request.limit_interval};
 }
+
+template <typename R>
+auto create_exchange(auto &account) {
+  using result_type = std::remove_cvref_t<R>;
+  std::string base_url;
+  std::string vault_address;
+  std::string account_address;
+  result_type result{static_cast<tools::Crypto &>(account), base_url, nullptr, vault_address, account_address};
+  return result;
+}
 }  // namespace
 
 // === IMPLEMENTATION ===
@@ -100,12 +110,18 @@ OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_i
           .open_orders_ack = create_metrics(shared.settings, name_, "open_orders_ack"sv),
           .user_fills = create_metrics(shared.settings, name_, "user_fills"sv),
           .user_fills_ack = create_metrics(shared.settings, name_, "user_fills_ack"sv),
+          .create_order = create_metrics(shared.settings, name_, "create_order"sv),
+          .create_order_ack = create_metrics(shared.settings, name_, "create_order_ack"sv),
+          .modify_order = create_metrics(shared.settings, name_, "modify_order"sv),
+          .modify_order_ack = create_metrics(shared.settings, name_, "modify_order_ack"sv),
+          .cancel_order = create_metrics(shared.settings, name_, "cancel_order"sv),
+          .cancel_order_ack = create_metrics(shared.settings, name_, "cancel_order_ack"sv),
       },
       latency_{
           .ping = create_metrics(shared.settings, name_, "ping"sv),
       },
-      account_{account}, shared_{shared}, download_{shared.settings.rest.request_timeout, [this](auto state) { return download(state); }},
-      rate_limiter{create_rate_limiter(shared.settings)} {
+      account_{account}, exchange_{create_exchange<decltype(exchange_)>(account_)}, shared_{shared},
+      download_{shared.settings.rest.request_timeout, [this](auto state) { return download(state); }}, rate_limiter{create_rate_limiter(shared.settings)} {
 }
 
 void OrderEntry::operator()(Event<Start> const &) {
@@ -134,28 +150,31 @@ void OrderEntry::operator()(metrics::Writer &writer) const {
       .write(profile_.open_orders_ack, metrics::Type::PROFILE)
       .write(profile_.user_fills, metrics::Type::PROFILE)
       .write(profile_.user_fills_ack, metrics::Type::PROFILE)
+      .write(profile_.create_order, metrics::Type::PROFILE)
+      .write(profile_.create_order_ack, metrics::Type::PROFILE)
+      .write(profile_.modify_order, metrics::Type::PROFILE)
+      .write(profile_.modify_order_ack, metrics::Type::PROFILE)
+      .write(profile_.cancel_order, metrics::Type::PROFILE)
+      .write(profile_.cancel_order_ack, metrics::Type::PROFILE)
       // latency
       .write(latency_.ping, metrics::Type::LATENCY);
 }
 
-uint16_t OrderEntry::operator()(Event<CreateOrder> const &, server::oms::Order const &, [[maybe_unused]] std::string_view const &request_id) {
-  throw server::oms::NotSupported{"not supported"sv};
+uint16_t OrderEntry::operator()(Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
+  create_order(event, order, request_id);
+  return stream_id_;
 }
 
 uint16_t OrderEntry::operator()(
-    Event<ModifyOrder> const &,
-    server::oms::Order const &,
-    [[maybe_unused]] std::string_view const &request_id,
-    [[maybe_unused]] std::string_view const &previous_request_id) {
-  throw server::oms::NotSupported{"not supported"sv};
+    Event<ModifyOrder> const &event, server::oms::Order const &order, std::string_view const &request_id, std::string_view const &previous_request_id) {
+  modify_order(event, order, request_id, previous_request_id);
+  return stream_id_;
 }
 
 uint16_t OrderEntry::operator()(
-    Event<CancelOrder> const &,
-    server::oms::Order const &,
-    [[maybe_unused]] std::string_view const &request_id,
-    [[maybe_unused]] std::string_view const &previous_request_id) {
-  throw server::oms::NotSupported{"not supported"sv};
+    Event<CancelOrder> const &event, server::oms::Order const &order, std::string_view const &request_id, std::string_view const &previous_request_id) {
+  cancel_order(event, order, request_id, previous_request_id);
+  return stream_id_;
 }
 
 uint16_t OrderEntry::operator()(Event<CancelAllOrders> const &, [[maybe_unused]] std::string_view const &request_id) {
@@ -473,6 +492,243 @@ void OrderEntry::operator()(Trace<json::GetUserFillsAck> const &event) {
   auto &[trace_info, user_fills_ack] = event;
   log::info<4>("user_fills_ack={}"sv, user_fills_ack);
 }
+
+// create-order
+
+void OrderEntry::create_order(Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
+  profile_.create_order([&]() {
+    auto &[message_info, create_order] = event;
+    auto send_request = [&](auto &body) {
+      auto path = shared_.api.simple.order_create;
+      auto request = web::rest::Request{
+          .method = web::http::Method::POST,
+          .path = path,
+          .query = {},
+          .accept = web::http::Accept::APPLICATION_JSON,
+          .content_type = web::http::ContentType::APPLICATION_JSON,
+          .headers = {},
+          .body = body,
+          .quality_of_service = {},
+      };
+      auto callback = [this, user_id = message_info.source, order_id = create_order.order_id]([[maybe_unused]] auto &request_id, auto &response) {
+        auto version = 1;
+        TraceInfo trace_info;
+        Trace event{trace_info, response};
+        create_order_ack(event, user_id, order_id, version);
+      };
+      log::warn(R"(DEBUG request="{}")"sv, request);
+      (*connection_)(request_id, request, callback);
+    };
+    std::string coin{order.symbol};
+    auto is_buy = order.side == Side::BUY;  // XXX FIXME TODO
+    auto reduce_only = false;               // XXX FIXME TODO
+    auto limit_order_type = crypto::LimitOrderType{
+        .tif = "Gtc"s,
+    };
+    auto order_type = crypto::OrderType{
+        .limit = limit_order_type,
+        .trigger = {},
+    };
+    auto tmp = fmt::format("0x{:0>32}"sv, request_id);
+    crypto::Cloid cloid{tmp};
+    auto request = exchange_.order(coin, is_buy, create_order.quantity, create_order.price, order_type, reduce_only, cloid);
+    send_request(request);
+  });
+}
+
+void OrderEntry::create_order_ack(Trace<web::rest::Response> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
+  profile_.create_order_ack([&]() {
+    auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
+      log::debug(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
+      auto response = server::oms::Response{
+          .request_type = RequestType::CREATE_ORDER,
+          .origin = origin,
+          .request_status = status,
+          .error = error,
+          .text = text,
+          .version = version,
+          .request_id = {},
+          .external_order_id = {},
+          .quantity = NaN,
+          .price = NaN,
+      };
+      Trace event_2{event, response};
+      // (*this)(event_2, user_id, order_id);
+    };
+    auto handle_success = [&](auto &body) {
+      log::warn(R"(DEBUG body="{}")"sv, body);
+      /*
+      json::PlaceOrderAck place_order_ack{body, decode_buffer_};
+      // note! ret_code checked below
+      Trace event_2{event, place_order_ack};
+      (*this)(event_2, user_id, order_id, version);
+      */
+    };
+    process_response(event, handle_error, handle_success);
+  });
+}
+
+// void OrderEntry::operator()(Trace<json::CreateOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version) {}
+
+// modify-order
+
+void OrderEntry::modify_order(
+    Event<ModifyOrder> const &event,
+    server::oms::Order const &order,
+    [[maybe_unused]] std::string_view const &request_id,
+    [[maybe_unused]] std::string_view const &previous_request_id) {
+  profile_.modify_order([&]() {
+    auto &[message_info, modify_order] = event;
+    auto send_request = [&](auto &body) {
+      auto path = shared_.api.simple.order_create;
+      auto request = web::rest::Request{
+          .method = web::http::Method::POST,
+          .path = path,
+          .query = {},
+          .accept = web::http::Accept::APPLICATION_JSON,
+          .content_type = web::http::ContentType::APPLICATION_JSON,
+          .headers = {},
+          .body = body,
+          .quality_of_service = {},
+      };
+      auto callback = [this, user_id = message_info.source, order_id = modify_order.order_id, version = modify_order.version](
+                          [[maybe_unused]] auto &request_id, auto &response) {
+        TraceInfo trace_info;
+        Trace event{trace_info, response};
+        modify_order_ack(event, user_id, order_id, version);
+      };
+      log::warn(R"(DEBUG request="{}")"sv, request);
+      (*connection_)(request_id, request, callback);
+    };
+    std::string coin{order.symbol};
+    auto tmp = fmt::format("0x{:0>32}"sv, static_cast<std::string_view>(order.client_order_id));
+    crypto::Cloid cloid{tmp};
+    crypto::OidOrCloid oid{cloid};
+    auto is_buy = true;       // XXX FIXME TODO
+    auto reduce_only = true;  // XXX FIXME TODO
+    auto limit_order_type = crypto::LimitOrderType{
+        .tif = "Gtc"s,
+    };
+    auto order_type = crypto::OrderType{
+        .limit = limit_order_type,
+        .trigger = {},
+    };
+    auto request = exchange_.modifyOrder(oid, coin, is_buy, modify_order.quantity, modify_order.price, order_type, reduce_only, cloid);
+    send_request(request);
+  });
+}
+
+void OrderEntry::modify_order_ack(Trace<web::rest::Response> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
+  profile_.modify_order_ack([&]() {
+    auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
+      log::debug(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
+      auto response = server::oms::Response{
+          .request_type = RequestType::MODIFY_ORDER,
+          .origin = origin,
+          .request_status = status,
+          .error = error,
+          .text = text,
+          .version = version,
+          .request_id = {},
+          .external_order_id = {},
+          .quantity = NaN,
+          .price = NaN,
+      };
+      Trace event_2{event, response};
+      // (*this)(event_2, user_id, order_id);
+    };
+    auto handle_success = [&](auto &body) {
+      log::warn(R"(DEBUG body="{}")"sv, body);
+      /*
+      json::PlaceOrderAck place_order_ack{body, decode_buffer_};
+      // note! ret_code checked below
+      Trace event_2{event, place_order_ack};
+      (*this)(event_2, user_id, order_id, version);
+      */
+    };
+    process_response(event, handle_error, handle_success);
+  });
+}
+
+// void OrderEntry::operator()(Trace<json::ModifyOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version) {}
+
+// cancel-order
+
+void OrderEntry::cancel_order(
+    Event<CancelOrder> const &event,
+    server::oms::Order const &order,
+    [[maybe_unused]] std::string_view const &request_id,
+    [[maybe_unused]] std::string_view const &previous_request_id) {
+  profile_.cancel_order([&]() {
+    auto &[message_info, cancel_order] = event;
+    auto send_request = [&](auto &body) {
+      auto path = shared_.api.simple.order_create;
+      auto request = web::rest::Request{
+          .method = web::http::Method::POST,
+          .path = path,
+          .query = {},
+          .accept = web::http::Accept::APPLICATION_JSON,
+          .content_type = web::http::ContentType::APPLICATION_JSON,
+          .headers = {},
+          .body = body,
+          .quality_of_service = {},
+      };
+      auto callback = [this, user_id = message_info.source, order_id = cancel_order.order_id, version = cancel_order.version](
+                          [[maybe_unused]] auto &request_id, auto &response) {
+        TraceInfo trace_info;
+        Trace event{trace_info, response};
+        cancel_order_ack(event, user_id, order_id, version);
+      };
+      log::warn(R"(DEBUG request="{}")"sv, request);
+      (*connection_)(request_id, request, callback);
+    };
+    std::string coin{order.symbol};
+    if (std::empty(order.external_order_id)) {
+      auto tmp = fmt::format("0x{:0>32}"sv, static_cast<std::string_view>(order.client_order_id));
+      crypto::Cloid cloid{tmp};
+      auto request = exchange_.cancelByCloid(coin, cloid);
+      send_request(request);
+    } else {
+      auto oid = utils::charconv::from_chars<int64_t>(order.external_order_id);
+      auto request = exchange_.cancel(coin, oid);
+      send_request(request);
+    }
+  });
+}
+
+void OrderEntry::cancel_order_ack(Trace<web::rest::Response> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
+  profile_.cancel_order_ack([&]() {
+    auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
+      log::debug(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
+      auto response = server::oms::Response{
+          .request_type = RequestType::CANCEL_ORDER,
+          .origin = origin,
+          .request_status = status,
+          .error = error,
+          .text = text,
+          .version = version,
+          .request_id = {},
+          .external_order_id = {},
+          .quantity = NaN,
+          .price = NaN,
+      };
+      Trace event_2{event, response};
+      // (*this)(event_2, user_id, order_id);
+    };
+    auto handle_success = [&](auto &body) {
+      log::warn(R"(DEBUG body="{}")"sv, body);
+      /*
+      json::PlaceOrderAck place_order_ack{body, decode_buffer_};
+      // note! ret_code checked below
+      Trace event_2{event, place_order_ack};
+      (*this)(event_2, user_id, order_id, version);
+      */
+    };
+    process_response(event, handle_error, handle_success);
+  });
+}
+
+// void OrderEntry::operator()(Trace<json::CancelOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version) {}
 
 // helpers
 

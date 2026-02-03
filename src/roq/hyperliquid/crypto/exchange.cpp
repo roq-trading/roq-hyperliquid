@@ -21,7 +21,7 @@ Exchange::Exchange(
     : wallet_{wallet}, base_url_{base_url}, vault_address_(vault_address), account_address_(account_address), expires_after_(std::nullopt) {
 }
 
-nlohmann::json Exchange::postAction(nlohmann::json const &action, Signature const &signature, int64_t nonce) {
+std::string Exchange::postAction(nlohmann::json const &action, Signature const &signature, int64_t nonce) {
   nlohmann::json payload = {{"action", action}, {"nonce", nonce}, {"signature", signature.toJson()}};
 
   // Add vault address if not a transfer action
@@ -42,7 +42,7 @@ nlohmann::json Exchange::postAction(nlohmann::json const &action, Signature cons
   }
 
   // return post("/exchange", payload);
-  return payload;
+  return payload.dump();
 }
 
 double Exchange::slippagePrice(std::string const &name, bool is_buy, double slippage, std::optional<double> px) {
@@ -70,7 +70,7 @@ void Exchange::setExpiresAfter(std::optional<int64_t> expires_after) {
   expires_after_ = expires_after;
 }
 
-nlohmann::json Exchange::order(
+std::string Exchange::order(
     std::string const &coin,
     bool is_buy,
     double sz,
@@ -100,7 +100,7 @@ nlohmann::json Exchange::order(
   return bulkOrders({order_req}, builder);
 }
 
-nlohmann::json Exchange::bulkOrders(std::vector<OrderRequest> const &orders, std::optional<BuilderInfo> const &builder, std::string const &grouping) {
+std::string Exchange::bulkOrders(std::vector<OrderRequest> const &orders, std::optional<BuilderInfo> const &builder, std::string const &grouping) {
   std::vector<OrderWire> order_wires;
   for (auto const &order : orders) {
     int asset = nameToAsset(order.coin);
@@ -130,7 +130,7 @@ nlohmann::json Exchange::bulkOrders(std::vector<OrderRequest> const &orders, std
   return postAction(action, signature, timestamp);
 }
 
-nlohmann::json Exchange::marketOpen(
+std::string Exchange::marketOpen(
     std::string const &coin,
     bool is_buy,
     double sz,
@@ -146,7 +146,7 @@ nlohmann::json Exchange::marketOpen(
   return order(coin, is_buy, sz, price, order_type, false, cloid, builder);
 }
 
-nlohmann::json Exchange::marketClose(
+std::string Exchange::marketClose(
     std::string const &coin,
     std::optional<double> sz,
     std::optional<double> px,
@@ -180,19 +180,19 @@ nlohmann::json Exchange::marketClose(
   return marketOpen(coin, is_buy, close_sz, px, slippage, cloid, builder);
 }
 
-nlohmann::json Exchange::cancel(std::string const &coin, int64_t oid) {
+std::string Exchange::cancel(std::string const &coin, int64_t oid) {
   CancelRequest cancel_req;
   cancel_req.coin = coin;
   cancel_req.oid = oid;
   return bulkCancel({cancel_req});
 }
 
-nlohmann::json Exchange::cancelByCloid(std::string const &coin, Cloid const &cloid) {
+std::string Exchange::cancelByCloid(std::string const &coin, Cloid const &cloid) {
   CancelByCloidRequest cancel_req{coin, cloid};
   return bulkCancelByCloid({cancel_req});
 }
 
-nlohmann::json Exchange::bulkCancel(std::vector<CancelRequest> const &cancels) {
+std::string Exchange::bulkCancel(std::vector<CancelRequest> const &cancels) {
   nlohmann::ordered_json cancels_array = nlohmann::ordered_json::array();
   for (auto const &cancel : cancels) {
     int asset = nameToAsset(cancel.coin);
@@ -215,7 +215,7 @@ nlohmann::json Exchange::bulkCancel(std::vector<CancelRequest> const &cancels) {
   return postAction(action, signature, timestamp);
 }
 
-nlohmann::json Exchange::bulkCancelByCloid(std::vector<CancelByCloidRequest> const &cancels) {
+std::string Exchange::bulkCancelByCloid(std::vector<CancelByCloidRequest> const &cancels) {
   nlohmann::ordered_json cancels_array = nlohmann::ordered_json::array();
   for (auto const &cancel : cancels) {
     int asset = nameToAsset(cancel.coin);
@@ -238,7 +238,7 @@ nlohmann::json Exchange::bulkCancelByCloid(std::vector<CancelByCloidRequest> con
   return postAction(action, signature, timestamp);
 }
 
-nlohmann::json Exchange::modifyOrder(
+std::string Exchange::modifyOrder(
     OidOrCloid const &oid,
     std::string const &coin,
     bool is_buy,
@@ -269,7 +269,7 @@ nlohmann::json Exchange::modifyOrder(
   return bulkModifyOrders({modify_req});
 }
 
-nlohmann::json Exchange::bulkModifyOrders(std::vector<ModifyRequest> const &modifies) {
+std::string Exchange::bulkModifyOrders(std::vector<ModifyRequest> const &modifies) {
   nlohmann::ordered_json modifies_array = nlohmann::ordered_json::array();
   for (auto const &modify : modifies) {
     int asset = nameToAsset(modify.order.coin);
@@ -307,7 +307,7 @@ nlohmann::json Exchange::bulkModifyOrders(std::vector<ModifyRequest> const &modi
   return postAction(action, signature, timestamp);
 }
 
-nlohmann::json Exchange::usdTransfer(double amount, std::string const &destination) {
+std::string Exchange::usdTransfer(double amount, std::string const &destination) {
   nlohmann::json action = {{"type", "usdSend"}, {"destination", destination}, {"amount", floatToWire(amount)}, {"time", getTimestampMs()}};
 
   std::vector<EIP712Type> payload_types = {{"hyperliquidChain", "string"}, {"destination", "string"}, {"amount", "string"}, {"time", "uint64"}};
@@ -318,7 +318,7 @@ nlohmann::json Exchange::usdTransfer(double amount, std::string const &destinati
   return postAction(action, signature, action["time"]);
 }
 
-nlohmann::json Exchange::spotTransfer(double amount, std::string const &destination, std::string const &token) {
+std::string Exchange::spotTransfer(double amount, std::string const &destination, std::string const &token) {
   nlohmann::json action = {{"type", "spotSend"}, {"destination", destination}, {"token", token}, {"amount", floatToWire(amount)}, {"time", getTimestampMs()}};
 
   std::vector<EIP712Type> payload_types = {
@@ -330,7 +330,7 @@ nlohmann::json Exchange::spotTransfer(double amount, std::string const &destinat
   return postAction(action, signature, action["time"]);
 }
 
-nlohmann::json Exchange::updateLeverage(int leverage, std::string const &coin, bool is_cross) {
+std::string Exchange::updateLeverage(int leverage, std::string const &coin, bool is_cross) {
   int asset = nameToAsset(coin);
 
   nlohmann::ordered_json leverage_obj;
@@ -357,7 +357,7 @@ nlohmann::json Exchange::updateLeverage(int leverage, std::string const &coin, b
   return postAction(action, signature, timestamp);
 }
 
-nlohmann::json Exchange::scheduleCancel(std::optional<int64_t> time) {
+std::string Exchange::scheduleCancel(std::optional<int64_t> time) {
   int64_t timestamp = getTimestampMs();
 
   nlohmann::ordered_json action;
@@ -374,7 +374,7 @@ nlohmann::json Exchange::scheduleCancel(std::optional<int64_t> time) {
   return postAction(action, signature, timestamp);
 }
 
-nlohmann::json Exchange::queryOrderByCloid(std::string const &user, Cloid const &cloid) {
+std::string Exchange::queryOrderByCloid(std::string const &user, Cloid const &cloid) {
   // return info_.queryOrderByCloid(user, cloid);
   return {};
 }

@@ -236,6 +236,7 @@ void Rest::get_spot_meta_ack(Trace<web::rest::Response> const &event, uint32_t s
       download_.retry(STATE);
     };
     auto handle_success = [&](auto &body) {
+      log::warn("DEBUG spot_meta={}"sv, body);
       if (download_.skip(sequence, STATE)) {
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
@@ -255,6 +256,7 @@ void Rest::operator()(Trace<json::GetSpotMetaAck> const &event) {
   for (auto &item : spot_meta_ack.tokens) {
     auto discard = shared_.discard_symbol(item.name);
     auto tick_size = std::pow(10.0, -static_cast<double>(item.sz_decimals));
+    auto trade_vol_step_size = std::pow(10.0, -static_cast<double>(item.sz_decimals));
     auto reference_data = ReferenceData{
         .stream_id = stream_id_,
         .exchange = shared_.settings.exchange,
@@ -273,7 +275,7 @@ void Rest::operator()(Trace<json::GetSpotMetaAck> const &event) {
         .min_notional = NaN,
         .min_trade_vol = NaN,
         .max_trade_vol = NaN,
-        .trade_vol_step_size = NaN,
+        .trade_vol_step_size = trade_vol_step_size,
         .option_type = {},
         .strike_currency = {},
         .strike_price = NaN,
@@ -328,6 +330,7 @@ void Rest::get_perp_dexs_ack(Trace<web::rest::Response> const &event, uint32_t s
       download_.retry(STATE);
     };
     auto handle_success = [&](auto &body) {
+      log::warn("DEBUG perp_dexs={}"sv, body);
       if (download_.skip(sequence, STATE)) {
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
@@ -379,6 +382,7 @@ void Rest::get_meta_ack(Trace<web::rest::Response> const &event, uint32_t sequen
       download_.retry(STATE);
     };
     auto handle_success = [&](auto &body) {
+      log::warn("DEBUG meta={}"sv, body);
       if (download_.skip(sequence, STATE)) {
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
@@ -402,6 +406,7 @@ void Rest::operator()(Trace<json::GetMetaAck> const &event) {
   for (auto &item : meta_ack.universe) {
     auto discard = shared_.discard_symbol(item.name);
     auto tick_size = std::pow(10.0, -static_cast<double>(item.sz_decimals));
+    auto trade_vol_step_size = std::pow(10.0, -static_cast<double>(item.sz_decimals));
     auto reference_data = ReferenceData{
         .stream_id = stream_id_,
         .exchange = shared_.settings.exchange,
@@ -420,7 +425,7 @@ void Rest::operator()(Trace<json::GetMetaAck> const &event) {
         .min_notional = NaN,
         .min_trade_vol = NaN,
         .max_trade_vol = NaN,
-        .trade_vol_step_size = NaN,
+        .trade_vol_step_size = trade_vol_step_size,
         .option_type = {},
         .strike_currency = {},
         .strike_price = NaN,
