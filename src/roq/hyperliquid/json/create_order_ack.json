@@ -1,0 +1,14 @@
+{
+  "name": "roq/hyperliquid/json/CreateOrderAck",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "status",
+      "type": "std/string_view"
+    },
+    {
+      "name": "response",
+      "type": "roq/hyperliquid/json/CreateOrderAckResponse"
+    }
+  ]
+}

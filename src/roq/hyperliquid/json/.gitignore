@@ -7,6 +7,10 @@ bbo_data_bbo_item.hpp
 bbo_data.hpp
 bbo.hpp
 channel.hpp
+create_order_ack.hpp
+create_order_ack_response_data.hpp
+create_order_ack_response_data_statuses_item.hpp
+create_order_ack_response.hpp
 error.hpp
 get_clearing_house_state_ack_cross_margin_summary.hpp
 get_clearing_house_state_ack.hpp
@@ -49,6 +53,10 @@ bbo_data_bbo_item.cpp
 bbo_data.cpp
 bbo.cpp
 channel.cpp
+create_order_ack.cpp
+create_order_ack_response_data.cpp
+create_order_ack_response_data_statuses_item.cpp
+create_order_ack_response.cpp
 error.cpp
 get_clearing_house_state_ack_cross_margin_summary.cpp
 get_clearing_house_state_ack.cpp

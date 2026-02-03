@@ -12,6 +12,10 @@ set(AUTOGEN_SCHEMAS
     bbo_data.json
     bbo.json
     channel.json
+    create_order_ack.json
+    create_order_ack_response_data.json
+    create_order_ack_response_data_statuses_item.json
+    create_order_ack_response.json
     error.json
     get_clearing_house_state_ack_cross_margin_summary.json
     get_clearing_house_state_ack.json

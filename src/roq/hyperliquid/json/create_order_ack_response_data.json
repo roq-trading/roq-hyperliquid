@@ -1,0 +1,11 @@
+{
+  "name": "roq/hyperliquid/json/CreateOrderAckResponseData",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "statuses",
+      "type": "roq/hyperliquid/json/CreateOrderAckResponseDataStatusesItem",
+      "array": "std/span"
+    }
+  ]
+}
