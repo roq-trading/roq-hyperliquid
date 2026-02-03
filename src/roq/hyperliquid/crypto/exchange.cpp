@@ -2,8 +2,12 @@
 
 #include <cmath>
 
+#include "roq/logging.hpp"
+
 #include "roq/hyperliquid/crypto/constants.hpp"
 #include "roq/hyperliquid/crypto/conversions.hpp"
+
+using namespace std::literals;
 
 namespace roq {
 namespace hyperliquid {
@@ -19,6 +23,7 @@ Exchange::Exchange(
     std::vector<std::string> const *perp_dexs,
     int timeout_ms)
     : wallet_{wallet}, base_url_{base_url}, vault_address_(vault_address), account_address_(account_address), expires_after_(std::nullopt) {
+  log::warn("DEBUG account_address={}"sv, account_address_);
 }
 
 std::string Exchange::postAction(nlohmann::json const &action, Signature const &signature, int64_t nonce) {

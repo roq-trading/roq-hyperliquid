@@ -17,8 +17,7 @@
 #include "roq/hyperliquid/json/map.hpp"
 #include "roq/hyperliquid/json/utils.hpp"
 
-// #define MSGPACK_NO_BOOST
-// #include <msgpack.hpp>
+#include "roq/hyperliquid/crypto/constants.hpp"
 
 using namespace std::literals;
 
@@ -85,9 +84,10 @@ auto create_rate_limiter(auto &settings) {
 template <typename R>
 auto create_exchange(auto &account) {
   using result_type = std::remove_cvref_t<R>;
-  std::string base_url;
+  std::string base_url{crypto::MAINNET_API_URL};
   std::string vault_address;
-  std::string account_address;
+  std::string account_address{account.get_key()};
+  log::warn("DEBUG account_address={}"sv, account_address);
   result_type result{static_cast<tools::Crypto &>(account), base_url, nullptr, vault_address, account_address};
   return result;
 }
