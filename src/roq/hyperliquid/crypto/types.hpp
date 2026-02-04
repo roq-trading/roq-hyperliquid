@@ -82,6 +82,8 @@ struct OrderRequest {
   OrderType order_type;
   bool reduce_only;
   std::optional<Cloid> cloid;
+  // roq
+  int roq_asset = {};
 };
 
 /**

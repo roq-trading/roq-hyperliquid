@@ -5,6 +5,10 @@
     {
       "name": "error",
       "type": "std/string_view"
+    },
+    {
+      "name": "resting",
+      "type": "roq/hyperliquid/json/CreateOrderAckResponseDataStatusesItemResting"
     }
   ]
 }

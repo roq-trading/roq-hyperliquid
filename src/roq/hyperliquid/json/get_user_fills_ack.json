@@ -1,15 +1,10 @@
 {
   "name": "roq/hyperliquid/json/GetUserFillsAck",
-  "type": "dictionary",
+  "type": "array",
   "values": [
     {
-      "name": "tokens",
-      "type": "roq/hyperliquid/json/GetSpotMetaAckTokensItem",
-      "array": "std/span"
-    },
-    {
-      "name": "universe",
-      "type": "roq/hyperliquid/json/GetSpotMetaAckUniverseItem",
+      "name": "data",
+      "type": "roq/hyperliquid/json/GetUserFillsAckItem",
       "array": "std/span"
     }
   ]

@@ -29,7 +29,11 @@ auto const SUPPORTS = Mask{
     SupportType::REFERENCE_DATA,
 };
 
-size_t const MAX_DECODE_BUFFER_DEPTH = 1;
+size_t const MAX_DECODE_BUFFER_DEPTH = 2;
+
+uint32_t const OFFSET_SPOT = 10000;
+uint32_t const OFFSET_SWAP = 0;
+// uint32_t const OFFSET_SWAP = 110000;
 }  // namespace
 
 // === HELPERS ===
@@ -236,7 +240,7 @@ void Rest::get_spot_meta_ack(Trace<web::rest::Response> const &event, uint32_t s
       download_.retry(STATE);
     };
     auto handle_success = [&](auto &body) {
-      log::warn("DEBUG spot_meta={}"sv, body);
+      // log::warn("DEBUG spot_meta={}"sv, body);
       if (download_.skip(sequence, STATE)) {
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
@@ -253,6 +257,12 @@ void Rest::get_spot_meta_ack(Trace<web::rest::Response> const &event, uint32_t s
 void Rest::operator()(Trace<json::GetSpotMetaAck> const &event) {
   auto &[trace_info, spot_meta_ack] = event;
   log::info<4>("spot_meta_ack={}"sv, spot_meta_ack);
+  for (size_t i = 0; i < std::size(spot_meta_ack.tokens); ++i) {
+    if (spot_meta_ack.tokens[i].index != i) {
+      log::fatal("Unexpected"sv);
+    }
+  }
+  /*
   for (auto &item : spot_meta_ack.tokens) {
     auto discard = shared_.discard_symbol(item.name);
     auto tick_size = std::pow(10.0, -static_cast<double>(item.sz_decimals));
@@ -263,9 +273,60 @@ void Rest::operator()(Trace<json::GetSpotMetaAck> const &event) {
         .symbol = item.name,
         .description = item.full_name,
         .security_type = SecurityType::SPOT,
+        .external_security_id = utils::safe_cast(item.index),
         .cfi_code = {},
         .base_currency = {},
         .quote_currency = {},
+        .settlement_currency = {},
+        .margin_currency = {},
+        .commission_currency = {},
+        .tick_size = tick_size,
+        .tick_size_steps = {},
+        .multiplier = NaN,
+        .min_notional = NaN,
+        .min_trade_vol = NaN,
+        .max_trade_vol = NaN,
+        .trade_vol_step_size = trade_vol_step_size,
+        .option_type = {},
+        .strike_currency = {},
+        .strike_price = NaN,
+        .underlying = {},
+        .time_zone = {},
+        .issue_date = {},
+        .settlement_date = {},
+        .expiry_datetime = {},
+        .expiry_datetime_utc = {},
+        .exchange_time_utc = {},
+        .exchange_sequence = {},
+        .sending_time_utc = {},
+        .discard = discard,
+    };
+    create_trace_and_dispatch(handler_, trace_info, reference_data, true);
+    if (discard) {
+      log::info<1>(R"(Drop symbol="{}")"sv, item.name);
+      continue;
+    }
+  }
+  */
+  for (auto &item : spot_meta_ack.universe) {
+    auto discard = shared_.discard_symbol(item.name);
+    if (std::size(item.tokens) != 2) {
+      log::fatal("Unexpected: item={}"sv, item);
+    }
+    auto &base = spot_meta_ack.tokens[item.tokens[0]];
+    auto &quote = spot_meta_ack.tokens[item.tokens[1]];
+    auto tick_size = std::pow(10.0, -static_cast<double>(base.sz_decimals));
+    auto trade_vol_step_size = std::pow(10.0, -static_cast<double>(base.sz_decimals));
+    auto reference_data = ReferenceData{
+        .stream_id = stream_id_,
+        .exchange = shared_.settings.exchange,
+        .symbol = item.name,
+        .description = {},
+        .security_type = SecurityType::SPOT,
+        .external_security_id = utils::safe_cast(item.index + OFFSET_SPOT),
+        .cfi_code = {},
+        .base_currency = base.name,
+        .quote_currency = quote.name,
         .settlement_currency = {},
         .margin_currency = {},
         .commission_currency = {},
@@ -330,7 +391,7 @@ void Rest::get_perp_dexs_ack(Trace<web::rest::Response> const &event, uint32_t s
       download_.retry(STATE);
     };
     auto handle_success = [&](auto &body) {
-      log::warn("DEBUG perp_dexs={}"sv, body);
+      // log::warn("DEBUG perp_dexs={}"sv, body);
       if (download_.skip(sequence, STATE)) {
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
@@ -382,7 +443,7 @@ void Rest::get_meta_ack(Trace<web::rest::Response> const &event, uint32_t sequen
       download_.retry(STATE);
     };
     auto handle_success = [&](auto &body) {
-      log::warn("DEBUG meta={}"sv, body);
+      // log::warn("DEBUG meta={}"sv, body);
       if (download_.skip(sequence, STATE)) {
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
@@ -403,7 +464,8 @@ void Rest::operator()(Trace<json::GetMetaAck> const &event) {
   std::vector<Symbol> symbols;
   symbols.reserve(std::size(meta_ack.universe));  // alloc
   size_t counter = 0;
-  for (auto &item : meta_ack.universe) {
+  for (size_t i = 0; i < std::size(meta_ack.universe); ++i) {
+    auto &item = meta_ack.universe[i];
     auto discard = shared_.discard_symbol(item.name);
     auto tick_size = std::pow(10.0, -static_cast<double>(item.sz_decimals));
     auto trade_vol_step_size = std::pow(10.0, -static_cast<double>(item.sz_decimals));
@@ -413,6 +475,7 @@ void Rest::operator()(Trace<json::GetMetaAck> const &event) {
         .symbol = item.name,
         .description = {},
         .security_type = SecurityType::SWAP,
+        .external_security_id = utils::safe_cast(OFFSET_SWAP + i),
         .cfi_code = {},
         .base_currency = {},
         .quote_currency = {},

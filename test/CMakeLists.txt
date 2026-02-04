@@ -4,15 +4,17 @@ set(TARGET_NAME ${PROJECT_NAME}-test)
 
 set(SOURCES
     crypto.cpp
-    json_create_order_ack.cpp
     json_active_asset_ctx.cpp
     json_bbo.cpp
+    json_create_order_ack.cpp
     json_error.cpp
     json_get_clearing_house_state_ack.cpp
     json_get_meta_ack.cpp
+    json_get_open_orders_ack.cpp
     json_get_perp_dexs_ack.cpp
     json_get_spot_clearing_house_state_ack.cpp
     json_get_spot_meta_ack.cpp
+    json_get_user_fills_ack.cpp
     json_l2_book.cpp
     json_pong.cpp
     json_spot_meta.cpp

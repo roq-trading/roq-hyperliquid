@@ -42,6 +42,17 @@ class Exchange {
       std::optional<Cloid> const &cloid = std::nullopt,
       std::optional<BuilderInfo> const &builder = std::nullopt);
 
+  std::string roq_order(
+      std::string const &coin,
+      int32_t external_security_id,
+      bool is_buy,
+      double sz,
+      double limit_px,
+      OrderType const &order_type,
+      bool reduce_only = false,
+      std::optional<Cloid> const &cloid = std::nullopt,
+      std::optional<BuilderInfo> const &builder = std::nullopt);
+
   /**
    * Place multiple orders in a single request
    */

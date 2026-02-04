@@ -3,7 +3,9 @@
   "type": "dictionary",
   "values": [
     {
-      "name": "tokens"
+      "name": "tokens",
+      "type": "std/int64",
+      "array": "std/span"
     },
     {
       "name": "name",

@@ -15,6 +15,7 @@ set(AUTOGEN_SCHEMAS
     create_order_ack.json
     create_order_ack_response_data.json
     create_order_ack_response_data_statuses_item.json
+    create_order_ack_response_data_statuses_item_resting.json
     create_order_ack_response.json
     error.json
     get_clearing_house_state_ack_cross_margin_summary.json
@@ -24,6 +25,7 @@ set(AUTOGEN_SCHEMAS
     get_meta_ack_margin_tables_item.json
     get_meta_ack_margin_tables_item_margin_table.json
     get_meta_ack_universe_item.json
+    get_open_orders_ack_item.json
     get_open_orders_ack.json
     get_perp_dexs_ack_item.json
     get_perp_dexs_ack.json
@@ -32,6 +34,8 @@ set(AUTOGEN_SCHEMAS
     get_spot_meta_ack.json
     get_spot_meta_ack_tokens_item.json
     get_spot_meta_ack_universe_item.json
+    get_user_fills_ack_item.json
+    get_user_fills_ack_item_liquidation.json
     get_user_fills_ack.json
     l2_book_data.json
     l2_book_data_levels_item_item.json

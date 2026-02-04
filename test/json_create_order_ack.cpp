@@ -37,3 +37,31 @@ TEST_CASE("failure", "[json_create_order_ack]") {
   value_type obj{message, buffers};
   helper(obj);
 }
+
+TEST_CASE("success", "[json_create_order_ack]") {
+  auto message = R"({)"
+                 R"("status":"ok",)"
+                 R"("response":{)"
+                 R"("type":"order",)"
+                 R"("data":{)"
+                 R"("statuses":[{)"
+                 R"("resting":{)"
+                 R"("oid":311642020084,)"
+                 R"("cloid":"0x430882655000030000000001000000b9")"
+                 R"(})"
+                 R"(})"
+                 R"(])"
+                 R"(})"
+                 R"(})"
+                 R"(})";
+  auto helper = [&](value_type &obj) {
+    CHECK(obj.status == "ok"sv);
+    CHECK(obj.response.type == "order"sv);
+    REQUIRE(std::size(obj.response.data.statuses) == 1);
+    auto &s0 = obj.response.data.statuses[0];
+    CHECK(std::empty(s0.error));
+  };
+  core::json::BufferStack buffers{8192, 1};
+  value_type obj{message, buffers};
+  helper(obj);
+}

@@ -417,11 +417,9 @@ void OrderEntry::get_open_orders_ack(Trace<web::rest::Response> const &event, ui
       if (download_.skip(sequence, STATE)) {
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
-        /*
         json::GetOpenOrdersAck open_orders_ack{body, decode_buffer_};
         Trace event_2{event, open_orders_ack};
         (*this)(event_2);
-        */
         download_.check(STATE);
       }
     };
@@ -432,6 +430,46 @@ void OrderEntry::get_open_orders_ack(Trace<web::rest::Response> const &event, ui
 void OrderEntry::operator()(Trace<json::GetOpenOrdersAck> const &event) {
   auto &[trace_info, open_orders_ack] = event;
   log::info<4>("open_orders_ack={}"sv, open_orders_ack);
+  for (auto &item : open_orders_ack.data) {
+    log::warn("DEBUG item={}"sv, item);
+    auto external_order_id = fmt::format("{}"sv, item.oid);
+    auto order_update = server::oms::OrderUpdate{
+        .account = account_.name,
+        .exchange = shared_.settings.exchange,
+        .symbol = item.coin,
+        .side = Side::BUY,  // XXX
+        .position_effect = {},
+        .margin_mode = {},
+        .max_show_quantity = NaN,
+        .order_type = OrderType::LIMIT,     // XXX
+        .time_in_force = TimeInForce::GTC,  // XXX
+        .execution_instructions = {},
+        .create_time_utc = {},
+        .update_time_utc = {},
+        .external_account = {},
+        .external_order_id = external_order_id,
+        .client_order_id = item.cloid,
+        .order_status = OrderStatus::WORKING,  // XXX
+        .quantity = item.orig_sz,
+        .price = item.limit_px,
+        .stop_price = NaN,
+        .leverage = NaN,
+        .remaining_quantity = NaN,
+        .traded_quantity = NaN,  // XXX
+        .average_traded_price = NaN,
+        .last_traded_quantity = {},
+        .last_traded_price = {},
+        .last_liquidity = {},
+        .routing_id = {},
+        .max_request_version = {},
+        .max_response_version = {},
+        .max_accepted_version = {},
+        .update_type = UpdateType::SNAPSHOT,
+        .sending_time_utc = {},
+    };
+    Trace event_2{trace_info, order_update};
+    (*this)(event_2, item.cloid);
+  }
 }
 
 // user-fills
@@ -440,7 +478,7 @@ void OrderEntry::get_user_fills() {
   profile_.user_fills([&]() {
     auto body = fmt::format(
         R"({{)"
-        R"("type":"openOrders",)"
+        R"("type":"userFills",)"
         R"("user":"{}")"
         R"(}})"sv,
         account_.get_key());
@@ -460,7 +498,7 @@ void OrderEntry::get_user_fills() {
       Trace event{trace_info, response};
       get_user_fills_ack(event, sequence);
     };
-    (*connection_)("open-orders"sv, request, callback);
+    (*connection_)("user-fills"sv, request, callback);
   });
 }
 
@@ -476,11 +514,9 @@ void OrderEntry::get_user_fills_ack(Trace<web::rest::Response> const &event, uin
       if (download_.skip(sequence, STATE)) {
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
-        /*
         json::GetUserFillsAck user_fills_ack{body, decode_buffer_};
         Trace event_2{event, user_fills_ack};
         (*this)(event_2);
-        */
         download_.check(STATE);
       }
     };
@@ -491,6 +527,9 @@ void OrderEntry::get_user_fills_ack(Trace<web::rest::Response> const &event, uin
 void OrderEntry::operator()(Trace<json::GetUserFillsAck> const &event) {
   auto &[trace_info, user_fills_ack] = event;
   log::info<4>("user_fills_ack={}"sv, user_fills_ack);
+  for (auto &item : user_fills_ack.data) {
+    log::warn("DEBUG item={}"sv, item);
+  }
 }
 
 // create-order
@@ -520,8 +559,19 @@ void OrderEntry::create_order(Event<CreateOrder> const &event, server::oms::Orde
       (*connection_)(request_id, request, callback);
     };
     std::string coin{order.symbol};
-    auto is_buy = order.side == Side::BUY;  // XXX FIXME TODO
-    auto reduce_only = false;               // XXX FIXME TODO
+    auto is_buy = [&]() {
+      switch (order.side) {
+        using enum Side;
+        case UNDEFINED:
+          break;
+        case BUY:
+          return true;
+        case SELL:
+          return false;
+      }
+      log::fatal("Unexpected"sv);
+    }();
+    auto reduce_only = false;  // XXX FIXME TODO
     auto limit_order_type = crypto::LimitOrderType{
         .tif = "Gtc"s,
     };
@@ -531,7 +581,15 @@ void OrderEntry::create_order(Event<CreateOrder> const &event, server::oms::Orde
     };
     auto tmp = fmt::format("0x{:0>32}"sv, request_id);
     crypto::Cloid cloid{tmp};
-    auto request = exchange_.order(coin, is_buy, create_order.quantity, create_order.price, order_type, reduce_only, cloid);
+    auto request = exchange_.roq_order(
+        coin,
+        order.external_security_id,  // note!
+        is_buy,
+        create_order.quantity,
+        create_order.price,
+        order_type,
+        reduce_only,
+        cloid);
     send_request(request);
   });
 }
@@ -763,6 +821,14 @@ void OrderEntry::process_response(web::rest::Response const &response, auto erro
   } catch (std::exception &e) {
     log::warn(R"(Exception type={}, what="{}")"sv, typeid(e).name(), e.what());
     error_handler(Origin::EXCHANGE, RequestStatus::ERROR, Error::UNKNOWN, e.what());
+  }
+}
+
+void OrderEntry::operator()(Trace<server::oms::OrderUpdate> const &event, std::string_view const &client_order_id) {
+  auto &[trace_info, order_update] = event;
+  if (shared_.update_order(client_order_id, stream_id_, trace_info, order_update, [&]([[maybe_unused]] auto &order) {})) {
+  } else {
+    log::warn("*** EXTERNAL ORDER ***"sv);
   }
 }
 

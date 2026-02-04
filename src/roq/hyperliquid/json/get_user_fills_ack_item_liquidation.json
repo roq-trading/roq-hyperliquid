@@ -1,0 +1,18 @@
+{
+  "name": "roq/hyperliquid/json/GetUserFillsAckItemLiquidation",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "liquidatedUser",
+      "type": "std/string_view"
+    },
+    {
+      "name": "markPx",
+      "type": "std/double"
+    },
+    {
+      "name": "method",
+      "type": "std/string_view"
+    }
+  ]
+}

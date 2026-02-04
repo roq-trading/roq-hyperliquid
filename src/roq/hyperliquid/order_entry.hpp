@@ -121,6 +121,8 @@ struct OrderEntry final : public web::rest::Client::Handler {
 
   void process_response(web::rest::Response const &, auto error_handler, auto success_handler);
 
+  void operator()(Trace<server::oms::OrderUpdate> const &, std::string_view const &client_order_id);
+
  private:
   Handler &handler_;
   // config

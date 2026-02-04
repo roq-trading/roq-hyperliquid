@@ -21508,9 +21508,16 @@ TEST_CASE("simple", "[json_get_spot_meta_ack]") {
                  R"(})";
   auto helper = [&](value_type &obj) {
     REQUIRE(std::size(obj.universe) == 1193);
+    auto &u0 = obj.universe[0];
+    REQUIRE(std::size(u0.tokens) == 2);
+    CHECK(u0.tokens[0] == 1);
+    CHECK(u0.tokens[1] == 0);
+    CHECK(u0.name == "PURR/USDC"sv);
+    CHECK(u0.index == 0);
+    CHECK(u0.is_canonical == true);
     //
   };
-  core::json::BufferStack buffers{262144, 1};
+  core::json::BufferStack buffers{262144, 2};
   value_type obj{message, buffers};
   helper(obj);
 }

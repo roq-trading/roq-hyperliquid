@@ -1,0 +1,14 @@
+{
+  "name": "roq/hyperliquid/json/CreateOrderAckResponseDataStatusesItemResting",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "oid",
+      "type": "std/int64"
+    },
+    {
+      "name": "cloid",
+      "type": "std/string_view"
+    }
+  ]
+}

@@ -1,15 +1,10 @@
 {
   "name": "roq/hyperliquid/json/GetOpenOrdersAck",
-  "type": "dictionary",
+  "type": "array",
   "values": [
     {
-      "name": "tokens",
-      "type": "roq/hyperliquid/json/GetSpotMetaAckTokensItem",
-      "array": "std/span"
-    },
-    {
-      "name": "universe",
-      "type": "roq/hyperliquid/json/GetSpotMetaAckUniverseItem",
+      "name": "data",
+      "type": "roq/hyperliquid/json/GetOpenOrdersAckItem",
       "array": "std/span"
     }
   ]

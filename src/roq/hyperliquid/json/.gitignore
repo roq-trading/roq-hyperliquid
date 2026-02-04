@@ -10,6 +10,7 @@ channel.hpp
 create_order_ack.hpp
 create_order_ack_response_data.hpp
 create_order_ack_response_data_statuses_item.hpp
+create_order_ack_response_data_statuses_item_resting.hpp
 create_order_ack_response.hpp
 error.hpp
 get_clearing_house_state_ack_cross_margin_summary.hpp
@@ -19,6 +20,7 @@ get_meta_ack.hpp
 get_meta_ack_margin_tables_item.hpp
 get_meta_ack_margin_tables_item_margin_table.hpp
 get_meta_ack_universe_item.hpp
+get_open_orders_ack_item.hpp
 get_open_orders_ack.hpp
 get_perp_dexs_ack_item.hpp
 get_perp_dexs_ack.hpp
@@ -27,6 +29,8 @@ get_spot_clearing_house_state_ack.hpp
 get_spot_meta_ack.hpp
 get_spot_meta_ack_tokens_item.hpp
 get_spot_meta_ack_universe_item.hpp
+get_user_fills_ack_item.hpp
+get_user_fills_ack_item_liquidation.hpp
 get_user_fills_ack.hpp
 l2_book_data.hpp
 l2_book_data_levels_item_item.hpp
@@ -56,6 +60,7 @@ channel.cpp
 create_order_ack.cpp
 create_order_ack_response_data.cpp
 create_order_ack_response_data_statuses_item.cpp
+create_order_ack_response_data_statuses_item_resting.cpp
 create_order_ack_response.cpp
 error.cpp
 get_clearing_house_state_ack_cross_margin_summary.cpp
@@ -65,6 +70,7 @@ get_meta_ack.cpp
 get_meta_ack_margin_tables_item.cpp
 get_meta_ack_margin_tables_item_margin_table.cpp
 get_meta_ack_universe_item.cpp
+get_open_orders_ack_item.cpp
 get_open_orders_ack.cpp
 get_perp_dexs_ack_item.cpp
 get_perp_dexs_ack.cpp
@@ -73,6 +79,8 @@ get_spot_clearing_house_state_ack.cpp
 get_spot_meta_ack.cpp
 get_spot_meta_ack_tokens_item.cpp
 get_spot_meta_ack_universe_item.cpp
+get_user_fills_ack_item.cpp
+get_user_fills_ack_item_liquidation.cpp
 get_user_fills_ack.cpp
 l2_book_data.cpp
 l2_book_data_levels_item_item.cpp

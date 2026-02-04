@@ -105,10 +105,42 @@ std::string Exchange::order(
   return bulkOrders({order_req}, builder);
 }
 
+std::string Exchange::roq_order(
+    std::string const &coin,
+    int32_t external_security_id,
+    bool is_buy,
+    double sz,
+    double limit_px,
+    OrderType const &order_type,
+    bool reduce_only,
+    std::optional<Cloid> const &cloid,
+    std::optional<BuilderInfo> const &builder) {
+  // Get asset info for rounding
+  int asset = external_security_id;
+  int sz_decimals = asset_to_sz_decimals(asset);
+  bool is_spot = asset >= 10000;
+
+  // Round price and size to tick/lot size
+  double rounded_px = roundPrice(limit_px, sz_decimals, is_spot);
+  double rounded_sz = roundSize(sz, sz_decimals);
+
+  OrderRequest order_req;
+  order_req.coin = coin;
+  order_req.is_buy = is_buy;
+  order_req.sz = rounded_sz;
+  order_req.limit_px = rounded_px;
+  order_req.order_type = order_type;
+  order_req.reduce_only = reduce_only;
+  order_req.cloid = cloid;
+  order_req.roq_asset = asset;  // XXX
+
+  return bulkOrders({order_req}, builder);
+}
+
 std::string Exchange::bulkOrders(std::vector<OrderRequest> const &orders, std::optional<BuilderInfo> const &builder, std::string const &grouping) {
   std::vector<OrderWire> order_wires;
   for (auto const &order : orders) {
-    int asset = nameToAsset(order.coin);
+    int asset = order.roq_asset;  // nameToAsset(order.coin);
     int sz_decimals = asset_to_sz_decimals(asset);
     bool is_spot = asset >= 10000;
 
