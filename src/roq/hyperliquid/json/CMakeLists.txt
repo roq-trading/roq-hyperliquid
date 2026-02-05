@@ -11,6 +11,9 @@ set(AUTOGEN_SCHEMAS
     bbo_data_bbo_item.json
     bbo_data.json
     bbo.json
+    cancel_order_ack.json
+    cancel_order_ack_response_data.json
+    cancel_order_ack_response.json
     channel.json
     create_order_ack.json
     create_order_ack_response_data.json

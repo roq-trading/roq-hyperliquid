@@ -31,6 +31,9 @@
 #include "roq/hyperliquid/json/get_spot_clearing_house_state_ack.hpp"
 #include "roq/hyperliquid/json/get_user_fills_ack.hpp"
 
+#include "roq/hyperliquid/json/cancel_order_ack.hpp"
+#include "roq/hyperliquid/json/create_order_ack.hpp"
+
 #include "roq/hyperliquid/crypto/exchange.hpp"
 
 namespace roq {

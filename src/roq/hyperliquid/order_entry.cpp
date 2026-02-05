@@ -433,6 +433,13 @@ void OrderEntry::operator()(Trace<json::GetOpenOrdersAck> const &event) {
   for (auto &item : open_orders_ack.data) {
     log::warn("DEBUG item={}"sv, item);
     auto external_order_id = fmt::format("{}"sv, item.oid);
+    auto client_order_id = [&]() {
+      if (item.cloid.starts_with("0x"sv)) {
+        return item.cloid.substr(2);
+      }
+      return item.cloid;
+    }();
+    log::warn("DEBUG client_order_id={}"sv, client_order_id);
     auto order_update = server::oms::OrderUpdate{
         .account = account_.name,
         .exchange = shared_.settings.exchange,
@@ -448,8 +455,10 @@ void OrderEntry::operator()(Trace<json::GetOpenOrdersAck> const &event) {
         .update_time_utc = {},
         .external_account = {},
         .external_order_id = external_order_id,
-        .client_order_id = item.cloid,
+        .client_order_id = client_order_id,
         .order_status = OrderStatus::WORKING,  // XXX
+        .error = {},
+        .text = {},
         .quantity = item.orig_sz,
         .price = item.limit_px,
         .stop_price = NaN,
@@ -468,7 +477,7 @@ void OrderEntry::operator()(Trace<json::GetOpenOrdersAck> const &event) {
         .sending_time_utc = {},
     };
     Trace event_2{trace_info, order_update};
-    (*this)(event_2, item.cloid);
+    (*this)(event_2, client_order_id);
   }
 }
 
@@ -580,8 +589,9 @@ void OrderEntry::create_order(Event<CreateOrder> const &event, server::oms::Orde
         .trigger = {},
     };
     auto tmp = fmt::format("0x{:0>32}"sv, request_id);
+    log::warn("{} {}"sv, request_id, tmp);
     crypto::Cloid cloid{tmp};
-    auto request = exchange_.roq_order(
+    auto request = exchange_.ROQ_order(
         coin,
         order.external_security_id,  // note!
         is_buy,
@@ -615,12 +625,9 @@ void OrderEntry::create_order_ack(Trace<web::rest::Response> const &event, uint8
     };
     auto handle_success = [&](auto &body) {
       log::warn(R"(DEBUG body="{}")"sv, body);
-      /*
-      json::PlaceOrderAck place_order_ack{body, decode_buffer_};
-      // note! ret_code checked below
-      Trace event_2{event, place_order_ack};
-      (*this)(event_2, user_id, order_id, version);
-      */
+      json::CreateOrderAck create_order_ack{body, decode_buffer_};
+      // Trace event_2{event, create_order_ack};
+      // (*this)(event_2, user_id, order_id, version);
     };
     process_response(event, handle_error, handle_success);
   });
@@ -697,12 +704,9 @@ void OrderEntry::modify_order_ack(Trace<web::rest::Response> const &event, uint8
     };
     auto handle_success = [&](auto &body) {
       log::warn(R"(DEBUG body="{}")"sv, body);
-      /*
-      json::PlaceOrderAck place_order_ack{body, decode_buffer_};
-      // note! ret_code checked below
-      Trace event_2{event, place_order_ack};
-      (*this)(event_2, user_id, order_id, version);
-      */
+      json::CancelOrderAck cancel_order_ack{body, decode_buffer_};
+      // Trace event_2{event, cancel_order_ack};
+      // (*this)(event_2, user_id, order_id, version);
     };
     process_response(event, handle_error, handle_success);
   });
@@ -743,12 +747,14 @@ void OrderEntry::cancel_order(
     std::string coin{order.symbol};
     if (std::empty(order.external_order_id)) {
       auto tmp = fmt::format("0x{:0>32}"sv, static_cast<std::string_view>(order.client_order_id));
+      log::warn("DEBUG cloid={}, asset={}"sv, tmp, order.external_security_id);
       crypto::Cloid cloid{tmp};
-      auto request = exchange_.cancelByCloid(coin, cloid);
+      auto request = exchange_.ROQ_cancelByCloid(coin, order.external_security_id, cloid);
       send_request(request);
     } else {
       auto oid = utils::charconv::from_chars<int64_t>(order.external_order_id);
-      auto request = exchange_.cancel(coin, oid);
+      log::warn("DEBUG oid={}, asset={}"sv, oid, order.external_security_id);
+      auto request = exchange_.ROQ_cancel(coin, order.external_security_id, oid);
       send_request(request);
     }
   });
@@ -756,8 +762,9 @@ void OrderEntry::cancel_order(
 
 void OrderEntry::cancel_order_ack(Trace<web::rest::Response> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
   profile_.cancel_order_ack([&]() {
+    log::warn("HERE"sv);
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
-      log::debug(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
+      log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
       auto response = server::oms::Response{
           .request_type = RequestType::CANCEL_ORDER,
           .origin = origin,
@@ -775,12 +782,9 @@ void OrderEntry::cancel_order_ack(Trace<web::rest::Response> const &event, uint8
     };
     auto handle_success = [&](auto &body) {
       log::warn(R"(DEBUG body="{}")"sv, body);
-      /*
-      json::PlaceOrderAck place_order_ack{body, decode_buffer_};
-      // note! ret_code checked below
-      Trace event_2{event, place_order_ack};
-      (*this)(event_2, user_id, order_id, version);
-      */
+      json::CancelOrderAck cancel_order_ack{body, decode_buffer_};
+      // Trace event_2{event, cancel_order_ack};
+      // (*this)(event_2, user_id, order_id, version);
     };
     process_response(event, handle_error, handle_success);
   });

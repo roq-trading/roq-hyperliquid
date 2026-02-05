@@ -6,6 +6,9 @@ active_asset_ctx.hpp
 bbo_data_bbo_item.hpp
 bbo_data.hpp
 bbo.hpp
+cancel_order_ack.hpp
+cancel_order_ack_response_data.hpp
+cancel_order_ack_response.hpp
 channel.hpp
 create_order_ack.hpp
 create_order_ack_response_data.hpp
@@ -56,6 +59,9 @@ active_asset_ctx.cpp
 bbo_data_bbo_item.cpp
 bbo_data.cpp
 bbo.cpp
+cancel_order_ack.cpp
+cancel_order_ack_response_data.cpp
+cancel_order_ack_response.cpp
 channel.cpp
 create_order_ack.cpp
 create_order_ack_response_data.cpp

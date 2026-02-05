@@ -6,6 +6,7 @@ set(SOURCES
     crypto.cpp
     json_active_asset_ctx.cpp
     json_bbo.cpp
+    json_cancel_order_ack.cpp
     json_create_order_ack.cpp
     json_error.cpp
     json_get_clearing_house_state_ack.cpp

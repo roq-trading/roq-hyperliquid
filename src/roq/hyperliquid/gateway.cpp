@@ -51,7 +51,8 @@ R create_order_entry(auto &gateway, auto &context, auto &stream_id, auto &accoun
 
 Gateway::Gateway(server::Dispatcher &dispatcher, Settings const &settings, Config const &config, io::Context &context)
     : dispatcher_{dispatcher}, accounts_{create_accounts<decltype(accounts_)>(settings, config)}, context_{context}, shared_{dispatcher, settings},
-      rest_{*this, context_, ++stream_id_, shared_}, order_entry_{create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, accounts_, shared_)} {
+      rest_{*this, context_, ++stream_id_, shared_} {
+  assert(std::empty(order_entry_));  // must be delayed until symbols
 }
 
 void Gateway::operator()(Event<Start> const &event) {
@@ -129,6 +130,15 @@ void Gateway::operator()(Rest::SymbolsUpdate &symbols_update) {
   ensure_symbol_slices(size);
   for (auto &item : market_data_) {
     (*item).subscribe(start_from);
+  }
+  // delayed creation of order-entry due to need for assets
+  if (std::empty(order_entry_) && !std::empty(accounts_)) {
+    order_entry_ = create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, accounts_, shared_);
+    MessageInfo message_info;
+    Start start;
+    for (auto &[_, item] : order_entry_) {
+      create_event_and_dispatch(*item, message_info, start);
+    }
   }
 }
 

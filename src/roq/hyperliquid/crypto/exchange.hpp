@@ -42,7 +42,7 @@ class Exchange {
       std::optional<Cloid> const &cloid = std::nullopt,
       std::optional<BuilderInfo> const &builder = std::nullopt);
 
-  std::string roq_order(
+  std::string ROQ_order(
       std::string const &coin,
       int32_t external_security_id,
       bool is_buy,
@@ -85,11 +85,13 @@ class Exchange {
    * Cancel an order by OID
    */
   std::string cancel(std::string const &coin, int64_t oid);
+  std::string ROQ_cancel(std::string const &coin, int32_t external_security_id, int64_t oid);
 
   /**
    * Cancel an order by client orde// r ID
    */
   std::string cancelByCloid(std::string const &coin, Cloid const &cloid);
+  std::string ROQ_cancelByCloid(std::string const &coin, int32_t external_security_id, Cloid const &cloid);
 
   /**
    * Cancel multiple orders

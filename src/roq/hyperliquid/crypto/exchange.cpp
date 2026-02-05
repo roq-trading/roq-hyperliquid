@@ -105,7 +105,7 @@ std::string Exchange::order(
   return bulkOrders({order_req}, builder);
 }
 
-std::string Exchange::roq_order(
+std::string Exchange::ROQ_order(
     std::string const &coin,
     int32_t external_security_id,
     bool is_buy,
@@ -132,7 +132,7 @@ std::string Exchange::roq_order(
   order_req.order_type = order_type;
   order_req.reduce_only = reduce_only;
   order_req.cloid = cloid;
-  order_req.roq_asset = asset;  // XXX
+  order_req.ROQ_asset = asset;  // XXX
 
   return bulkOrders({order_req}, builder);
 }
@@ -140,7 +140,7 @@ std::string Exchange::roq_order(
 std::string Exchange::bulkOrders(std::vector<OrderRequest> const &orders, std::optional<BuilderInfo> const &builder, std::string const &grouping) {
   std::vector<OrderWire> order_wires;
   for (auto const &order : orders) {
-    int asset = order.roq_asset;  // nameToAsset(order.coin);
+    int asset = order.ROQ_asset;  // nameToAsset(order.coin);
     int sz_decimals = asset_to_sz_decimals(asset);
     bool is_spot = asset >= 10000;
 
@@ -221,18 +221,34 @@ std::string Exchange::cancel(std::string const &coin, int64_t oid) {
   CancelRequest cancel_req;
   cancel_req.coin = coin;
   cancel_req.oid = oid;
+  cancel_req.ROQ_asset = nameToAsset(coin);
+  return bulkCancel({cancel_req});
+}
+
+std::string Exchange::ROQ_cancel(std::string const &coin, int32_t external_security_id, int64_t oid) {
+  CancelRequest cancel_req;
+  cancel_req.coin = coin;
+  cancel_req.oid = oid;
+  cancel_req.ROQ_asset = external_security_id;
   return bulkCancel({cancel_req});
 }
 
 std::string Exchange::cancelByCloid(std::string const &coin, Cloid const &cloid) {
   CancelByCloidRequest cancel_req{coin, cloid};
+  cancel_req.ROQ_asset = nameToAsset(coin);
+  return bulkCancelByCloid({cancel_req});
+}
+
+std::string Exchange::ROQ_cancelByCloid(std::string const &coin, int32_t external_security_id, Cloid const &cloid) {
+  CancelByCloidRequest cancel_req{coin, cloid};
+  cancel_req.ROQ_asset = external_security_id;
   return bulkCancelByCloid({cancel_req});
 }
 
 std::string Exchange::bulkCancel(std::vector<CancelRequest> const &cancels) {
   nlohmann::ordered_json cancels_array = nlohmann::ordered_json::array();
   for (auto const &cancel : cancels) {
-    int asset = nameToAsset(cancel.coin);
+    int asset = cancel.ROQ_asset;
     nlohmann::ordered_json cancel_obj;
     cancel_obj["a"] = asset;
     cancel_obj["o"] = cancel.oid;
@@ -255,7 +271,7 @@ std::string Exchange::bulkCancel(std::vector<CancelRequest> const &cancels) {
 std::string Exchange::bulkCancelByCloid(std::vector<CancelByCloidRequest> const &cancels) {
   nlohmann::ordered_json cancels_array = nlohmann::ordered_json::array();
   for (auto const &cancel : cancels) {
-    int asset = nameToAsset(cancel.coin);
+    int asset = cancel.ROQ_asset;
     nlohmann::ordered_json cancel_obj;
     cancel_obj["a"] = asset;
     cancel_obj["o"] = cancel.cloid.toRaw();

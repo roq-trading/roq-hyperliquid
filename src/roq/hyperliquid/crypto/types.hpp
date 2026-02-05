@@ -83,7 +83,7 @@ struct OrderRequest {
   bool reduce_only;
   std::optional<Cloid> cloid;
   // roq
-  int roq_asset = {};
+  int ROQ_asset = {};
 };
 
 /**
@@ -107,6 +107,8 @@ struct OrderWire {
 struct CancelRequest {
   std::string coin;
   int64_t oid;
+  //
+  int ROQ_asset = {};
 };
 
 /**
@@ -115,6 +117,8 @@ struct CancelRequest {
 struct CancelByCloidRequest {
   std::string coin;
   Cloid cloid;
+  //
+  int ROQ_asset = {};
 };
 
 /**
