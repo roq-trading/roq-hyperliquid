@@ -21,6 +21,10 @@
     {
       "name": "user",
       "type": "std/string_view"
+    },
+    {
+      "name": "aggregateByTime",
+      "type": "std/bool"
     }
   ]
 }
