@@ -273,13 +273,13 @@ std::string Exchange::bulkCancelByCloid(std::vector<CancelByCloidRequest> const 
   for (auto const &cancel : cancels) {
     int asset = cancel.ROQ_asset;
     nlohmann::ordered_json cancel_obj;
-    cancel_obj["a"] = asset;
-    cancel_obj["o"] = cancel.cloid.toRaw();
+    cancel_obj["asset"] = asset;
+    cancel_obj["cloid"] = cancel.cloid.toRaw();
     cancels_array.push_back(cancel_obj);
   }
 
   nlohmann::ordered_json action;
-  action["type"] = "cancel";
+  action["type"] = "cancelByCloid";
   action["cancels"] = cancels_array;
 
   int64_t timestamp = getTimestampMs();

@@ -45,6 +45,17 @@ R create_order_entry(auto &gateway, auto &context, auto &stream_id, auto &accoun
   return result;
 }
 
+template <typename R>
+R create_drop_copy(auto &gateway, auto &context, auto &stream_id, auto &accounts, auto &shared) {
+  using result_type = std::remove_cvref_t<R>;
+  result_type result;
+  for (auto &[_, item] : accounts) {
+    auto &account = *item;
+    auto obj = std::make_unique<DropCopy>(gateway, context, ++stream_id, account, shared);
+    result.try_emplace(static_cast<std::string_view>(account.name), std::move(obj));
+  }
+  return result;
+}
 }  // namespace
 
 // === IMPLEMENTATION ===
@@ -132,12 +143,22 @@ void Gateway::operator()(Rest::SymbolsUpdate &symbols_update) {
     (*item).subscribe(start_from);
   }
   // delayed creation of order-entry due to need for assets
-  if (std::empty(order_entry_) && !std::empty(accounts_)) {
-    order_entry_ = create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, accounts_, shared_);
-    MessageInfo message_info;
-    Start start;
-    for (auto &[_, item] : order_entry_) {
-      create_event_and_dispatch(*item, message_info, start);
+  if (!std::empty(accounts_)) {
+    if (std::empty(order_entry_)) {
+      order_entry_ = create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, accounts_, shared_);
+      MessageInfo message_info;
+      Start start;
+      for (auto &[_, item] : order_entry_) {
+        create_event_and_dispatch(*item, message_info, start);
+      }
+    }
+    if (std::empty(drop_copy_)) {
+      drop_copy_ = create_drop_copy<decltype(drop_copy_)>(*this, context_, stream_id_, accounts_, shared_);
+      MessageInfo message_info;
+      Start start;
+      for (auto &[_, item] : drop_copy_) {
+        create_event_and_dispatch(*item, message_info, start);
+      }
     }
   }
 }
@@ -218,6 +239,9 @@ void Gateway::dispatch_helper(auto &self, Args &&...args) {
     helper(*item);
   }
   for (auto &[_, item] : self.order_entry_) {
+    helper(*item);
+  }
+  for (auto &[_, item] : self.drop_copy_) {
     helper(*item);
   }
 }

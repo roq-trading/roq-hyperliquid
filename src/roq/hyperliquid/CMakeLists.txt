@@ -7,6 +7,7 @@ set(SOURCES
     api.cpp
     application.cpp
     config.cpp
+    drop_copy.cpp
     gateway.cpp
     market_data.cpp
     order_entry.cpp

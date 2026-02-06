@@ -1,0 +1,12 @@
+{
+  "name": "roq/hyperliquid/json/OrderStatus",
+  "type": "enum",
+  "values": [
+    {
+      "name": "open"
+    },
+    {
+      "name": "canceled"
+    }
+  ]
+}

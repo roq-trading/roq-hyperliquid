@@ -5,6 +5,7 @@ set(SOURCES map.cpp parser.cpp utils.cpp)
 include(RoqAutogen)
 
 set(AUTOGEN_SCHEMAS
+    direction.json
     active_asset_ctx_data_ctx.json
     active_asset_ctx_data.json
     active_asset_ctx.json
@@ -44,6 +45,10 @@ set(AUTOGEN_SCHEMAS
     l2_book_data_levels_item_item.json
     l2_book_data_levels_item.json
     l2_book.json
+    order_status.json
+    order_updates_data_item.json
+    order_updates_data_item_order.json
+    order_updates.json
     payload_type.json
     pong.json
     response_type.json
@@ -57,6 +62,12 @@ set(AUTOGEN_SCHEMAS
     subscription_response_data_subscription.json
     subscription_response.json
     trades_data_item.json
+    user_fills_data_fills_item.json
+    user_fills_data.json
+    user_fills.json
+    user_fundings_data_fundings_item.json
+    user_fundings_data.json
+    user_fundings.json
     trades.json)
 
 roq_autogen_hpp(

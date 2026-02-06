@@ -1,5 +1,6 @@
 !!! THIS FILE HAS BEEN AUTO-GENERATED !!!
 roq-hyperliquid-json
+direction.hpp
 active_asset_ctx_data_ctx.hpp
 active_asset_ctx_data.hpp
 active_asset_ctx.hpp
@@ -39,6 +40,10 @@ l2_book_data.hpp
 l2_book_data_levels_item_item.hpp
 l2_book_data_levels_item.hpp
 l2_book.hpp
+order_status.hpp
+order_updates_data_item.hpp
+order_updates_data_item_order.hpp
+order_updates.hpp
 payload_type.hpp
 pong.hpp
 response_type.hpp
@@ -52,7 +57,14 @@ subscription_response_data.hpp
 subscription_response_data_subscription.hpp
 subscription_response.hpp
 trades_data_item.hpp
+user_fills_data_fills_item.hpp
+user_fills_data.hpp
+user_fills.hpp
+user_fundings_data_fundings_item.hpp
+user_fundings_data.hpp
+user_fundings.hpp
 trades.hpp
+direction.cpp
 active_asset_ctx_data_ctx.cpp
 active_asset_ctx_data.cpp
 active_asset_ctx.cpp
@@ -92,6 +104,10 @@ l2_book_data.cpp
 l2_book_data_levels_item_item.cpp
 l2_book_data_levels_item.cpp
 l2_book.cpp
+order_status.cpp
+order_updates_data_item.cpp
+order_updates_data_item_order.cpp
+order_updates.cpp
 payload_type.cpp
 pong.cpp
 response_type.cpp
@@ -105,4 +121,10 @@ subscription_response_data.cpp
 subscription_response_data_subscription.cpp
 subscription_response.cpp
 trades_data_item.cpp
+user_fills_data_fills_item.cpp
+user_fills_data.cpp
+user_fills.cpp
+user_fundings_data_fundings_item.cpp
+user_fundings_data.cpp
+user_fundings.cpp
 trades.cpp

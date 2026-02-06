@@ -15,6 +15,7 @@
 
 #include "roq/hyperliquid/account.hpp"
 #include "roq/hyperliquid/config.hpp"
+#include "roq/hyperliquid/drop_copy.hpp"
 #include "roq/hyperliquid/market_data.hpp"
 #include "roq/hyperliquid/order_entry.hpp"
 #include "roq/hyperliquid/rest.hpp"
@@ -24,7 +25,7 @@
 namespace roq {
 namespace hyperliquid {
 
-struct Gateway final : public server::Handler, public Rest::Handler, public MarketData::Handler, public OrderEntry::Handler {
+struct Gateway final : public server::Handler, public Rest::Handler, public MarketData::Handler, public OrderEntry::Handler, public DropCopy::Handler {
   Gateway(server::Dispatcher &, Settings const &, Config const &, io::Context &);
 
   Gateway(Gateway const &) = delete;
@@ -92,6 +93,7 @@ struct Gateway final : public server::Handler, public Rest::Handler, public Mark
   Rest rest_;
   std::vector<std::unique_ptr<MarketData>> market_data_;
   utils::unordered_map<std::string, std::unique_ptr<OrderEntry>> order_entry_;
+  utils::unordered_map<std::string, std::unique_ptr<DropCopy>> drop_copy_;
   // cache
   std::vector<MBPUpdate> bids_, asks_;
 };

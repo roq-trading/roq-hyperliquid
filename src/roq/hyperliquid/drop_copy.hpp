@@ -22,6 +22,7 @@
 
 #include "roq/server.hpp"
 
+#include "roq/hyperliquid/account.hpp"
 #include "roq/hyperliquid/shared.hpp"
 
 #include "roq/hyperliquid/json/parser.hpp"
@@ -29,7 +30,7 @@
 namespace roq {
 namespace hyperliquid {
 
-struct MarketData final : public web::socket::Client::Handler, public json::Parser::Handler {
+struct DropCopy final : public web::socket::Client::Handler, public json::Parser::Handler {
   struct Handler {
     virtual void operator()(Trace<StreamStatus> const &) = 0;
     virtual void operator()(Trace<ExternalLatency> const &) = 0;
@@ -40,9 +41,9 @@ struct MarketData final : public web::socket::Client::Handler, public json::Pars
     virtual void operator()(Trace<StatisticsUpdate> const &, bool is_last) = 0;
   };
 
-  MarketData(Handler &, io::Context &, uint16_t stream_id, Shared &, size_t index);
+  DropCopy(Handler &, io::Context &, uint16_t stream_id, Account &, Shared &);
 
-  MarketData(MarketData const &) = delete;
+  DropCopy(DropCopy const &) = delete;
 
   uint16_t stream_id() const { return stream_id_; }
 
@@ -53,8 +54,6 @@ struct MarketData final : public web::socket::Client::Handler, public json::Pars
   void operator()(Event<Timer> const &);
 
   void operator()(metrics::Writer &) const;
-
-  void subscribe(size_t start_from = 0);
 
  protected:
   // web::socket::Client::Handler
@@ -70,10 +69,8 @@ struct MarketData final : public web::socket::Client::Handler, public json::Pars
  private:
   void operator()(ConnectionStatus);
 
-  void get_spot_meta();
-
-  void subscribe(std::span<Symbol const> const &symbols);
-  void subscribe(std::string_view const &channel, std::span<Symbol const> const &symbols);
+  void subscribe();
+  void subscribe(std::string_view const &type);
 
   void send_ping(std::chrono::nanoseconds now);
 
@@ -96,12 +93,15 @@ struct MarketData final : public web::socket::Client::Handler, public json::Pars
   void operator()(Trace<json::UserFills> const &) override;
   void operator()(Trace<json::OrderUpdates> const &) override;
 
+  // helpers
+
+  void operator()(Trace<server::oms::OrderUpdate> const &, std::string_view const &client_order_id);
+
  private:
   Handler &handler_;
   // config
   uint16_t const stream_id_;
   std::string const name_;
-  size_t const index_;
   std::chrono::nanoseconds const ping_frequency_;
   // web socket
   std::unique_ptr<web::socket::Client> const connection_;
@@ -119,6 +119,8 @@ struct MarketData final : public web::socket::Client::Handler, public json::Pars
   struct {
     utils::metrics::Latency ping, heartbeat;
   } latency_;
+  // account
+  Account &account_;
   // cache
   Shared &shared_;
   // state

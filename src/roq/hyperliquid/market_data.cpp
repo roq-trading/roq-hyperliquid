@@ -57,8 +57,8 @@ auto create_connection(auto &handler, auto &settings, auto &context) {
   auto config = web::socket::Client::Config{
       // connection
       .interface = {},
-      .uris = {&settings.ws.public_uri, 1},
-      .host = settings.ws.public_host,
+      .uris = {&settings.ws.uri, 1},
+      .host = settings.ws.host,
       .validate_certificate = settings.net.tls_validate_certificate,
       // connection manager
       .connection_timeout = settings.net.connection_timeout,
@@ -461,6 +461,18 @@ void MarketData::operator()(Trace<json::ActiveAssetCtx> const &event) {
 
 void MarketData::operator()(Trace<json::SpotMeta> const &) {
   profile_.spot_meta([&]() { log::warn("DEBUG"sv); });
+}
+
+void MarketData::operator()(Trace<json::UserFundings> const &) {
+  log::fatal("Unexpected"sv);
+}
+
+void MarketData::operator()(Trace<json::UserFills> const &) {
+  log::fatal("Unexpected"sv);
+}
+
+void MarketData::operator()(Trace<json::OrderUpdates> const &) {
+  log::fatal("Unexpected"sv);
 }
 
 }  // namespace hyperliquid

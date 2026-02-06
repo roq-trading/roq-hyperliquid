@@ -1,0 +1,19 @@
+{
+  "name": "roq/hyperliquid/json/UserFillsData",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "isSnapshot",
+      "type": "std/bool"
+    },
+    {
+      "name": "user",
+      "type": "std/string_view"
+    },
+    {
+      "name": "fills",
+      "type": "roq/hyperliquid/json/UserFillsDataFillsItem",
+      "array": "std/span"
+    }
+  ]
+}

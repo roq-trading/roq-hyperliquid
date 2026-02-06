@@ -1,5 +1,5 @@
 {
-  "name": "roq/hyperliquid/json/GetOpenOrdersAckItem",
+  "name": "roq/hyperliquid/json/OrderUpdatesDataItemOrder",
   "type": "dictionary",
   "values": [
     {

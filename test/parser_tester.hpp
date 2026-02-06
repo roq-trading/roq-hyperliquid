@@ -39,6 +39,10 @@ struct ParserTester final : public json::Parser::Handler {
   void operator()(Trace<json::ActiveAssetCtx> const &event) override { dispatch_helper(event); }
   //
   void operator()(Trace<json::SpotMeta> const &event) override { dispatch_helper(event); }
+  //
+  void operator()(Trace<json::UserFundings> const &event) override { dispatch_helper(event); }
+  void operator()(Trace<json::UserFills> const &event) override { dispatch_helper(event); }
+  void operator()(Trace<json::OrderUpdates> const &event) override { dispatch_helper(event); }
 
   template <typename U>
   void dispatch_helper(Trace<U> const &event) {

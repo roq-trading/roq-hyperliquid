@@ -120,6 +120,15 @@ bool Parser::dispatch(
           case ACTIVE_ASSET_CTX:
             result = dispatch_helper<ActiveAssetCtx>(handler, message, buffer_stack, trace_info);
             return true;
+          case USER_FUNDINGS:
+            result = dispatch_helper<UserFundings>(handler, message, buffer_stack, trace_info);
+            return true;
+          case USER_FILLS:
+            result = dispatch_helper<UserFills>(handler, message, buffer_stack, trace_info);
+            return true;
+          case ORDER_UPDATES:
+            result = dispatch_helper<OrderUpdates>(handler, message, buffer_stack, trace_info);
+            return true;
         }
         break;
       }

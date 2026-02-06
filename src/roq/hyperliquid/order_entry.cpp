@@ -444,19 +444,19 @@ void OrderEntry::operator()(Trace<json::GetOpenOrdersAck> const &event) {
         .account = account_.name,
         .exchange = shared_.settings.exchange,
         .symbol = item.coin,
-        .side = Side::BUY,  // XXX
+        .side = map(item.side),
         .position_effect = {},
         .margin_mode = {},
         .max_show_quantity = NaN,
-        .order_type = OrderType::LIMIT,     // XXX
-        .time_in_force = TimeInForce::GTC,  // XXX
+        .order_type = OrderType::LIMIT,     // note!
+        .time_in_force = TimeInForce::GTC,  // note!
         .execution_instructions = {},
         .create_time_utc = {},
         .update_time_utc = {},
         .external_account = {},
         .external_order_id = external_order_id,
         .client_order_id = client_order_id,
-        .order_status = OrderStatus::WORKING,  // XXX
+        .order_status = OrderStatus::WORKING,  // note!
         .error = {},
         .text = {},
         .quantity = item.orig_sz,
@@ -762,7 +762,6 @@ void OrderEntry::cancel_order(
 
 void OrderEntry::cancel_order_ack(Trace<web::rest::Response> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
   profile_.cancel_order_ack([&]() {
-    log::warn("HERE"sv);
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
       auto response = server::oms::Response{

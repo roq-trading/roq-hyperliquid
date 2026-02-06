@@ -17,6 +17,10 @@
     {
       "name": "mantissa",
       "type": "std/uint32"
+    },
+    {
+      "name": "user",
+      "type": "std/string_view"
     }
   ]
 }

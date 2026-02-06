@@ -4,6 +4,9 @@ set(TARGET_NAME ${PROJECT_NAME}-test)
 
 set(SOURCES
     crypto.cpp
+    json_user_fundings.cpp
+    json_user_fills.cpp
+    json_order_updates.cpp
     json_active_asset_ctx.cpp
     json_bbo.cpp
     json_cancel_order_ack.cpp

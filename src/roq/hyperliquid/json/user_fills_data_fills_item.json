@@ -1,5 +1,5 @@
 {
-  "name": "roq/hyperliquid/json/GetUserFillsAckItem",
+  "name": "roq/hyperliquid/json/UserFillsDataFillsItem",
   "type": "dictionary",
   "values": [
     {
@@ -19,7 +19,7 @@
       "type": "roq/hyperliquid/json/Side"
     },
     {
-      "name": "timestamp",
+      "name": "time",
       "type": "std/milliseconds"
     },
     {
@@ -55,10 +55,6 @@
       "type": "std/int64"
     },
     {
-      "name": "liquidation",
-      "type": "roq/hyperliquid/json/GetUserFillsAckItemLiquidation"
-    },
-    {
       "name": "feeToken",
       "type": "std/string_view"
     },
@@ -70,8 +66,7 @@
       "type": "std/string_view"
     },
     {
-      "name": "time",
-      "type": "std/milliseconds"
+      "name": "liquidation"
     }
   ]
 }

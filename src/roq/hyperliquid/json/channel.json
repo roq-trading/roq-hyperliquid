@@ -25,6 +25,15 @@
     },
     {
       "name": "activeAssetCtx"
+    },
+    {
+      "name": "userFundings"
+    },
+    {
+      "name": "userFills"
+    },
+    {
+      "name": "orderUpdates"
     }
   ]
 }
