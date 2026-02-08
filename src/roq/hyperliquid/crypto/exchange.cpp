@@ -108,6 +108,8 @@ std::string Exchange::order(
 std::string Exchange::ROQ_order(
     std::string const &coin,
     int32_t external_security_id,
+    int8_t quantity_decimals,
+    int8_t price_decimals,
     bool is_buy,
     double sz,
     double limit_px,
@@ -117,7 +119,7 @@ std::string Exchange::ROQ_order(
     std::optional<BuilderInfo> const &builder) {
   // Get asset info for rounding
   int asset = external_security_id;
-  int sz_decimals = asset_to_sz_decimals(asset);
+  int sz_decimals = quantity_decimals;  // asset_to_sz_decimals(asset);
   bool is_spot = asset >= 10000;
 
   // Round price and size to tick/lot size
@@ -132,7 +134,10 @@ std::string Exchange::ROQ_order(
   order_req.order_type = order_type;
   order_req.reduce_only = reduce_only;
   order_req.cloid = cloid;
-  order_req.ROQ_asset = asset;  // XXX
+
+  order_req.ROQ_external_security_id = asset;           // XXX
+  order_req.ROQ_quantity_decimals = quantity_decimals;  // XXX
+  order_req.ROQ_price_decimals = price_decimals;        // XXX
 
   return bulkOrders({order_req}, builder);
 }
@@ -140,8 +145,8 @@ std::string Exchange::ROQ_order(
 std::string Exchange::bulkOrders(std::vector<OrderRequest> const &orders, std::optional<BuilderInfo> const &builder, std::string const &grouping) {
   std::vector<OrderWire> order_wires;
   for (auto const &order : orders) {
-    int asset = order.ROQ_asset;  // nameToAsset(order.coin);
-    int sz_decimals = asset_to_sz_decimals(asset);
+    int asset = order.ROQ_external_security_id;     // nameToAsset(order.coin);
+    int sz_decimals = order.ROQ_quantity_decimals;  // asset_to_sz_decimals(asset);
     bool is_spot = asset >= 10000;
 
     // Round price and size to tick/lot size
@@ -221,7 +226,7 @@ std::string Exchange::cancel(std::string const &coin, int64_t oid) {
   CancelRequest cancel_req;
   cancel_req.coin = coin;
   cancel_req.oid = oid;
-  cancel_req.ROQ_asset = nameToAsset(coin);
+  cancel_req.ROQ_external_security_id = nameToAsset(coin);
   return bulkCancel({cancel_req});
 }
 
@@ -229,26 +234,26 @@ std::string Exchange::ROQ_cancel(std::string const &coin, int32_t external_secur
   CancelRequest cancel_req;
   cancel_req.coin = coin;
   cancel_req.oid = oid;
-  cancel_req.ROQ_asset = external_security_id;
+  cancel_req.ROQ_external_security_id = external_security_id;
   return bulkCancel({cancel_req});
 }
 
 std::string Exchange::cancelByCloid(std::string const &coin, Cloid const &cloid) {
   CancelByCloidRequest cancel_req{coin, cloid};
-  cancel_req.ROQ_asset = nameToAsset(coin);
+  cancel_req.ROQ_external_security_id = nameToAsset(coin);
   return bulkCancelByCloid({cancel_req});
 }
 
 std::string Exchange::ROQ_cancelByCloid(std::string const &coin, int32_t external_security_id, Cloid const &cloid) {
   CancelByCloidRequest cancel_req{coin, cloid};
-  cancel_req.ROQ_asset = external_security_id;
+  cancel_req.ROQ_external_security_id = external_security_id;
   return bulkCancelByCloid({cancel_req});
 }
 
 std::string Exchange::bulkCancel(std::vector<CancelRequest> const &cancels) {
   nlohmann::ordered_json cancels_array = nlohmann::ordered_json::array();
   for (auto const &cancel : cancels) {
-    int asset = cancel.ROQ_asset;
+    int asset = cancel.ROQ_external_security_id;
     nlohmann::ordered_json cancel_obj;
     cancel_obj["a"] = asset;
     cancel_obj["o"] = cancel.oid;
@@ -271,7 +276,7 @@ std::string Exchange::bulkCancel(std::vector<CancelRequest> const &cancels) {
 std::string Exchange::bulkCancelByCloid(std::vector<CancelByCloidRequest> const &cancels) {
   nlohmann::ordered_json cancels_array = nlohmann::ordered_json::array();
   for (auto const &cancel : cancels) {
-    int asset = cancel.ROQ_asset;
+    int asset = cancel.ROQ_external_security_id;
     nlohmann::ordered_json cancel_obj;
     cancel_obj["asset"] = asset;
     cancel_obj["cloid"] = cancel.cloid.toRaw();
@@ -322,10 +327,44 @@ std::string Exchange::modifyOrder(
   return bulkModifyOrders({modify_req});
 }
 
+std::string Exchange::ROQ_modifyOrder(
+    OidOrCloid const &oid,
+    std::string const &coin,
+    int32_t external_security_id,
+    bool is_buy,
+    double sz,
+    double limit_px,
+    OrderType const &order_type,
+    bool reduce_only,
+    std::optional<Cloid> const &cloid) {
+  // Get asset info for rounding
+  int asset = external_security_id;
+  int sz_decimals = asset_to_sz_decimals(asset);
+  bool is_spot = asset >= 10000;
+
+  // Round price and size to tick/lot size
+  double rounded_px = roundPrice(limit_px, sz_decimals, is_spot);
+  double rounded_sz = roundSize(sz, sz_decimals);
+
+  ModifyRequest modify_req;
+  modify_req.oid = oid;
+  modify_req.order.coin = coin;
+  modify_req.order.is_buy = is_buy;
+  modify_req.order.sz = rounded_sz;
+  modify_req.order.limit_px = rounded_px;
+  modify_req.order.order_type = order_type;
+  modify_req.order.reduce_only = reduce_only;
+  modify_req.order.cloid = cloid;
+  //
+  modify_req.order.ROQ_external_security_id = external_security_id;
+
+  return bulkModifyOrders({modify_req});
+}
+
 std::string Exchange::bulkModifyOrders(std::vector<ModifyRequest> const &modifies) {
   nlohmann::ordered_json modifies_array = nlohmann::ordered_json::array();
   for (auto const &modify : modifies) {
-    int asset = nameToAsset(modify.order.coin);
+    int asset = modify.order.ROQ_external_security_id;  // XXX
     int sz_decimals = asset_to_sz_decimals(asset);
     bool is_spot = asset >= 10000;
 

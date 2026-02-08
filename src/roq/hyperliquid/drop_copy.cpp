@@ -34,14 +34,11 @@ namespace {
 auto const NAME = "md"sv;
 
 auto const SUPPORTS = Mask{
-    SupportType::MARKET_STATUS,
-    SupportType::TOP_OF_BOOK,
-    SupportType::MARKET_BY_PRICE,
-    SupportType::TRADE_SUMMARY,
-    SupportType::STATISTICS,
+    SupportType::ORDER_ACK,
+    SupportType::ORDER,
+    SupportType::TRADE,
+    SupportType::FUNDS,
 };
-
-uint64_t const REQUEST_ID = 1'000'000;
 
 size_t const MAX_DECODE_BUFFER_DEPTH = 2;
 }  // namespace
@@ -88,7 +85,6 @@ struct create_metrics final : public utils::metrics::Factory {
 DropCopy::DropCopy(Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, ping_frequency_{shared.settings.ws.ping_freq},
       connection_{create_connection(*this, shared.settings, context)}, decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
-      request_id_{stream_id_ * REQUEST_ID},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
@@ -97,11 +93,10 @@ DropCopy::DropCopy(Handler &handler, io::Context &context, uint16_t stream_id, A
           .pong = create_metrics(shared.settings, name_, "pong"sv),
           .error = create_metrics(shared.settings, name_, "error"sv),
           .subscription_response = create_metrics(shared.settings, name_, "subscription_response"sv),
-          .bbo = create_metrics(shared.settings, name_, "bbo"sv),
-          .l2book = create_metrics(shared.settings, name_, "l2book"sv),
-          .trades = create_metrics(shared.settings, name_, "trades"sv),
-          .active_asset_ctx = create_metrics(shared.settings, name_, "active_asset_ctx"sv),
-          .spot_meta = create_metrics(shared.settings, name_, "spot_meta"sv),
+          .user = create_metrics(shared.settings, name_, "user"sv),
+          .user_fundings = create_metrics(shared.settings, name_, "user_fundings"sv),
+          .user_fills = create_metrics(shared.settings, name_, "user_fills"sv),
+          .order_updates = create_metrics(shared.settings, name_, "order_updates"sv),
       },
       latency_{
           .ping = create_metrics(shared.settings, name_, "ping"sv),
@@ -135,11 +130,10 @@ void DropCopy::operator()(metrics::Writer &writer) const {
       .write(profile_.pong, metrics::Type::PROFILE)
       .write(profile_.error, metrics::Type::PROFILE)
       .write(profile_.subscription_response, metrics::Type::PROFILE)
-      .write(profile_.bbo, metrics::Type::PROFILE)
-      .write(profile_.l2book, metrics::Type::PROFILE)
-      .write(profile_.trades, metrics::Type::PROFILE)
-      .write(profile_.active_asset_ctx, metrics::Type::PROFILE)
-      .write(profile_.spot_meta, metrics::Type::PROFILE)
+      .write(profile_.user, metrics::Type::PROFILE)
+      .write(profile_.user_fundings, metrics::Type::PROFILE)
+      .write(profile_.user_fills, metrics::Type::PROFILE)
+      .write(profile_.order_updates, metrics::Type::PROFILE)
       // latency
       .write(latency_.ping, metrics::Type::LATENCY)
       .write(latency_.heartbeat, metrics::Type::LATENCY);
@@ -295,34 +289,51 @@ void DropCopy::operator()(Trace<json::SpotMeta> const &) {
   log::fatal("Unexpected"sv);
 }
 
+void DropCopy::operator()(Trace<json::User> const &event) {
+  profile_.user([&]() {
+    auto &[trace_info, user] = event;
+    log::warn("DEBUG {}"sv, user);
+    // XXX FIXME TODO funding
+    // XXX FIXME TODO fills
+  });
+}
+
 void DropCopy::operator()(Trace<json::UserFundings> const &event) {
-  profile_.spot_meta([&]() {
+  profile_.user_fundings([&]() {
     auto &[trace_info, user_fundings] = event;
     log::warn("DEBUG {}"sv, user_fundings);
   });
 }
 
 void DropCopy::operator()(Trace<json::UserFills> const &event) {
-  profile_.spot_meta([&]() {
+  profile_.user_fills([&]() {
     auto &[trace_info, user_fills] = event;
     log::warn("DEBUG {}"sv, user_fills);
   });
 }
 
 void DropCopy::operator()(Trace<json::OrderUpdates> const &event) {
-  profile_.spot_meta([&]() {
+  profile_.order_updates([&]() {
     auto &[trace_info, order_updates] = event;
     log::info<2>("order_updates={}"sv, order_updates);
     for (auto &item : order_updates.data) {
       log::warn("DEBUG item={}"sv, item);
       auto external_order_id = fmt::format("{}"sv, item.order.oid);
-      auto client_order_id = [&]() {
-        if (item.order.cloid.starts_with("0x"sv)) {
-          return item.order.cloid.substr(2);
+      auto client_order_id = json::get_client_order_id(item.order.cloid);
+      auto order_status = map(item.status).get<OrderStatus>();
+      auto error = [&]() -> Error {
+        if (order_status == OrderStatus::REJECTED) {
+          return Error::UNKNOWN;
         }
-        return item.order.cloid;
+        return {};
       }();
-      log::warn("DEBUG client_order_id={}"sv, client_order_id);
+      auto text = [&]() -> std::string_view {
+        if (order_status == OrderStatus::REJECTED) {
+          return item.status.as_raw_text();
+        }
+        return {};
+      }();
+      auto traded_quantity = item.order.orig_sz - item.order.sz;
       auto order_update = server::oms::OrderUpdate{
           .account = account_.name,
           .exchange = shared_.settings.exchange,
@@ -332,22 +343,22 @@ void DropCopy::operator()(Trace<json::OrderUpdates> const &event) {
           .margin_mode = {},
           .max_show_quantity = NaN,
           .order_type = OrderType::LIMIT,     // note!
-          .time_in_force = TimeInForce::GTC,  // note!
+          .time_in_force = TimeInForce::GTC,  // note! we need this to always be GTC due to modify order using it
           .execution_instructions = {},
           .create_time_utc = item.order.timestamp,
           .update_time_utc = item.status_timestamp,
           .external_account = {},
           .external_order_id = external_order_id,
           .client_order_id = client_order_id,
-          .order_status = map(item.status),
-          .error = {},
-          .text = {},
+          .order_status = order_status,
+          .error = error,
+          .text = text,
           .quantity = item.order.orig_sz,
           .price = item.order.limit_px,
           .stop_price = NaN,
           .leverage = NaN,
-          .remaining_quantity = NaN,
-          .traded_quantity = NaN,  // XXX
+          .remaining_quantity = item.order.sz,
+          .traded_quantity = traded_quantity,
           .average_traded_price = NaN,
           .last_traded_quantity = {},
           .last_traded_price = {},
@@ -359,6 +370,7 @@ void DropCopy::operator()(Trace<json::OrderUpdates> const &event) {
           .update_type = UpdateType::INCREMENTAL,
           .sending_time_utc = {},
       };
+      log::warn("DEBUG order_update={}"sv, order_update);
       Trace event_2{trace_info, order_update};
       (*this)(event_2, client_order_id);
     }

@@ -20,6 +20,7 @@
 #include "roq/hyperliquid/json/spot_meta.hpp"
 //
 #include "roq/hyperliquid/json/order_updates.hpp"
+#include "roq/hyperliquid/json/user.hpp"
 #include "roq/hyperliquid/json/user_fills.hpp"
 #include "roq/hyperliquid/json/user_fundings.hpp"
 
@@ -40,6 +41,7 @@ struct Parser final {
     //
     virtual void operator()(Trace<json::SpotMeta> const &) = 0;
     //
+    virtual void operator()(Trace<json::User> const &) = 0;
     virtual void operator()(Trace<json::UserFundings> const &) = 0;
     virtual void operator()(Trace<json::UserFills> const &) = 0;
     virtual void operator()(Trace<json::OrderUpdates> const &) = 0;

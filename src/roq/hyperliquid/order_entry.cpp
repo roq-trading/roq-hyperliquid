@@ -7,6 +7,7 @@
 
 #include "roq/mask.hpp"
 
+#include "roq/utils/common.hpp"
 #include "roq/utils/safe_cast.hpp"
 #include "roq/utils/update.hpp"
 
@@ -90,6 +91,42 @@ auto create_exchange(auto &account) {
   log::warn("DEBUG account_address={}"sv, account_address);
   result_type result{static_cast<tools::Crypto &>(account), base_url, nullptr, vault_address, account_address};
   return result;
+}
+
+bool is_buy_helper(auto side) {
+  switch (side) {
+    using enum Side;
+    case UNDEFINED:
+      break;
+    case BUY:
+      return true;
+    case SELL:
+      return false;
+  }
+  log::fatal("Unexpected"sv);
+}
+
+auto order_type_helper(auto &order) -> crypto::OrderType {
+  auto limit_order_type_helper = [&]() -> crypto::LimitOrderType {
+    switch (order.order_type) {
+      using enum OrderType;
+      case UNDEFINED:
+        break;
+      case MARKET:
+        break;
+      case LIMIT: {
+        auto tif = map(order.time_in_force).template get<json::TimeInForce>();
+        return {
+            .tif = std::string{tif.as_raw_text()},
+        };
+      }
+    }
+    log::fatal("Unexpected"sv);
+  };
+  return {
+      .limit = limit_order_type_helper(),
+      .trigger = {},
+  };
 }
 }  // namespace
 
@@ -433,13 +470,8 @@ void OrderEntry::operator()(Trace<json::GetOpenOrdersAck> const &event) {
   for (auto &item : open_orders_ack.data) {
     log::warn("DEBUG item={}"sv, item);
     auto external_order_id = fmt::format("{}"sv, item.oid);
-    auto client_order_id = [&]() {
-      if (item.cloid.starts_with("0x"sv)) {
-        return item.cloid.substr(2);
-      }
-      return item.cloid;
-    }();
-    log::warn("DEBUG client_order_id={}"sv, client_order_id);
+    auto client_order_id = json::get_client_order_id(item.cloid);
+    auto traded_quantity = item.orig_sz - item.sz;
     auto order_update = server::oms::OrderUpdate{
         .account = account_.name,
         .exchange = shared_.settings.exchange,
@@ -449,7 +481,7 @@ void OrderEntry::operator()(Trace<json::GetOpenOrdersAck> const &event) {
         .margin_mode = {},
         .max_show_quantity = NaN,
         .order_type = OrderType::LIMIT,     // note!
-        .time_in_force = TimeInForce::GTC,  // note!
+        .time_in_force = TimeInForce::GTC,  // note! we need this to always be GTC due to modify order using it
         .execution_instructions = {},
         .create_time_utc = {},
         .update_time_utc = {},
@@ -463,8 +495,8 @@ void OrderEntry::operator()(Trace<json::GetOpenOrdersAck> const &event) {
         .price = item.limit_px,
         .stop_price = NaN,
         .leverage = NaN,
-        .remaining_quantity = NaN,
-        .traded_quantity = NaN,  // XXX
+        .remaining_quantity = item.sz,
+        .traded_quantity = traded_quantity,
         .average_traded_price = NaN,
         .last_traded_quantity = {},
         .last_traded_price = {},
@@ -476,6 +508,7 @@ void OrderEntry::operator()(Trace<json::GetOpenOrdersAck> const &event) {
         .update_type = UpdateType::SNAPSHOT,
         .sending_time_utc = {},
     };
+    log::warn("DEBUG order_update={}"sv, order_update);
     Trace event_2{trace_info, order_update};
     (*this)(event_2, client_order_id);
   }
@@ -568,32 +601,16 @@ void OrderEntry::create_order(Event<CreateOrder> const &event, server::oms::Orde
       (*connection_)(request_id, request, callback);
     };
     std::string coin{order.symbol};
-    auto is_buy = [&]() {
-      switch (order.side) {
-        using enum Side;
-        case UNDEFINED:
-          break;
-        case BUY:
-          return true;
-        case SELL:
-          return false;
-      }
-      log::fatal("Unexpected"sv);
-    }();
+    auto is_buy = is_buy_helper(order.side);
     auto reduce_only = false;  // XXX FIXME TODO
-    auto limit_order_type = crypto::LimitOrderType{
-        .tif = "Gtc"s,
-    };
-    auto order_type = crypto::OrderType{
-        .limit = limit_order_type,
-        .trigger = {},
-    };
+    auto order_type = order_type_helper(order);
     auto tmp = fmt::format("0x{:0>32}"sv, request_id);
-    log::warn("{} {}"sv, request_id, tmp);
     crypto::Cloid cloid{tmp};
     auto request = exchange_.ROQ_order(
         coin,
         order.external_security_id,  // note!
+        utils::decimal_digits(order.quantity_precision.precision),
+        utils::decimal_digits(order.price_precision.precision),
         is_buy,
         create_order.quantity,
         create_order.price,
@@ -621,19 +638,20 @@ void OrderEntry::create_order_ack(Trace<web::rest::Response> const &event, uint8
           .price = NaN,
       };
       Trace event_2{event, response};
-      // (*this)(event_2, user_id, order_id);
+      (*this)(event_2, user_id, order_id);
     };
     auto handle_success = [&](auto &body) {
       log::warn(R"(DEBUG body="{}")"sv, body);
       json::CreateOrderAck create_order_ack{body, decode_buffer_};
-      // Trace event_2{event, create_order_ack};
-      // (*this)(event_2, user_id, order_id, version);
+      Trace event_2{event, create_order_ack};
+      (*this)(event_2, user_id, order_id, version);
     };
     process_response(event, handle_error, handle_success);
   });
 }
 
-// void OrderEntry::operator()(Trace<json::CreateOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version) {}
+void OrderEntry::operator()(Trace<json::CreateOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version) {
+}
 
 // modify-order
 
@@ -669,16 +687,11 @@ void OrderEntry::modify_order(
     auto tmp = fmt::format("0x{:0>32}"sv, static_cast<std::string_view>(order.client_order_id));
     crypto::Cloid cloid{tmp};
     crypto::OidOrCloid oid{cloid};
-    auto is_buy = true;       // XXX FIXME TODO
+    auto is_buy = is_buy_helper(order.side);
     auto reduce_only = true;  // XXX FIXME TODO
-    auto limit_order_type = crypto::LimitOrderType{
-        .tif = "Gtc"s,
-    };
-    auto order_type = crypto::OrderType{
-        .limit = limit_order_type,
-        .trigger = {},
-    };
-    auto request = exchange_.modifyOrder(oid, coin, is_buy, modify_order.quantity, modify_order.price, order_type, reduce_only, cloid);
+    auto order_type = order_type_helper(order);
+    auto request =
+        exchange_.ROQ_modifyOrder(oid, coin, order.external_security_id, is_buy, modify_order.quantity, modify_order.price, order_type, reduce_only, cloid);
     send_request(request);
   });
 }
@@ -700,19 +713,20 @@ void OrderEntry::modify_order_ack(Trace<web::rest::Response> const &event, uint8
           .price = NaN,
       };
       Trace event_2{event, response};
-      // (*this)(event_2, user_id, order_id);
+      (*this)(event_2, user_id, order_id);
     };
     auto handle_success = [&](auto &body) {
       log::warn(R"(DEBUG body="{}")"sv, body);
-      json::CancelOrderAck cancel_order_ack{body, decode_buffer_};
-      // Trace event_2{event, cancel_order_ack};
-      // (*this)(event_2, user_id, order_id, version);
+      json::ModifyOrderAck cancel_order_ack{body, decode_buffer_};
+      Trace event_2{event, cancel_order_ack};
+      (*this)(event_2, user_id, order_id, version);
     };
     process_response(event, handle_error, handle_success);
   });
 }
 
-// void OrderEntry::operator()(Trace<json::ModifyOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version) {}
+void OrderEntry::operator()(Trace<json::ModifyOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version) {
+}
 
 // cancel-order
 
@@ -747,7 +761,6 @@ void OrderEntry::cancel_order(
     std::string coin{order.symbol};
     if (std::empty(order.external_order_id)) {
       auto tmp = fmt::format("0x{:0>32}"sv, static_cast<std::string_view>(order.client_order_id));
-      log::warn("DEBUG cloid={}, asset={}"sv, tmp, order.external_security_id);
       crypto::Cloid cloid{tmp};
       auto request = exchange_.ROQ_cancelByCloid(coin, order.external_security_id, cloid);
       send_request(request);
@@ -777,19 +790,20 @@ void OrderEntry::cancel_order_ack(Trace<web::rest::Response> const &event, uint8
           .price = NaN,
       };
       Trace event_2{event, response};
-      // (*this)(event_2, user_id, order_id);
+      (*this)(event_2, user_id, order_id);
     };
     auto handle_success = [&](auto &body) {
       log::warn(R"(DEBUG body="{}")"sv, body);
       json::CancelOrderAck cancel_order_ack{body, decode_buffer_};
-      // Trace event_2{event, cancel_order_ack};
-      // (*this)(event_2, user_id, order_id, version);
+      Trace event_2{event, cancel_order_ack};
+      (*this)(event_2, user_id, order_id, version);
     };
     process_response(event, handle_error, handle_success);
   });
 }
 
-// void OrderEntry::operator()(Trace<json::CancelOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version) {}
+void OrderEntry::operator()(Trace<json::CancelOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version) {
+}
 
 // helpers
 
@@ -832,6 +846,15 @@ void OrderEntry::operator()(Trace<server::oms::OrderUpdate> const &event, std::s
   if (shared_.update_order(client_order_id, stream_id_, trace_info, order_update, [&]([[maybe_unused]] auto &order) {})) {
   } else {
     log::warn("*** EXTERNAL ORDER ***"sv);
+  }
+}
+
+template <typename... Args>
+void OrderEntry::operator()(Trace<server::oms::Response> const &event, uint8_t user_id, uint64_t order_id, Args &&...args) {
+  auto &[trace_info, response] = event;
+  if (shared_.update_order(user_id, order_id, stream_id_, trace_info, response, std::forward<Args>(args)..., []([[maybe_unused]] auto &order) {})) {
+  } else {
+    log::warn("Did not find order: user_id={}, order_id={}"sv, user_id, order_id);
   }
 }
 

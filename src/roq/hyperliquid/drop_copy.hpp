@@ -89,6 +89,7 @@ struct DropCopy final : public web::socket::Client::Handler, public json::Parser
   //
   void operator()(Trace<json::SpotMeta> const &) override;
   //
+  void operator()(Trace<json::User> const &) override;
   void operator()(Trace<json::UserFundings> const &) override;
   void operator()(Trace<json::UserFills> const &) override;
   void operator()(Trace<json::OrderUpdates> const &) override;
@@ -107,14 +108,12 @@ struct DropCopy final : public web::socket::Client::Handler, public json::Parser
   std::unique_ptr<web::socket::Client> const connection_;
   // buffers
   core::json::BufferStack decode_buffer_;
-  // session
-  uint64_t request_id_ = {};
   // metrics
   struct {
     utils::metrics::Counter disconnect;
   } counter_;
   struct {
-    utils::metrics::Profile parse, pong, error, subscription_response, bbo, l2book, trades, active_asset_ctx, spot_meta;
+    utils::metrics::Profile parse, pong, error, subscription_response, user, user_fundings, user_fills, order_updates;
   } profile_;
   struct {
     utils::metrics::Latency ping, heartbeat;

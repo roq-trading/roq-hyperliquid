@@ -9,6 +9,10 @@
     {
       "name": "resting",
       "type": "roq/hyperliquid/json/CreateOrderAckResponseDataStatusesItemResting"
+    },
+    {
+      "name": "filled",
+      "type": "roq/hyperliquid/json/CreateOrderAckResponseDataStatusesItemFilled"
     }
   ]
 }

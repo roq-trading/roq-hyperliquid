@@ -106,7 +106,7 @@ Supports
         - |check-mark|
         -
       * - :cpp:class:`CancelAllOrders <roq::CancelAllOrders>`
-        - |check-mark|
+        - |cross-mark|
         -
       * - :cpp:class:`MassQuote <roq::MassQuote>`
         - |cross-mark|
@@ -266,21 +266,26 @@ Order Management
 Comments
 ~~~~~~~~
 
-* The gateway can not simultaneously support all product categories due to
-  overlapping symbol names, e.g. BTCUSDT being both spot and linear.
-  For this reason, the :code:`--api` flag controls the product category and, if
-  necessary, the :code:`--name` or :code:`--exchange` flags must be configured
-  to appropriately differentitate the sources.
+* Downloaded orders lack many attributes, e.g. TimeInForce.
 
-* The :code:`order` channel doesn't give us any information about last traded,
-  only the aggregate fields (traded / remaining / average price) are available.
-  The last trade price/quantity fields are therefore estimated.
+* Order management can only be enabled after downloading reference data.
+  This is due to protocol requiring asset IDs (not symbol names) and because of very strict usage of decimals.
+
+* The :code:`login` (TOML config) should be your account's **public address**.
+
+* The :code:`secret` (TOML config) should be your account's **private** key.
 
   .. note::
-     The :code:`execution` channel will independently report the fills.
+     The account's public key (not address!) can be derived from the private key.
 
-* :code:`TopOfBook` is based on :code:`orderbook.1` for spot and :code:`tickers`
-  for all other categories.
+* Currently only support for :code:`OrderType::LIMIT` and :code:`TimeInForce::GTC`.
+
+* Following streams have not been tested yet: :code:`notification`, :code:`userNotification`.
+
+* REST response has very little information for rejects.
+  We only use WS to ack the order.
+
+* :code:`ModifyOrder` does not work.
 
 
 References

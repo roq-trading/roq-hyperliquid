@@ -4,9 +4,6 @@ set(TARGET_NAME ${PROJECT_NAME}-test)
 
 set(SOURCES
     crypto.cpp
-    json_user_fundings.cpp
-    json_user_fills.cpp
-    json_order_updates.cpp
     json_active_asset_ctx.cpp
     json_bbo.cpp
     json_cancel_order_ack.cpp
@@ -20,10 +17,16 @@ set(SOURCES
     json_get_spot_meta_ack.cpp
     json_get_user_fills_ack.cpp
     json_l2_book.cpp
+    json_modify_order_ack.cpp
+    json_order_updates.cpp
     json_pong.cpp
     json_spot_meta.cpp
     json_subscription_response.cpp
     json_trades.cpp
+    json_user.cpp
+    json_user_fills.cpp
+    json_user_fundings.cpp
+    json_utils.cpp
     main.cpp)
 
 roq_gitignore(OUTPUT .gitignore SOURCES ${TARGET_NAME})

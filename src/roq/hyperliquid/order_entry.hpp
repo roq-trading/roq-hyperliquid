@@ -33,6 +33,7 @@
 
 #include "roq/hyperliquid/json/cancel_order_ack.hpp"
 #include "roq/hyperliquid/json/create_order_ack.hpp"
+#include "roq/hyperliquid/json/modify_order_ack.hpp"
 
 #include "roq/hyperliquid/crypto/exchange.hpp"
 
@@ -106,25 +107,28 @@ struct OrderEntry final : public web::rest::Client::Handler {
 
   void create_order(Event<CreateOrder> const &, server::oms::Order const &, std::string_view const &request_id);
   void create_order_ack(Trace<web::rest::Response> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
-  // void operator()(Trace<json::CreateOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
+  void operator()(Trace<json::CreateOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
 
   // modify-order
 
   void modify_order(Event<ModifyOrder> const &, server::oms::Order const &, std::string_view const &request_id, std::string_view const &previous_request_id);
   void modify_order_ack(Trace<web::rest::Response> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
-  // void operator()(Trace<json::ModifyOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
+  void operator()(Trace<json::ModifyOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
 
   // cancel-order
 
   void cancel_order(Event<CancelOrder> const &, server::oms::Order const &, std::string_view const &request_id, std::string_view const &previous_request_id);
   void cancel_order_ack(Trace<web::rest::Response> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
-  // void operator()(Trace<json::CancelOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
+  void operator()(Trace<json::CancelOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
 
   // helpers
 
   void process_response(web::rest::Response const &, auto error_handler, auto success_handler);
 
   void operator()(Trace<server::oms::OrderUpdate> const &, std::string_view const &client_order_id);
+
+  template <typename... Args>
+  void operator()(Trace<server::oms::Response> const &, uint8_t user_id, uint64_t order_id, Args &&...args);
 
  private:
   Handler &handler_;

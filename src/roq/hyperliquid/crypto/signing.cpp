@@ -247,6 +247,8 @@ OrderWire orderRequestToOrderWire(OrderRequest const &order, int asset) {
   wire.is_buy = order.is_buy;
   wire.price = floatToWire(order.limit_px);
   wire.size = floatToWire(order.sz);
+  // wire.price = std::empty(order.ROQ_price) ? floatToWire(order.limit_px) : order.ROQ_price;
+  // wire.size = std::empty(order.ROQ_quantity) ? floatToWire(order.sz) : order.ROQ_quantity;
   wire.reduce_only = order.reduce_only;
 
   // Convert order type

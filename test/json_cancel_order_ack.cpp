@@ -27,8 +27,8 @@ TEST_CASE("failure_by_oid", "[json_cancel_order_ack]") {
                  R"(})"
                  R"(})";
   auto helper = [&](value_type &obj) {
-    CHECK(obj.status == "ok"sv);
-    CHECK(obj.response.type == "cancel"sv);
+    CHECK(obj.status == json::Status::OK);
+    CHECK(obj.response.type == json::ResponseType::CANCEL);
     // REQUIRE(std::size(obj.response.data.statuses) == 1);
     // CHECK(obj.response.data.statuses[0] == "success"sv);
   };
@@ -36,6 +36,7 @@ TEST_CASE("failure_by_oid", "[json_cancel_order_ack]") {
   value_type obj{message, buffers};
   helper(obj);
 }
+
 TEST_CASE("success_by_oid", "[json_cancel_order_ack]") {
   auto message = R"({)"
                  R"("status":"ok",)"
@@ -49,8 +50,8 @@ TEST_CASE("success_by_oid", "[json_cancel_order_ack]") {
                  R"(})"
                  R"(})";
   auto helper = [&](value_type &obj) {
-    CHECK(obj.status == "ok"sv);
-    CHECK(obj.response.type == "cancel"sv);
+    CHECK(obj.status == json::Status::OK);
+    CHECK(obj.response.type == json::ResponseType::CANCEL);
     // REQUIRE(std::size(obj.response.data.statuses) == 1);
     // CHECK(obj.response.data.statuses[0] == "success"sv);
   };

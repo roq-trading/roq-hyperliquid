@@ -1,0 +1,9 @@
+{
+  "name": "roq/hyperliquid/json/TimeInForce",
+  "type": "enum",
+  "values": [
+    {
+      "name": "Gtc"
+    }
+  ]
+}

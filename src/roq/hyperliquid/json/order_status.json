@@ -6,7 +6,13 @@
       "name": "open"
     },
     {
+      "name": "filled"
+    },
+    {
       "name": "canceled"
+    },
+    {
+      "name": "minTradeNtlRejected"
     }
   ]
 }

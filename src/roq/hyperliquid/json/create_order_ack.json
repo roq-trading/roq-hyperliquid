@@ -4,7 +4,7 @@
   "values": [
     {
       "name": "status",
-      "type": "std/string_view"
+      "type": "roq/hyperliquid/json/Status"
     },
     {
       "name": "response",

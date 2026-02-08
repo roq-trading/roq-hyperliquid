@@ -27,6 +27,9 @@
       "name": "activeAssetCtx"
     },
     {
+      "name": "user"
+    },
+    {
       "name": "userFundings"
     },
     {

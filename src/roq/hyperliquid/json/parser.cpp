@@ -120,6 +120,9 @@ bool Parser::dispatch(
           case ACTIVE_ASSET_CTX:
             result = dispatch_helper<ActiveAssetCtx>(handler, message, buffer_stack, trace_info);
             return true;
+          case USER:
+            result = dispatch_helper<User>(handler, message, buffer_stack, trace_info);
+            return true;
           case USER_FUNDINGS:
             result = dispatch_helper<UserFundings>(handler, message, buffer_stack, trace_info);
             return true;

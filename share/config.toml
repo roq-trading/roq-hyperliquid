@@ -10,8 +10,8 @@ symbols = [
 
   [accounts.A1]
   master = true
-  login = "YOUR_HYPERLIQUID_API_KEY_GOES_HERE"
-  secret = "YOUR_HYPERLIQUID_SECRET_GOES_HERE"
+  login = "YOUR_HYPERLIQUID_PUBLIC_ADDRESS_GOES_HERE"
+  secret = "YOUR_HYPERLIQUID_PRIVATE_KEY_GOES_HERE"
   symbols = [ ".*" ]
 
 [users]

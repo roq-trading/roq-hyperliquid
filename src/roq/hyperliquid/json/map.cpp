@@ -55,15 +55,21 @@ constexpr Helper<hyperliquid::json::OrderStatus>::operator std::optional<roq::Or
       return roq::OrderStatus::UNDEFINED;
     case OPEN:
       return roq::OrderStatus::WORKING;
+    case FILLED:
+      return roq::OrderStatus::COMPLETED;
     case CANCELED:
       return roq::OrderStatus::CANCELED;
+    case MIN_TRADE_NTL_REJECTED:
+      return roq::OrderStatus::REJECTED;
   }
   return {};
 }
 
 static_assert(Helper{hyperliquid::json::OrderStatus{hyperliquid::json::OrderStatus::UNDEFINED_INTERNAL}} == roq::OrderStatus::UNDEFINED);
 static_assert(Helper{hyperliquid::json::OrderStatus{hyperliquid::json::OrderStatus::OPEN}} == roq::OrderStatus::WORKING);
+static_assert(Helper{hyperliquid::json::OrderStatus{hyperliquid::json::OrderStatus::FILLED}} == roq::OrderStatus::COMPLETED);
 static_assert(Helper{hyperliquid::json::OrderStatus{hyperliquid::json::OrderStatus::CANCELED}} == roq::OrderStatus::CANCELED);
+static_assert(Helper{hyperliquid::json::OrderStatus{hyperliquid::json::OrderStatus::MIN_TRADE_NTL_REJECTED}} == roq::OrderStatus::REJECTED);
 
 template <>
 template <>
@@ -97,6 +103,66 @@ static_assert(Helper{roq::Side::SELL} == hyperliquid::json::Side{hyperliquid::js
 template <>
 template <>
 std::optional<hyperliquid::json::Side> Map<roq::Side>::helper() const {
+  return Helper{args_};
+}
+
+// roq::TimeInForce => hyperliquid::json::TimeInForce
+
+template <>
+template <>
+constexpr Helper<roq::TimeInForce>::operator std::optional<hyperliquid::json::TimeInForce>() const {
+  switch (std::get<0>(args_)) {
+    using enum TimeInForce;
+    case UNDEFINED:
+      return hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL;
+    case GFD:
+      return hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL;
+    case GTC:
+      return hyperliquid::json::TimeInForce::GTC;
+    case OPG:
+      return hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL;
+    case IOC:
+      return hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL;
+    case FOK:
+      return hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL;
+    case GTX:
+      return hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL;
+    case GTD:
+      return hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL;
+    case AT_THE_CLOSE:
+      return hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL;
+    case GOOD_THROUGH_CROSSING:
+      return hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL;
+    case AT_CROSSING:
+      return hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL;
+    case GOOD_FOR_TIME:
+      return hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL;
+    case GFA:
+      return hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL;
+    case GFM:
+      return hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL;
+  }
+  return {};
+}
+
+static_assert(Helper{roq::TimeInForce::UNDEFINED} == hyperliquid::json::TimeInForce{hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL});
+static_assert(Helper{roq::TimeInForce::GFD} == hyperliquid::json::TimeInForce{hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL});
+static_assert(Helper{roq::TimeInForce::GTC} == hyperliquid::json::TimeInForce{hyperliquid::json::TimeInForce::GTC});
+static_assert(Helper{roq::TimeInForce::OPG} == hyperliquid::json::TimeInForce{hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL});
+static_assert(Helper{roq::TimeInForce::IOC} == hyperliquid::json::TimeInForce{hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL});
+static_assert(Helper{roq::TimeInForce::FOK} == hyperliquid::json::TimeInForce{hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL});
+static_assert(Helper{roq::TimeInForce::GTX} == hyperliquid::json::TimeInForce{hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL});
+static_assert(Helper{roq::TimeInForce::GTD} == hyperliquid::json::TimeInForce{hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL});
+static_assert(Helper{roq::TimeInForce::AT_THE_CLOSE} == hyperliquid::json::TimeInForce{hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL});
+static_assert(Helper{roq::TimeInForce::GOOD_THROUGH_CROSSING} == hyperliquid::json::TimeInForce{hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL});
+static_assert(Helper{roq::TimeInForce::AT_CROSSING} == hyperliquid::json::TimeInForce{hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL});
+static_assert(Helper{roq::TimeInForce::GOOD_FOR_TIME} == hyperliquid::json::TimeInForce{hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL});
+static_assert(Helper{roq::TimeInForce::GFA} == hyperliquid::json::TimeInForce{hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL});
+static_assert(Helper{roq::TimeInForce::GFM} == hyperliquid::json::TimeInForce{hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL});
+
+template <>
+template <>
+std::optional<hyperliquid::json::TimeInForce> Map<roq::TimeInForce>::helper() const {
   return Helper{args_};
 }
 

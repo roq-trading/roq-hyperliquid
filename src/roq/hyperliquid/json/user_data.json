@@ -1,0 +1,15 @@
+{
+  "name": "roq/hyperliquid/json/UserData",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "funding",
+      "type": "roq/hyperliquid/json/UserDataFunding"
+    },
+    {
+      "name": "fills",
+      "type": "roq/hyperliquid/json/UserDataFillsItem",
+      "array": "std/span"
+    }
+  ]
+}

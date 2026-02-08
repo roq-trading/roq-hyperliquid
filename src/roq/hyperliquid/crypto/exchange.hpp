@@ -45,6 +45,8 @@ class Exchange {
   std::string ROQ_order(
       std::string const &coin,
       int32_t external_security_id,
+      int8_t quantity_decimals,
+      int8_t price_decimals,
       bool is_buy,
       double sz,
       double limit_px,
@@ -109,6 +111,17 @@ class Exchange {
   std::string modifyOrder(
       OidOrCloid const &oid,
       std::string const &coin,
+      bool is_buy,
+      double sz,
+      double limit_px,
+      OrderType const &order_type,
+      bool reduce_only = false,
+      std::optional<Cloid> const &cloid = std::nullopt);
+
+  std::string ROQ_modifyOrder(
+      OidOrCloid const &oid,
+      std::string const &coin,
+      int32_t external_security_id,
       bool is_buy,
       double sz,
       double limit_px,

@@ -1,5 +1,5 @@
 {
-  "name": "roq/hyperliquid/json/CancelOrderAckResponse",
+  "name": "roq/hyperliquid/json/ModifyOrderAckResponse",
   "type": "dictionary",
   "values": [
     {
@@ -8,7 +8,7 @@
     },
     {
       "name": "data",
-      "type": "roq/hyperliquid/json/CancelOrderAckResponseData"
+      "type": "roq/hyperliquid/json/ModifyOrderAckResponseData"
     }
   ]
 }

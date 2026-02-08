@@ -81,6 +81,8 @@ inline void update(std::chrono::nanoseconds &result, core::json::Value const &va
       value);
 }
 
+extern std::string_view get_client_order_id(std::string_view const &cloid);
+
 }  // namespace json
 }  // namespace hyperliquid
 }  // namespace roq
