@@ -1,6 +1,13 @@
 set(TARGET_NAME ${PROJECT_NAME}-tools)
 
-set(SOURCES bignum.cpp crypto.cpp keccak256.cpp key.cpp point.cpp wallet.cpp)
+set(SOURCES
+    bignum.cpp
+    crypto.cpp
+    keccak256.cpp
+    key.cpp
+    point.cpp
+    wallet.cpp
+    encoder.cpp)
 
 add_library(${TARGET_NAME} OBJECT ${SOURCES})
 

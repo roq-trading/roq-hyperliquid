@@ -221,6 +221,26 @@ Signature signL1Action(
   return wallet.signMessage(message_hash);
 }
 
+Signature ROQ_signL1Action(
+    Wallet const &wallet,
+    std::vector<uint8_t> const &action_hash,
+    std::optional<std::string> const &vault_address,
+    int64_t nonce,
+    std::optional<int64_t> expires_after,
+    bool is_mainnet) {
+  // Construct phantom agent
+  auto phantom_agent = constructPhantomAgent(action_hash, is_mainnet);
+
+  // Create EIP-712 payload
+  auto payload = l1Payload(phantom_agent);
+
+  // Encode typed data
+  auto message_hash = encodeTypedData(payload);
+
+  // Sign the hash
+  return wallet.signMessage(message_hash);
+}
+
 // Sign user-signed action
 
 Signature signUserSignedAction(

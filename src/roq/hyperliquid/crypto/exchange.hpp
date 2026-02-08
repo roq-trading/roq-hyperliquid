@@ -29,6 +29,10 @@ class Exchange {
       std::vector<std::string> const *perp_dexs = nullptr,
       int timeout_ms = 30000);
 
+  std::vector<uint8_t> ROQ_actionHash(nlohmann::ordered_json const &action, std::chrono::milliseconds timestamp);
+
+  std::string ROQ_sign(std::string_view const &action, std::vector<uint8_t> const &hash, std::chrono::milliseconds timestamp);
+
   /**
    * Place a single order
    */
@@ -42,7 +46,7 @@ class Exchange {
       std::optional<Cloid> const &cloid = std::nullopt,
       std::optional<BuilderInfo> const &builder = std::nullopt);
 
-  std::string ROQ_order(
+  nlohmann::ordered_json ROQ_order(
       std::string const &coin,
       int32_t external_security_id,
       int8_t quantity_decimals,
@@ -59,6 +63,9 @@ class Exchange {
    * Place multiple orders in a single request
    */
   std::string bulkOrders(std::vector<OrderRequest> const &orders, std::optional<BuilderInfo> const &builder = std::nullopt, std::string const &grouping = "na");
+
+  nlohmann::ordered_json ROQ_bulkOrders(
+      std::vector<OrderRequest> const &orders, std::optional<BuilderInfo> const &builder = std::nullopt, std::string const &grouping = "na");
 
   /**
    * Open a market order
@@ -87,23 +94,29 @@ class Exchange {
    * Cancel an order by OID
    */
   std::string cancel(std::string const &coin, int64_t oid);
-  std::string ROQ_cancel(std::string const &coin, int32_t external_security_id, int64_t oid);
+
+  nlohmann::ordered_json ROQ_cancel(std::string const &coin, int32_t external_security_id, int64_t oid);
 
   /**
    * Cancel an order by client orde// r ID
    */
   std::string cancelByCloid(std::string const &coin, Cloid const &cloid);
-  std::string ROQ_cancelByCloid(std::string const &coin, int32_t external_security_id, Cloid const &cloid);
+
+  nlohmann::ordered_json ROQ_cancelByCloid(std::string const &coin, int32_t external_security_id, Cloid const &cloid);
 
   /**
    * Cancel multiple orders
    */
   std::string bulkCancel(std::vector<CancelRequest> const &cancels);
 
+  nlohmann::ordered_json ROQ_bulkCancel(std::vector<CancelRequest> const &cancels);
+
   /**
    * Cancel multiple orders by CLOID
    */
   std::string bulkCancelByCloid(std::vector<CancelByCloidRequest> const &cancels);
+
+  nlohmann::ordered_json ROQ_bulkCancelByCloid(std::vector<CancelByCloidRequest> const &cancels);
 
   /**
    * Modify an existing order
@@ -118,7 +131,7 @@ class Exchange {
       bool reduce_only = false,
       std::optional<Cloid> const &cloid = std::nullopt);
 
-  std::string ROQ_modifyOrder(
+  nlohmann::ordered_json ROQ_modifyOrder(
       OidOrCloid const &oid,
       std::string const &coin,
       int32_t external_security_id,
@@ -134,6 +147,7 @@ class Exchange {
    */
   std::string bulkModifyOrders(std::vector<ModifyRequest> const &modifies);
 
+  nlohmann::ordered_json ROQ_bulkModifyOrders(std::vector<ModifyRequest> const &modifies);
   /**
    * Transfer USD to another address
    */
@@ -185,6 +199,8 @@ class Exchange {
 
  private:
   std::string postAction(nlohmann::json const &action, Signature const &signature, int64_t nonce);
+
+  std::string ROQ_postAction(std::string_view const &action, Signature const &signature, int64_t nonce);
 
   double slippagePrice(std::string const &name, bool is_buy, double slippage, std::optional<double> px = std::nullopt);
 

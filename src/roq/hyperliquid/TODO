@@ -1,18 +1,9 @@
-tif gtc, ioc or alo (add liquidity only, post only)
+test / main net
 
-margin cross or isolated
+separate action from signing
 
-TWAP there's an order type + explanation of algo
+create
+- signL1Action
 
-
-
-order:
-a - asset
-b - buy? true/false
-p - price
-s - size
-r - reduce-only? true/false
-t - type (dict)
-c - client order id
-
-t = { "limit": {"tif": "Gtc"} }
+cancel
+- signL1Action

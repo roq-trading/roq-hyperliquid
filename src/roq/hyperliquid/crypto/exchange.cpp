@@ -26,9 +26,39 @@ Exchange::Exchange(
   log::warn("DEBUG account_address={}"sv, account_address_);
 }
 
-std::string Exchange::postAction(nlohmann::json const &action, Signature const &signature, int64_t nonce) {
-  nlohmann::json payload = {{"action", action}, {"nonce", nonce}, {"signature", signature.toJson()}};
+std::vector<uint8_t> Exchange::ROQ_actionHash(nlohmann::ordered_json const &action, std::chrono::milliseconds timestamp) {
+  std::optional<std::string> vault_opt = vault_address_.empty() ? std::nullopt : std::optional<std::string>(vault_address_);
+  return actionHash(action, vault_opt, timestamp.count(), expires_after_);
+}
 
+std::string Exchange::ROQ_sign(std::string_view const &action, std::vector<uint8_t> const &hash, std::chrono::milliseconds timestamp) {
+  bool is_mainnet = (base_url_ == MAINNET_API_URL);
+  std::optional<std::string> vault_opt = vault_address_.empty() ? std::nullopt : std::optional<std::string>(vault_address_);
+  auto signature = ROQ_signL1Action(wallet_, hash, vault_opt, timestamp.count(), expires_after_, is_mainnet);
+  return ROQ_postAction(action, signature, timestamp.count());
+}
+
+std::string Exchange::ROQ_postAction(std::string_view const &action, Signature const &signature, int64_t nonce) {
+  auto signature_2 = signature.toJson().dump();
+  auto result = fmt::format(
+      R"({{)"
+      R"("action":{},)"
+      R"("nonce":{},)"
+      R"("signature":{})"
+      R"(}})"sv,
+      action,
+      nonce,
+      signature_2);
+  return result;
+}
+
+std::string Exchange::postAction(nlohmann::json const &action, Signature const &signature, int64_t nonce) {
+  nlohmann::json payload = {
+      {"action", action},
+      {"nonce", nonce},
+      {"signature", signature.toJson()},
+  };
+  // XXX FIXME TODO do we need vaultAddress ???
   // Add vault address if not a transfer action
   std::string action_type = action["type"];
   if (action_type != "usdClassTransfer" && action_type != "sendAsset") {
@@ -105,7 +135,7 @@ std::string Exchange::order(
   return bulkOrders({order_req}, builder);
 }
 
-std::string Exchange::ROQ_order(
+nlohmann::ordered_json Exchange::ROQ_order(
     std::string const &coin,
     int32_t external_security_id,
     int8_t quantity_decimals,
@@ -139,7 +169,7 @@ std::string Exchange::ROQ_order(
   order_req.ROQ_quantity_decimals = quantity_decimals;  // XXX
   order_req.ROQ_price_decimals = price_decimals;        // XXX
 
-  return bulkOrders({order_req}, builder);
+  return ROQ_bulkOrders({order_req}, builder);
 }
 
 std::string Exchange::bulkOrders(std::vector<OrderRequest> const &orders, std::optional<BuilderInfo> const &builder, std::string const &grouping) {
@@ -170,6 +200,25 @@ std::string Exchange::bulkOrders(std::vector<OrderRequest> const &orders, std::o
   auto signature = signL1Action(wallet_, action, vault_opt, timestamp, expires_after_, is_mainnet);
 
   return postAction(action, signature, timestamp);
+}
+
+nlohmann::ordered_json Exchange::ROQ_bulkOrders(
+    std::vector<OrderRequest> const &orders, std::optional<BuilderInfo> const &builder, std::string const &grouping) {
+  std::vector<OrderWire> order_wires;
+  for (auto const &order : orders) {
+    int asset = order.ROQ_external_security_id;     // nameToAsset(order.coin);
+    int sz_decimals = order.ROQ_quantity_decimals;  // asset_to_sz_decimals(asset);
+    bool is_spot = asset >= 10000;
+
+    // Round price and size to tick/lot size
+    OrderRequest rounded_order = order;
+    rounded_order.limit_px = roundPrice(order.limit_px, sz_decimals, is_spot);
+    rounded_order.sz = roundSize(order.sz, sz_decimals);
+
+    order_wires.push_back(orderRequestToOrderWire(rounded_order, asset));
+  }
+
+  return orderWiresToOrderAction(order_wires, builder, grouping);
 }
 
 std::string Exchange::marketOpen(
@@ -230,12 +279,12 @@ std::string Exchange::cancel(std::string const &coin, int64_t oid) {
   return bulkCancel({cancel_req});
 }
 
-std::string Exchange::ROQ_cancel(std::string const &coin, int32_t external_security_id, int64_t oid) {
+nlohmann::ordered_json Exchange::ROQ_cancel(std::string const &coin, int32_t external_security_id, int64_t oid) {
   CancelRequest cancel_req;
   cancel_req.coin = coin;
   cancel_req.oid = oid;
   cancel_req.ROQ_external_security_id = external_security_id;
-  return bulkCancel({cancel_req});
+  return ROQ_bulkCancel({cancel_req});
 }
 
 std::string Exchange::cancelByCloid(std::string const &coin, Cloid const &cloid) {
@@ -244,10 +293,10 @@ std::string Exchange::cancelByCloid(std::string const &coin, Cloid const &cloid)
   return bulkCancelByCloid({cancel_req});
 }
 
-std::string Exchange::ROQ_cancelByCloid(std::string const &coin, int32_t external_security_id, Cloid const &cloid) {
+nlohmann::ordered_json Exchange::ROQ_cancelByCloid(std::string const &coin, int32_t external_security_id, Cloid const &cloid) {
   CancelByCloidRequest cancel_req{coin, cloid};
   cancel_req.ROQ_external_security_id = external_security_id;
-  return bulkCancelByCloid({cancel_req});
+  return ROQ_bulkCancelByCloid({cancel_req});
 }
 
 std::string Exchange::bulkCancel(std::vector<CancelRequest> const &cancels) {
@@ -273,6 +322,23 @@ std::string Exchange::bulkCancel(std::vector<CancelRequest> const &cancels) {
   return postAction(action, signature, timestamp);
 }
 
+nlohmann::ordered_json Exchange::ROQ_bulkCancel(std::vector<CancelRequest> const &cancels) {
+  nlohmann::ordered_json cancels_array = nlohmann::ordered_json::array();
+  for (auto const &cancel : cancels) {
+    int asset = cancel.ROQ_external_security_id;
+    nlohmann::ordered_json cancel_obj;
+    cancel_obj["a"] = asset;
+    cancel_obj["o"] = cancel.oid;
+    cancels_array.push_back(cancel_obj);
+  }
+
+  nlohmann::ordered_json action;
+  action["type"] = "cancel";
+  action["cancels"] = cancels_array;
+
+  return action;
+}
+
 std::string Exchange::bulkCancelByCloid(std::vector<CancelByCloidRequest> const &cancels) {
   nlohmann::ordered_json cancels_array = nlohmann::ordered_json::array();
   for (auto const &cancel : cancels) {
@@ -294,6 +360,23 @@ std::string Exchange::bulkCancelByCloid(std::vector<CancelByCloidRequest> const 
   auto signature = signL1Action(wallet_, action, vault_opt, timestamp, expires_after_, is_mainnet);
 
   return postAction(action, signature, timestamp);
+}
+
+nlohmann::ordered_json Exchange::ROQ_bulkCancelByCloid(std::vector<CancelByCloidRequest> const &cancels) {
+  nlohmann::ordered_json cancels_array = nlohmann::ordered_json::array();
+  for (auto const &cancel : cancels) {
+    int asset = cancel.ROQ_external_security_id;
+    nlohmann::ordered_json cancel_obj;
+    cancel_obj["asset"] = asset;
+    cancel_obj["cloid"] = cancel.cloid.toRaw();
+    cancels_array.push_back(cancel_obj);
+  }
+
+  nlohmann::ordered_json action;
+  action["type"] = "cancelByCloid";
+  action["cancels"] = cancels_array;
+
+  return action;
 }
 
 std::string Exchange::modifyOrder(
@@ -327,7 +410,7 @@ std::string Exchange::modifyOrder(
   return bulkModifyOrders({modify_req});
 }
 
-std::string Exchange::ROQ_modifyOrder(
+nlohmann::ordered_json Exchange::ROQ_modifyOrder(
     OidOrCloid const &oid,
     std::string const &coin,
     int32_t external_security_id,
@@ -358,7 +441,7 @@ std::string Exchange::ROQ_modifyOrder(
   //
   modify_req.order.ROQ_external_security_id = external_security_id;
 
-  return bulkModifyOrders({modify_req});
+  return ROQ_bulkModifyOrders({modify_req});
 }
 
 std::string Exchange::bulkModifyOrders(std::vector<ModifyRequest> const &modifies) {
@@ -397,6 +480,38 @@ std::string Exchange::bulkModifyOrders(std::vector<ModifyRequest> const &modifie
   auto signature = signL1Action(wallet_, action, vault_opt, timestamp, expires_after_, is_mainnet);
 
   return postAction(action, signature, timestamp);
+}
+
+nlohmann::ordered_json Exchange::ROQ_bulkModifyOrders(std::vector<ModifyRequest> const &modifies) {
+  nlohmann::ordered_json modifies_array = nlohmann::ordered_json::array();
+  for (auto const &modify : modifies) {
+    int asset = modify.order.ROQ_external_security_id;  // XXX
+    int sz_decimals = asset_to_sz_decimals(asset);
+    bool is_spot = asset >= 10000;
+
+    // Round price and size to tick/lot size
+    OrderRequest rounded_order = modify.order;
+    rounded_order.limit_px = roundPrice(modify.order.limit_px, sz_decimals, is_spot);
+    rounded_order.sz = roundSize(modify.order.sz, sz_decimals);
+
+    OrderWire wire = orderRequestToOrderWire(rounded_order, asset);
+
+    nlohmann::ordered_json modify_wire;
+    if (std::holds_alternative<int64_t>(modify.oid)) {
+      modify_wire["oid"] = std::get<int64_t>(modify.oid);
+    } else {
+      modify_wire["oid"] = std::get<Cloid>(modify.oid).toRaw();
+    }
+    modify_wire["order"] = wire.toJson();
+
+    modifies_array.push_back(modify_wire);
+  }
+
+  nlohmann::ordered_json action;
+  action["type"] = "batchModify";
+  action["modifies"] = modifies_array;
+
+  return action;
 }
 
 std::string Exchange::usdTransfer(double amount, std::string const &destination) {

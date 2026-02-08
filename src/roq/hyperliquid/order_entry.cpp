@@ -7,7 +7,6 @@
 
 #include "roq/mask.hpp"
 
-#include "roq/utils/common.hpp"
 #include "roq/utils/safe_cast.hpp"
 #include "roq/utils/update.hpp"
 
@@ -18,7 +17,9 @@
 #include "roq/hyperliquid/json/map.hpp"
 #include "roq/hyperliquid/json/utils.hpp"
 
-#include "roq/hyperliquid/crypto/constants.hpp"
+#include "roq/hyperliquid/crypto/constants.hpp"  // XXX FIXME TOD mainnet/testnet
+
+#include "roq/hyperliquid/tools/encoder.hpp"
 
 using namespace std::literals;
 
@@ -91,42 +92,6 @@ auto create_exchange(auto &account) {
   log::warn("DEBUG account_address={}"sv, account_address);
   result_type result{static_cast<tools::Crypto &>(account), base_url, nullptr, vault_address, account_address};
   return result;
-}
-
-bool is_buy_helper(auto side) {
-  switch (side) {
-    using enum Side;
-    case UNDEFINED:
-      break;
-    case BUY:
-      return true;
-    case SELL:
-      return false;
-  }
-  log::fatal("Unexpected"sv);
-}
-
-auto order_type_helper(auto &order) -> crypto::OrderType {
-  auto limit_order_type_helper = [&]() -> crypto::LimitOrderType {
-    switch (order.order_type) {
-      using enum OrderType;
-      case UNDEFINED:
-        break;
-      case MARKET:
-        break;
-      case LIMIT: {
-        auto tif = map(order.time_in_force).template get<json::TimeInForce>();
-        return {
-            .tif = std::string{tif.as_raw_text()},
-        };
-      }
-    }
-    log::fatal("Unexpected"sv);
-  };
-  return {
-      .limit = limit_order_type_helper(),
-      .trigger = {},
-  };
 }
 }  // namespace
 
@@ -600,23 +565,9 @@ void OrderEntry::create_order(Event<CreateOrder> const &event, server::oms::Orde
       log::warn(R"(DEBUG request="{}")"sv, request);
       (*connection_)(request_id, request, callback);
     };
-    std::string coin{order.symbol};
-    auto is_buy = is_buy_helper(order.side);
-    auto reduce_only = false;  // XXX FIXME TODO
-    auto order_type = order_type_helper(order);
-    auto tmp = fmt::format("0x{:0>32}"sv, request_id);
-    crypto::Cloid cloid{tmp};
-    auto request = exchange_.ROQ_order(
-        coin,
-        order.external_security_id,  // note!
-        utils::decimal_digits(order.quantity_precision.precision),
-        utils::decimal_digits(order.price_precision.precision),
-        is_buy,
-        create_order.quantity,
-        create_order.price,
-        order_type,
-        reduce_only,
-        cloid);
+    auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
+    auto [action, hash] = tools::Encoder::create_order(create_order, order, request_id, now_utc, exchange_);
+    auto request = exchange_.ROQ_sign(action, hash, now_utc);
     send_request(request);
   });
 }
@@ -683,15 +634,9 @@ void OrderEntry::modify_order(
       log::warn(R"(DEBUG request="{}")"sv, request);
       (*connection_)(request_id, request, callback);
     };
-    std::string coin{order.symbol};
-    auto tmp = fmt::format("0x{:0>32}"sv, static_cast<std::string_view>(order.client_order_id));
-    crypto::Cloid cloid{tmp};
-    crypto::OidOrCloid oid{cloid};
-    auto is_buy = is_buy_helper(order.side);
-    auto reduce_only = true;  // XXX FIXME TODO
-    auto order_type = order_type_helper(order);
-    auto request =
-        exchange_.ROQ_modifyOrder(oid, coin, order.external_security_id, is_buy, modify_order.quantity, modify_order.price, order_type, reduce_only, cloid);
+    auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
+    auto [action, hash] = tools::Encoder::modify_order(modify_order, order, request_id, previous_request_id, now_utc, exchange_);
+    auto request = exchange_.ROQ_sign(action, hash, now_utc);
     send_request(request);
   });
 }
@@ -758,18 +703,10 @@ void OrderEntry::cancel_order(
       log::warn(R"(DEBUG request="{}")"sv, request);
       (*connection_)(request_id, request, callback);
     };
-    std::string coin{order.symbol};
-    if (std::empty(order.external_order_id)) {
-      auto tmp = fmt::format("0x{:0>32}"sv, static_cast<std::string_view>(order.client_order_id));
-      crypto::Cloid cloid{tmp};
-      auto request = exchange_.ROQ_cancelByCloid(coin, order.external_security_id, cloid);
-      send_request(request);
-    } else {
-      auto oid = utils::charconv::from_chars<int64_t>(order.external_order_id);
-      log::warn("DEBUG oid={}, asset={}"sv, oid, order.external_security_id);
-      auto request = exchange_.ROQ_cancel(coin, order.external_security_id, oid);
-      send_request(request);
-    }
+    auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
+    auto [action, hash] = tools::Encoder::cancel_order(cancel_order, order, request_id, previous_request_id, now_utc, exchange_);
+    auto request = exchange_.ROQ_sign(action, hash, now_utc);
+    send_request(request);
   });
 }
 

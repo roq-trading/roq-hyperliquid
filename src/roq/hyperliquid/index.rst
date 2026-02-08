@@ -287,6 +287,8 @@ Comments
 
 * :code:`ModifyOrder` does not work.
 
+* Q: Do we need vault address for anything?
+
 
 References
 ----------
