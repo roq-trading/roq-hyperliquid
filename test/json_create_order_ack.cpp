@@ -122,3 +122,18 @@ TEST_CASE("failure_quantity", "[json_create_order_ack]") {
   value_type obj{message, buffers};
   helper(obj);
 }
+/*
+TEST_CASE("failure_xxx", "[json_create_order_ack]") {
+  auto message = R"({)"
+                 R"("status":"err",)"
+                 R"("response":"User or API Wallet 0x4b6c5b1287e38b78e61d5dbca726d5e267eda747 does not exist.")"
+                 R"(})";
+  auto helper = [&](value_type &obj) {
+    CHECK(obj.status == json::Status::ERR);
+    // CHECK(s0.error == "Order must have minimum value of $10. asset=1"sv);
+  };
+  core::json::BufferStack buffers{8192, 1};
+  value_type obj{message, buffers};
+  helper(obj);
+}
+*/

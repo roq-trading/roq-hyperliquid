@@ -2,6 +2,7 @@ set(TARGET_NAME ${PROJECT_NAME}-tools)
 
 set(SOURCES
     bignum.cpp
+    conversions.cpp
     crypto.cpp
     keccak256.cpp
     key.cpp

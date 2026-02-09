@@ -273,13 +273,21 @@ OrderWire orderRequestToOrderWire(OrderRequest const &order, int asset) {
 
   // Convert order type
   if (order.order_type.limit.has_value()) {
-    wire.order_type = {{"limit", {{"tif", order.order_type.limit->tif}}}};
+    wire.order_type = {
+        {"limit",
+         {
+             {"tif", order.order_type.limit->tif},
+         }},
+    };
   } else if (order.order_type.trigger.has_value()) {
     wire.order_type = {
         {"trigger",
-         {{"triggerPx", floatToWire(order.order_type.trigger->trigger_px)},
-          {"isMarket", order.order_type.trigger->is_market},
-          {"tpsl", order.order_type.trigger->tpsl}}}};
+         {
+             {"triggerPx", floatToWire(order.order_type.trigger->trigger_px)},
+             {"isMarket", order.order_type.trigger->is_market},
+             {"tpsl", order.order_type.trigger->tpsl},
+         }},
+    };
   }
 
   // Add cloid if present

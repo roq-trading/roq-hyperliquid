@@ -266,11 +266,6 @@ Order Management
 Comments
 ~~~~~~~~
 
-* Downloaded orders lack many attributes, e.g. TimeInForce.
-
-* Order management can only be enabled after downloading reference data.
-  This is due to protocol requiring asset IDs (not symbol names) and because of very strict usage of decimals.
-
 * The :code:`login` (TOML config) should be your account's **public address**.
 
 * The :code:`secret` (TOML config) should be your account's **private** key.
@@ -278,14 +273,22 @@ Comments
   .. note::
      The account's public key (not address!) can be derived from the private key.
 
+* Downloaded orders lack several attributes, e.g. :code:`TimeInForce`.
+
+* Order management can only be enabled after downloading reference data.
+  This is due to protocol using asset IDs (as opposed to symbol names) and very strict usage of decimals.
+
 * Currently only support for :code:`OrderType::LIMIT` and :code:`TimeInForce::GTC`.
 
-* Following streams have not been tested yet: :code:`notification`, :code:`userNotification`.
+* REST response seems to not have any fixed structure.
 
 * REST response has very little information for rejects.
-  We only use WS to ack the order.
 
-* :code:`ModifyOrder` does not work.
+  .. warning::
+
+     JSON parsing may fail for various reasons.
+
+* It does not currently seem possible to use :code:`ModifyOrder`.
 
 * Q: Do we need vault address for anything?
 
