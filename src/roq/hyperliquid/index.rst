@@ -266,6 +266,8 @@ Order Management
 Comments
 ~~~~~~~~
 
+* There is currently only support for mainnet.
+
 * The :code:`login` (TOML config) should be your account's **public address**.
 
 * The :code:`secret` (TOML config) should be your account's **private** key.
@@ -291,6 +293,8 @@ Comments
 * It does not currently seem possible to use :code:`ModifyOrder`.
 
 * Q: Do we need vault address for anything?
+
+* Q: Do we need expires after?
 
 
 References

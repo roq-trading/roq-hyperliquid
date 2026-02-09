@@ -200,7 +200,7 @@ class Exchange {
  private:
   std::string postAction(nlohmann::json const &action, Signature const &signature, int64_t nonce);
 
-  std::string ROQ_postAction(std::string_view const &action, Signature const &signature, int64_t nonce);
+  std::string ROQ_postAction(std::string_view const &action, std::string const &signature, int64_t nonce);
 
   double slippagePrice(std::string const &name, bool is_buy, double slippage, std::optional<double> px = std::nullopt);
 

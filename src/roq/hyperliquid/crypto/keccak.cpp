@@ -4,8 +4,6 @@
 
 #include <stdexcept>
 
-#include "roq/hyperliquid/crypto/conversions.hpp"
-
 namespace roq {
 namespace hyperliquid {
 namespace crypto {

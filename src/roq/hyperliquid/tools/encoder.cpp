@@ -16,11 +16,10 @@
 
 #include "roq/server/oms/exceptions.hpp"
 
-#include "roq/hyperliquid/crypto/keccak.hpp"
-
 #include "roq/hyperliquid/json/map.hpp"
 
 #include "roq/hyperliquid/tools/conversions.hpp"
+#include "roq/hyperliquid/tools/keccak256.hpp"
 
 using namespace std::literals;
 
@@ -135,7 +134,7 @@ auto action_hash_helper(auto &action, auto now_utc) {
   // 4. expires_after
   // note! nothing
   // 5. hash (keccak-256)
-  auto result = crypto::keccak256(data);  // XXX HANS
+  auto result = Keccak256::keccak256(data);
   assert(std::size(result) == 32);
   return result;
 }

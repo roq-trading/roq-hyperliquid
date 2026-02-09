@@ -221,7 +221,7 @@ Signature signL1Action(
   return wallet.signMessage(message_hash);
 }
 
-Signature ROQ_signL1Action(
+std::string ROQ_signL1Action(
     Wallet const &wallet,
     std::vector<uint8_t> const &action_hash,
     std::optional<std::string> const &vault_address,
@@ -238,7 +238,9 @@ Signature ROQ_signL1Action(
   auto message_hash = encodeTypedData(payload);
 
   // Sign the hash
-  return wallet.signMessage(message_hash);
+  auto signature = wallet.signMessage(message_hash);
+
+  return signature.toJson().dump();
 }
 
 // Sign user-signed action

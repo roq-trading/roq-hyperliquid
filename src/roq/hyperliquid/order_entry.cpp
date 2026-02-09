@@ -82,17 +82,6 @@ struct create_metrics final : public utils::metrics::Factory {
 auto create_rate_limiter(auto &settings) {
   return core::limit::RateLimiter{settings.request.limit, settings.request.limit_interval};
 }
-
-template <typename R>
-auto create_exchange(auto &account) {
-  using result_type = std::remove_cvref_t<R>;
-  std::string base_url{crypto::MAINNET_API_URL};
-  std::string vault_address;
-  std::string account_address{account.get_key()};
-  log::warn("DEBUG account_address={}"sv, account_address);
-  result_type result{static_cast<tools::Crypto &>(account), base_url, nullptr, vault_address, account_address};
-  return result;
-}
 }  // namespace
 
 // === IMPLEMENTATION ===
@@ -122,8 +111,8 @@ OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_i
       latency_{
           .ping = create_metrics(shared.settings, name_, "ping"sv),
       },
-      account_{account}, exchange_{create_exchange<decltype(exchange_)>(account_)}, shared_{shared},
-      download_{shared.settings.rest.request_timeout, [this](auto state) { return download(state); }}, rate_limiter{create_rate_limiter(shared.settings)} {
+      account_{account}, shared_{shared}, download_{shared.settings.rest.request_timeout, [this](auto state) { return download(state); }},
+      rate_limiter{create_rate_limiter(shared.settings)} {
 }
 
 void OrderEntry::operator()(Event<Start> const &) {
@@ -567,7 +556,7 @@ void OrderEntry::create_order(Event<CreateOrder> const &event, server::oms::Orde
     };
     auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
     auto [action, hash] = tools::Encoder::create_order(create_order, order, request_id, now_utc);
-    auto request = exchange_.ROQ_sign(action, hash, now_utc);
+    auto request = account_.sign(action, hash, now_utc);
     send_request(request);
   });
 }
@@ -636,7 +625,7 @@ void OrderEntry::modify_order(
     };
     auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
     auto [action, hash] = tools::Encoder::modify_order(modify_order, order, request_id, previous_request_id, now_utc);
-    auto request = exchange_.ROQ_sign(action, hash, now_utc);
+    auto request = account_.sign(action, hash, now_utc);
     send_request(request);
   });
 }
@@ -705,7 +694,7 @@ void OrderEntry::cancel_order(
     };
     auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
     auto [action, hash] = tools::Encoder::cancel_order(cancel_order, order, request_id, previous_request_id, now_utc);
-    auto request = exchange_.ROQ_sign(action, hash, now_utc);
+    auto request = account_.sign(action, hash, now_utc);
     send_request(request);
   });
 }

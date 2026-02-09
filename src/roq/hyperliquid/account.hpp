@@ -18,9 +18,9 @@ struct Account final {
 
   Account(Account const &) = delete;
 
-  operator tools::Crypto &() { return crypto_; }
-
   std::string_view get_key() const { return crypto_.get_key(); }
+
+  std::string sign(std::string_view const &action, std::vector<uint8_t> const &hash, std::chrono::milliseconds now_utc);
 
   std::string const name;
 

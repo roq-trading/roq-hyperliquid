@@ -2,8 +2,10 @@
 
 #pragma once
 
+#include <chrono>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "roq/hyperliquid/crypto/wallet.hpp"
 
@@ -20,6 +22,8 @@ struct Crypto final {
   operator crypto::Wallet &() { return wallet_; }
 
   auto const &get_key() const { return key_; }
+
+  std::string sign(std::string_view const &action, std::vector<uint8_t> const &hash, std::chrono::milliseconds now_utc);
 
  private:
   std::string const key_;

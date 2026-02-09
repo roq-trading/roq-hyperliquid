@@ -38,8 +38,7 @@ std::string Exchange::ROQ_sign(std::string_view const &action, std::vector<uint8
   return ROQ_postAction(action, signature, timestamp.count());
 }
 
-std::string Exchange::ROQ_postAction(std::string_view const &action, Signature const &signature, int64_t nonce) {
-  auto signature_2 = signature.toJson().dump();
+std::string Exchange::ROQ_postAction(std::string_view const &action, std::string const &signature, int64_t nonce) {
   auto result = fmt::format(
       R"({{)"
       R"("action":{},)"
@@ -48,7 +47,7 @@ std::string Exchange::ROQ_postAction(std::string_view const &action, Signature c
       R"(}})"sv,
       action,
       nonce,
-      signature_2);
+      signature);
   return result;
 }
 

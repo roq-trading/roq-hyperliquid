@@ -35,8 +35,6 @@
 #include "roq/hyperliquid/json/create_order_ack.hpp"
 #include "roq/hyperliquid/json/modify_order_ack.hpp"
 
-#include "roq/hyperliquid/crypto/exchange.hpp"
-
 namespace roq {
 namespace hyperliquid {
 
@@ -152,7 +150,6 @@ struct OrderEntry final : public web::rest::Client::Handler {
   } latency_;
   // account
   Account &account_;
-  crypto::Exchange exchange_;
   // cache
   Shared &shared_;
   // state
