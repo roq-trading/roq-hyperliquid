@@ -317,6 +317,7 @@ int calculateRecoveryId(const EC_KEY *ec_key, std::vector<uint8_t> const &hash, 
   return 0;
 }
 
+// HANS
 Signature signHash(void const *ec_key_ptr, std::vector<uint8_t> const &hash) {
   EC_KEY *ec_key = static_cast<EC_KEY *>(const_cast<void *>(ec_key_ptr));
 

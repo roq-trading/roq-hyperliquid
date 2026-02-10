@@ -7,6 +7,8 @@
 #include <string_view>
 #include <vector>
 
+#include "roq/utils/hash/keccak256.hpp"
+
 #include "roq/hyperliquid/crypto/wallet.hpp"
 
 namespace roq {
@@ -19,15 +21,18 @@ struct Crypto final {
   Crypto(Crypto &&) = delete;
   Crypto(Crypto const &) = delete;
 
-  operator crypto::Wallet &() { return wallet_; }
-
   auto const &get_key() const { return key_; }
 
-  std::string sign(std::string_view const &action, std::vector<uint8_t> const &hash, std::chrono::milliseconds now_utc);
+  std::string sign(std::string_view const &action, std::vector<uint8_t> const &packed, std::chrono::milliseconds now_utc);
 
  private:
+  using Hash = utils::hash::Keccak256;
+  using Digest = std::array<std::byte, Hash::DIGEST_LENGTH>;
+
   std::string const key_;
-  crypto::Wallet wallet_;
+  crypto::Wallet wallet_;  // XXX FIXME TODO move to tools
+  Digest digest_;
+  Hash hash_;
 };
 
 }  // namespace tools

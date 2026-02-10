@@ -19,7 +19,6 @@
 #include "roq/hyperliquid/json/map.hpp"
 
 #include "roq/hyperliquid/tools/conversions.hpp"
-#include "roq/hyperliquid/tools/keccak256.hpp"
 
 using namespace std::literals;
 
@@ -114,7 +113,7 @@ void pack_json(auto &packer, auto &node) {
 }
 
 // XXX FIXME TODO std::stringstream => fixed buffer supporting write(const char*, size_t s)
-auto action_hash_helper(auto &action, auto now_utc) {
+auto pack_helper(auto &action, auto now_utc) {
   std::vector<uint8_t> data;
   std::stringstream ss;
   msgpack::packer<std::stringstream> packer(ss);
@@ -133,10 +132,7 @@ auto action_hash_helper(auto &action, auto now_utc) {
   data.push_back(0x00);  // note! none
   // 4. expires_after
   // note! nothing
-  // 5. hash (keccak-256)
-  auto result = Keccak256::keccak256(data);
-  assert(std::size(result) == 32);
-  return result;
+  return data;
 }
 }  // namespace
 
@@ -173,9 +169,9 @@ std::pair<std::string, std::vector<uint8_t>> Encoder::create_order(
     };
     return result;
   }();
-  auto hash = action_hash_helper(action, now_utc);
+  auto packed = pack_helper(action, now_utc);
   auto action_2 = action.dump();
-  return {action_2, hash};
+  return {action_2, packed};
 }
 // {"action":{"type":"order","orders":[{"a":1,"b":true,"p":"1500","s":"1","r":false,"t":{"limit":{"tif":"Gtc"}},"c":"0x000300515099a47a0000010000000003"}],"grouping":"na"}
 
@@ -197,9 +193,9 @@ std::pair<std::string, std::vector<uint8_t>> Encoder::modify_order(
   auto order_type = order_type_helper(order);
   auto action =
       exchange.ROQ_modifyOrder(oid, coin, order.external_security_id, is_buy, modify_order.quantity, modify_order.price, order_type, reduce_only, cloid);
-  auto hash = action_hash_helper(action, now_utc);
+  auto packed = pack_helper(action, now_utc);
   auto action_2 = action.dump();
-  return {action_2, hash};
+  return {action_2, packed};
   */
 }
 
@@ -212,9 +208,9 @@ std::pair<std::string, std::vector<uint8_t>> Encoder::cancel_order(
     [[maybe_unused]] std::string_view const &previous_request_id,
     std::chrono::milliseconds now_utc) {
   auto helper = [&](auto &action) -> std::pair<std::string, std::vector<uint8_t>> {
-    auto hash = action_hash_helper(action, now_utc);
+    auto packed = pack_helper(action, now_utc);
     auto action_2 = action.dump();
-    return {action_2, hash};
+    return {action_2, packed};
   };
   if (std::empty(order.external_order_id)) {
     auto cloid = fmt::format("0x{:0>32}"sv, static_cast<std::string_view>(order.client_order_id));

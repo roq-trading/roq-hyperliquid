@@ -104,6 +104,7 @@ std::vector<uint8_t> hashStruct(std::string const &struct_type, nlohmann::json c
   return keccak256(encoded);
 }
 
+// HANS
 std::vector<uint8_t> encodeTypedData(nlohmann::json const &typed_data) {
   // EIP-712 prefix
   std::vector<uint8_t> result = {0x19, 0x01};

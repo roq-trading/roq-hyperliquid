@@ -53,7 +53,7 @@ Signature signL1Action(
 
 std::string ROQ_signL1Action(
     Wallet const &wallet,
-    std::vector<uint8_t> const &action_hash,
+    nlohmann::json const &payload,
     std::optional<std::string> const &vault_address,
     int64_t nonce,
     std::optional<int64_t> expires_after,
@@ -76,6 +76,8 @@ std::vector<uint8_t> actionHash(
  * Construct phantom agent for L1 action signing
  */
 nlohmann::json constructPhantomAgent(std::vector<uint8_t> const &hash, bool is_mainnet);
+
+nlohmann::json ROQ_constructPhantomAgent(std::span<std::byte const> const &hash, bool is_mainnet);
 
 /**
  * Create EIP-712 payload for L1 actions

@@ -82,6 +82,10 @@ std::string bytesToHex(std::vector<uint8_t> const &bytes, bool with_prefix) {
   return bytesToHex(bytes.data(), bytes.size(), with_prefix);
 }
 
+std::string ROQ_bytesToHex(std::span<std::byte const> const &bytes, bool with_prefix) {
+  return bytesToHex(reinterpret_cast<uint8_t const *>(bytes.data()), bytes.size(), with_prefix);
+}
+
 std::string bytesToHex(uint8_t const *data, size_t len, bool with_prefix) {
   std::ostringstream oss;
   if (with_prefix) {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <span>
 #include <string>
 #include <vector>
 
@@ -34,6 +35,7 @@ std::vector<uint8_t> hexToBytes(std::string const &hex);
  * Convert bytes to hex string with "0x" prefix
  */
 std::string bytesToHex(std::vector<uint8_t> const &bytes, bool with_prefix = true);
+std::string ROQ_bytesToHex(std::span<std::byte const> const &bytes, bool with_prefix = true);
 
 /**
  * Convert bytes to hex string with "0x" prefix

@@ -555,8 +555,8 @@ void OrderEntry::create_order(Event<CreateOrder> const &event, server::oms::Orde
       (*connection_)(request_id, request, callback);
     };
     auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
-    auto [action, hash] = tools::Encoder::create_order(create_order, order, request_id, now_utc);
-    auto request = account_.sign(action, hash, now_utc);
+    auto [action, packed] = tools::Encoder::create_order(create_order, order, request_id, now_utc);
+    auto request = account_.sign(action, packed, now_utc);
     send_request(request);
   });
 }
@@ -624,8 +624,8 @@ void OrderEntry::modify_order(
       (*connection_)(request_id, request, callback);
     };
     auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
-    auto [action, hash] = tools::Encoder::modify_order(modify_order, order, request_id, previous_request_id, now_utc);
-    auto request = account_.sign(action, hash, now_utc);
+    auto [action, packed] = tools::Encoder::modify_order(modify_order, order, request_id, previous_request_id, now_utc);
+    auto request = account_.sign(action, packed, now_utc);
     send_request(request);
   });
 }
@@ -693,8 +693,8 @@ void OrderEntry::cancel_order(
       (*connection_)(request_id, request, callback);
     };
     auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
-    auto [action, hash] = tools::Encoder::cancel_order(cancel_order, order, request_id, previous_request_id, now_utc);
-    auto request = account_.sign(action, hash, now_utc);
+    auto [action, packed] = tools::Encoder::cancel_order(cancel_order, order, request_id, previous_request_id, now_utc);
+    auto request = account_.sign(action, packed, now_utc);
     send_request(request);
   });
 }

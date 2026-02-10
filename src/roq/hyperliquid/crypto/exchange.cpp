@@ -32,10 +32,13 @@ std::vector<uint8_t> Exchange::ROQ_actionHash(nlohmann::ordered_json const &acti
 }
 
 std::string Exchange::ROQ_sign(std::string_view const &action, std::vector<uint8_t> const &hash, std::chrono::milliseconds timestamp) {
+  throw std::runtime_error("XXX");
+  /*
   bool is_mainnet = (base_url_ == MAINNET_API_URL);
   std::optional<std::string> vault_opt = vault_address_.empty() ? std::nullopt : std::optional<std::string>(vault_address_);
   auto signature = ROQ_signL1Action(wallet_, hash, vault_opt, timestamp.count(), expires_after_, is_mainnet);
   return ROQ_postAction(action, signature, timestamp.count());
+  */
 }
 
 std::string Exchange::ROQ_postAction(std::string_view const &action, std::string const &signature, int64_t nonce) {

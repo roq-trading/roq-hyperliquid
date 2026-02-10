@@ -141,6 +141,13 @@ nlohmann::json constructPhantomAgent(std::vector<uint8_t> const &hash, bool is_m
   return {{"source", source}, {"connectionId", connection_id}};
 }
 
+nlohmann::json ROQ_constructPhantomAgent(std::string_view const &hash, bool is_mainnet) {
+  std::string source = is_mainnet ? "a" : "b";
+  // std::string connection_id = ROQ_bytesToHex(hash, true);
+
+  return {{"source", source}, {"connectionId", hash}};
+}
+
 // L1 payload for EIP-712
 
 nlohmann::json l1Payload(nlohmann::json const &phantom_agent) {
@@ -221,18 +228,19 @@ Signature signL1Action(
   return wallet.signMessage(message_hash);
 }
 
+// HANS
 std::string ROQ_signL1Action(
     Wallet const &wallet,
-    std::vector<uint8_t> const &action_hash,
+    nlohmann::json const &payload,
     std::optional<std::string> const &vault_address,
     int64_t nonce,
     std::optional<int64_t> expires_after,
     bool is_mainnet) {
   // Construct phantom agent
-  auto phantom_agent = constructPhantomAgent(action_hash, is_mainnet);
+  // auto phantom_agent = ROQ_constructPhantomAgent(action_hash, is_mainnet);
 
   // Create EIP-712 payload
-  auto payload = l1Payload(phantom_agent);
+  // auto payload = l1Payload(phantom_agent);
 
   // Encode typed data
   auto message_hash = encodeTypedData(payload);
