@@ -83,20 +83,13 @@ auto create_rate_limiter(auto &settings) {
   return core::limit::RateLimiter{settings.request.limit, settings.request.limit_interval};
 }
 
-constexpr auto get_exchange_from_coin(auto const &symbol, auto const &fallback) {
-#if (1)
-  return fallback;
-#else
-  auto sep = symbol.find_first_of(':');
+auto get_exchange_from_coin(auto &coin) {
+  auto sep = coin.find_first_of(':');
   if (sep == std::string_view::npos) {
-    return fallback;
+    return "hyperliquid"sv;
   }
-  return symbol.substr(0, sep);
-#endif
+  return coin.substr(0, sep);
 }
-
-static_assert(get_exchange_from_coin("ETH"sv, "hyperliquid"sv) == "hyperliquid"sv);
-// static_assert(get_exchange_from_coin("xyz:SILVER"sv, "hyperliquid"sv) == "xyz"sv);
 }  // namespace
 
 // === IMPLEMENTATION ===
@@ -459,7 +452,7 @@ void OrderEntry::operator()(Trace<json::GetOpenOrdersAck> const &event, size_t i
   log::info<4>("open_orders_ack={}"sv, open_orders_ack);
   for (auto &item : open_orders_ack.data) {
     log::warn("DEBUG item={}"sv, item);
-    auto exchange = get_exchange_from_coin(item.coin, shared_.settings.exchange);
+    auto exchange = get_exchange_from_coin(item.coin);
     auto external_order_id = fmt::format("{}"sv, item.oid);
     auto client_order_id = json::get_client_order_id(item.cloid);
     auto traded_quantity = item.orig_sz - item.sz;

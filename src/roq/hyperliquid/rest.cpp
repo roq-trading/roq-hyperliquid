@@ -81,20 +81,13 @@ auto create_rate_limiter(auto &settings) {
   return core::limit::RateLimiter{settings.request.limit, settings.request.limit_interval};
 }
 
-constexpr auto get_exchange_from_coin(auto const &symbol, auto const &fallback) {
-#if (1)
-  return fallback;
-#else
-  auto sep = symbol.find_first_of(':');
+auto get_exchange_from_coin(auto &coin) {
+  auto sep = coin.find_first_of(':');
   if (sep == std::string_view::npos) {
-    return fallback;
+    return "hyperliquid"sv;
   }
-  return symbol.substr(0, sep);
-#endif
+  return coin.substr(0, sep);
 }
-
-static_assert(get_exchange_from_coin("ETH"sv, "hyperliquid"sv) == "hyperliquid"sv);
-// static_assert(get_exchange_from_coin("xyz:SILVER"sv, "hyperliquid"sv) == "xyz"sv);
 }  // namespace
 
 // === IMPLEMENTATION ===
@@ -278,6 +271,7 @@ void Rest::operator()(Trace<json::GetSpotMetaAck> const &event) {
       log::fatal("Unexpected"sv);
     }
   }
+  /*
   for (auto &item : spot_meta_ack.universe) {
     auto discard = shared_.discard_symbol(item.name);
     if (std::size(item.tokens) != 2) {
@@ -327,6 +321,7 @@ void Rest::operator()(Trace<json::GetSpotMetaAck> const &event) {
       continue;
     }
   }
+  */
 }
 
 // perp-dexs
@@ -383,18 +378,27 @@ void Rest::operator()(Trace<json::GetPerpDexsAck> const &event) {
     auto &item = perp_dexs_ack.data[i];
     auto asset_id_offset = static_cast<int32_t>(i * OFFSET_DEX);
     log::warn("DEBUG item={}"sv, item);
-    if (i < std::size(shared_.dex)) {
-      auto &lhs = shared_.dex[i];
-      if (lhs.name != item.name || lhs.asset_id_offset != asset_id_offset) {
-        log::fatal("Unexpected: {}"sv, item);
+    for (auto &item_2 : shared_.dex) {
+      if (item_2.name == item.name) {
+        if (item_2.asset_id_offset != asset_id_offset) {
+          log::fatal("Unexpected: {}"sv, item);
+        }
+        continue;
       }
-    } else {
-      auto dex = Shared::Dex{
-          .name = std::string{item.name},
-          .asset_id_offset = asset_id_offset,
-      };
-      shared_.dex.emplace_back(std::move(dex));
     }
+    auto discard = !std::empty(item.name) && std::ranges::find(shared_.settings.exchange, item.name) == std::end(shared_.settings.exchange);
+    if (discard) {
+      continue;
+    }
+    auto dex = Shared::Dex{
+        .name = std::string{item.name},
+        .asset_id_offset = asset_id_offset,
+    };
+    shared_.dex.emplace_back(std::move(dex));
+  }
+  for (size_t i = 0; i < std::size(shared_.dex); ++i) {
+    auto &item = shared_.dex[i];
+    log::warn(R"(DEBUG [{}] name="{}", asset_id_offset={})"sv, i, item.name, item.asset_id_offset);
   }
 }
 
@@ -468,7 +472,7 @@ void Rest::operator()(Trace<json::GetMetaAck> const &event, size_t index) {
   for (size_t i = 0; i < std::size(meta_ack.universe); ++i) {
     auto &item = meta_ack.universe[i];
     auto discard = shared_.discard_symbol(item.name);
-    auto exchange = get_exchange_from_coin(item.name, shared_.settings.exchange);
+    auto exchange = get_exchange_from_coin(item.name);
     auto tick_size = std::pow(10.0, -static_cast<double>(item.sz_decimals));
     auto trade_vol_step_size = std::pow(10.0, -static_cast<double>(item.sz_decimals));
     auto reference_data = ReferenceData{

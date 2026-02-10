@@ -16,10 +16,8 @@
 namespace roq {
 namespace hyperliquid {
 
-struct Settings final : public server::flags::Settings {
+struct Settings final : public server::flags::Settings, public flags::Flags {
   explicit Settings(args::Parser const &);
-
-  std::string_view exchange;
 
   flags::Misc misc;
   flags::REST rest;
@@ -42,7 +40,6 @@ struct fmt::formatter<roq::hyperliquid::Settings> {
     return fmt::format_to(
         context.out(),
         R"({{)"
-        R"(exchange="{}", )"
         R"(misc={}, )"
         R"(rest={}, )"
         R"(ws={}, )"
@@ -50,7 +47,6 @@ struct fmt::formatter<roq::hyperliquid::Settings> {
         R"(request={}, )"
         R"(server={})"
         R"(}})"sv,
-        value.exchange,
         value.misc,
         value.rest,
         value.ws,
