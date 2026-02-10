@@ -82,6 +82,21 @@ struct create_metrics final : public utils::metrics::Factory {
 auto create_rate_limiter(auto &settings) {
   return core::limit::RateLimiter{settings.request.limit, settings.request.limit_interval};
 }
+
+constexpr auto get_exchange_from_coin(auto const &symbol, auto const &fallback) {
+#if (1)
+  return fallback;
+#else
+  auto sep = symbol.find_first_of(':');
+  if (sep == std::string_view::npos) {
+    return fallback;
+  }
+  return symbol.substr(0, sep);
+#endif
+}
+
+static_assert(get_exchange_from_coin("ETH"sv, "hyperliquid"sv) == "hyperliquid"sv);
+// static_assert(get_exchange_from_coin("xyz:SILVER"sv, "hyperliquid"sv) == "xyz"sv);
 }  // namespace
 
 // === IMPLEMENTATION ===
@@ -93,10 +108,10 @@ OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_i
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
       profile_{
-          .clearing_house_state = create_metrics(shared.settings, name_, "clearing_house_state"sv),
-          .clearing_house_state_ack = create_metrics(shared.settings, name_, "clearing_house_state_ack"sv),
           .spot_clearing_house_state = create_metrics(shared.settings, name_, "spot_clearing_house_state"sv),
           .spot_clearing_house_state_ack = create_metrics(shared.settings, name_, "spot_clearing_house_state_ack"sv),
+          .clearing_house_state = create_metrics(shared.settings, name_, "clearing_house_state"sv),
+          .clearing_house_state_ack = create_metrics(shared.settings, name_, "clearing_house_state_ack"sv),
           .open_orders = create_metrics(shared.settings, name_, "open_orders"sv),
           .open_orders_ack = create_metrics(shared.settings, name_, "open_orders_ack"sv),
           .user_fills = create_metrics(shared.settings, name_, "user_fills"sv),
@@ -133,10 +148,10 @@ void OrderEntry::operator()(metrics::Writer &writer) const {
       // counter
       .write(counter_.disconnect, metrics::Type::COUNTER)
       // profile
-      .write(profile_.clearing_house_state, metrics::Type::PROFILE)
-      .write(profile_.clearing_house_state_ack, metrics::Type::PROFILE)
       .write(profile_.spot_clearing_house_state, metrics::Type::PROFILE)
       .write(profile_.spot_clearing_house_state_ack, metrics::Type::PROFILE)
+      .write(profile_.clearing_house_state, metrics::Type::PROFILE)
+      .write(profile_.clearing_house_state_ack, metrics::Type::PROFILE)
       .write(profile_.open_orders, metrics::Type::PROFILE)
       .write(profile_.open_orders_ack, metrics::Type::PROFILE)
       .write(profile_.user_fills, metrics::Type::PROFILE)
@@ -230,82 +245,27 @@ uint32_t OrderEntry::download(OrderEntryState state) {
     case UNDEFINED:
       assert(false);
       break;
-    case CLEARING_HOUSE_STATE:
-      get_clearing_house_state();
-      return 1;
     case SPOT_CLEARING_HOUSE_STATE:
       get_spot_clearing_house_state();
       return 1;
+    case CLEARING_HOUSE_STATE:
+      get_clearing_house_state(0);
+      return 1;
+      // return std::size(shared_.dex);
     case OPEN_ORDERS:
-      get_open_orders();
+      get_open_orders(0);
       return 1;
+      // return std::size(shared_.dex);
     case USER_FILLS:
-      get_user_fills();
+      get_user_fills(0);
       return 1;
+      // return std::size(shared_.dex);
     case DONE:
       (*this)(ConnectionStatus::READY);
       return 0;
   }
   assert(false);
   return 0;
-}
-
-// clearing-house-state
-
-void OrderEntry::get_clearing_house_state() {
-  profile_.clearing_house_state([&]() {
-    auto body = fmt::format(
-        R"({{)"
-        R"("type":"clearinghouseState",)"
-        R"("user":"{}")"
-        R"(}})"sv,
-        account_.get_key());
-    auto request = web::rest::Request{
-        .method = web::http::Method::POST,
-        .path = shared_.api.market_data.get_info,
-        .query = {},
-        .accept = web::http::Accept::APPLICATION_JSON,
-        .content_type = web::http::ContentType::APPLICATION_JSON,
-        .headers = {},
-        .body = body,
-        .quality_of_service = {},
-    };
-    log::warn("DEBUG request={}"sv, request);
-    auto callback = [this, sequence = download_.sequence()]([[maybe_unused]] auto &request_id, auto &response) {
-      TraceInfo trace_info;
-      Trace event{trace_info, response};
-      get_clearing_house_state_ack(event, sequence);
-    };
-    (*connection_)("clearing-house-state"sv, request, callback);
-  });
-}
-
-void OrderEntry::get_clearing_house_state_ack(Trace<web::rest::Response> const &event, uint32_t sequence) {
-  auto const STATE = OrderEntryState::CLEARING_HOUSE_STATE;
-  profile_.clearing_house_state_ack([&]() {
-    auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
-      log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
-      download_.retry(STATE);
-    };
-    auto handle_success = [&](auto &body) {
-      log::warn("DEBUG {}"sv, body);
-      if (download_.skip(sequence, STATE)) {
-        log::info("Download state={} has already been processed"sv, STATE);
-      } else {
-        json::GetClearingHouseStateAck clearing_house_state_ack{body, decode_buffer_};
-        Trace event_2{event, clearing_house_state_ack};
-        (*this)(event_2);
-        download_.check(STATE);
-      }
-    };
-    process_response(event, handle_error, handle_success);
-  });
-}
-
-void OrderEntry::operator()(Trace<json::GetClearingHouseStateAck> const &event) {
-  auto &[trace_info, clearing_house_state_ack] = event;
-  log::info<4>("clearing_house_state_ack={}"sv, clearing_house_state_ack);
-  log::warn("DEBUG clearing_house_state_ack={}"sv, clearing_house_state_ack);
 }
 
 // spot-clearing-house-state
@@ -366,16 +326,20 @@ void OrderEntry::operator()(Trace<json::GetSpotClearingHouseStateAck> const &eve
   log::warn("DEBUG spot_clearing_house_state_ack={}"sv, spot_clearing_house_state_ack);
 }
 
-// open-orders
+// clearing-house-state
 
-void OrderEntry::get_open_orders() {
-  profile_.open_orders([&]() {
+void OrderEntry::get_clearing_house_state(size_t index) {
+  profile_.clearing_house_state([&]() {
+    assert(index < std::size(shared_.dex));
+    auto &dex = shared_.dex[index];
     auto body = fmt::format(
         R"({{)"
-        R"("type":"openOrders",)"
-        R"("user":"{}")"
+        R"("type":"clearinghouseState",)"
+        R"("user":"{}",)"
+        R"("dex":"{}")"
         R"(}})"sv,
-        account_.get_key());
+        account_.get_key(),
+        dex.name);
     auto request = web::rest::Request{
         .method = web::http::Method::POST,
         .path = shared_.api.market_data.get_info,
@@ -387,16 +351,83 @@ void OrderEntry::get_open_orders() {
         .quality_of_service = {},
     };
     log::warn("DEBUG request={}"sv, request);
-    auto callback = [this, sequence = download_.sequence()]([[maybe_unused]] auto &request_id, auto &response) {
+    auto callback = [this, sequence = download_.sequence(), index = index]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
-      get_open_orders_ack(event, sequence);
+      get_clearing_house_state_ack(event, sequence, index);
+    };
+    (*connection_)("clearing-house-state"sv, request, callback);
+  });
+}
+
+void OrderEntry::get_clearing_house_state_ack(Trace<web::rest::Response> const &event, uint32_t sequence, size_t index) {
+  auto const STATE = OrderEntryState::CLEARING_HOUSE_STATE;
+  profile_.clearing_house_state_ack([&]() {
+    auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
+      log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
+      download_.retry(STATE);
+    };
+    auto handle_success = [&](auto &body) {
+      log::warn("DEBUG {}"sv, body);
+      if (download_.skip(sequence, STATE)) {
+        log::info("Download state={} has already been processed"sv, STATE);
+      } else {
+        json::GetClearingHouseStateAck clearing_house_state_ack{body, decode_buffer_};
+        Trace event_2{event, clearing_house_state_ack};
+        (*this)(event_2, index);
+        auto next_index = index + 1;
+        if (next_index >= std::size(shared_.dex)) {
+          download_.check(STATE);
+        } else {
+          get_clearing_house_state(next_index);
+        }
+      }
+    };
+    process_response(event, handle_error, handle_success);
+  });
+}
+
+void OrderEntry::operator()(Trace<json::GetClearingHouseStateAck> const &event, size_t index) {
+  auto &[trace_info, clearing_house_state_ack] = event;
+  log::info<4>("clearing_house_state_ack={}"sv, clearing_house_state_ack);
+  log::warn("DEBUG clearing_house_state_ack={}"sv, clearing_house_state_ack);
+}
+
+// open-orders
+
+void OrderEntry::get_open_orders(size_t index) {
+  profile_.open_orders([&]() {
+    assert(index < std::size(shared_.dex));
+    auto &dex = shared_.dex[index];
+    auto body = fmt::format(
+        R"({{)"
+        R"("type":"openOrders",)"
+        R"("user":"{}",)"
+        R"("dex":"{}")"
+        R"(}})"sv,
+        account_.get_key(),
+        dex.name);
+    auto request = web::rest::Request{
+        .method = web::http::Method::POST,
+        .path = shared_.api.market_data.get_info,
+        .query = {},
+        .accept = web::http::Accept::APPLICATION_JSON,
+        .content_type = web::http::ContentType::APPLICATION_JSON,
+        .headers = {},
+        .body = body,
+        .quality_of_service = {},
+    };
+    log::warn("DEBUG request={}"sv, request);
+    auto callback = [this, sequence = download_.sequence(), index = index]([[maybe_unused]] auto &request_id, auto &response) {
+      TraceInfo trace_info;
+      Trace event{trace_info, response};
+      get_open_orders_ack(event, sequence, index);
     };
     (*connection_)("open-orders"sv, request, callback);
   });
 }
 
-void OrderEntry::get_open_orders_ack(Trace<web::rest::Response> const &event, uint32_t sequence) {
+void OrderEntry::get_open_orders_ack(Trace<web::rest::Response> const &event, uint32_t sequence, size_t index) {
   auto const STATE = OrderEntryState::OPEN_ORDERS;
   profile_.open_orders_ack([&]() {
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
@@ -410,25 +441,31 @@ void OrderEntry::get_open_orders_ack(Trace<web::rest::Response> const &event, ui
       } else {
         json::GetOpenOrdersAck open_orders_ack{body, decode_buffer_};
         Trace event_2{event, open_orders_ack};
-        (*this)(event_2);
-        download_.check(STATE);
+        (*this)(event_2, index);
+        auto next_index = index + 1;
+        if (next_index >= std::size(shared_.dex)) {
+          download_.check(STATE);
+        } else {
+          get_open_orders(next_index);
+        }
       }
     };
     process_response(event, handle_error, handle_success);
   });
 }
 
-void OrderEntry::operator()(Trace<json::GetOpenOrdersAck> const &event) {
+void OrderEntry::operator()(Trace<json::GetOpenOrdersAck> const &event, size_t index) {
   auto &[trace_info, open_orders_ack] = event;
   log::info<4>("open_orders_ack={}"sv, open_orders_ack);
   for (auto &item : open_orders_ack.data) {
     log::warn("DEBUG item={}"sv, item);
+    auto exchange = get_exchange_from_coin(item.coin, shared_.settings.exchange);
     auto external_order_id = fmt::format("{}"sv, item.oid);
     auto client_order_id = json::get_client_order_id(item.cloid);
     auto traded_quantity = item.orig_sz - item.sz;
     auto order_update = server::oms::OrderUpdate{
         .account = account_.name,
-        .exchange = shared_.settings.exchange,
+        .exchange = exchange,
         .symbol = item.coin,
         .side = map(item.side),
         .position_effect = {},
@@ -470,14 +507,18 @@ void OrderEntry::operator()(Trace<json::GetOpenOrdersAck> const &event) {
 
 // user-fills
 
-void OrderEntry::get_user_fills() {
+void OrderEntry::get_user_fills(size_t index) {
   profile_.user_fills([&]() {
+    assert(index < std::size(shared_.dex));
+    auto &dex = shared_.dex[index];
     auto body = fmt::format(
         R"({{)"
         R"("type":"userFills",)"
-        R"("user":"{}")"
+        R"("user":"{}",)"
+        R"("dex":"{}")"
         R"(}})"sv,
-        account_.get_key());
+        account_.get_key(),
+        dex.name);
     auto request = web::rest::Request{
         .method = web::http::Method::POST,
         .path = shared_.api.market_data.get_info,
@@ -489,16 +530,16 @@ void OrderEntry::get_user_fills() {
         .quality_of_service = {},
     };
     log::warn("DEBUG request={}"sv, request);
-    auto callback = [this, sequence = download_.sequence()]([[maybe_unused]] auto &request_id, auto &response) {
+    auto callback = [this, sequence = download_.sequence(), index = index]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
-      get_user_fills_ack(event, sequence);
+      get_user_fills_ack(event, sequence, index);
     };
     (*connection_)("user-fills"sv, request, callback);
   });
 }
 
-void OrderEntry::get_user_fills_ack(Trace<web::rest::Response> const &event, uint32_t sequence) {
+void OrderEntry::get_user_fills_ack(Trace<web::rest::Response> const &event, uint32_t sequence, size_t index) {
   auto const STATE = OrderEntryState::USER_FILLS;
   profile_.user_fills_ack([&]() {
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
@@ -512,15 +553,20 @@ void OrderEntry::get_user_fills_ack(Trace<web::rest::Response> const &event, uin
       } else {
         json::GetUserFillsAck user_fills_ack{body, decode_buffer_};
         Trace event_2{event, user_fills_ack};
-        (*this)(event_2);
-        download_.check(STATE);
+        (*this)(event_2, index);
+        auto next_index = index + 1;
+        if (next_index >= std::size(shared_.dex)) {
+          download_.check(STATE);
+        } else {
+          get_user_fills(next_index);
+        }
       }
     };
     process_response(event, handle_error, handle_success);
   });
 }
 
-void OrderEntry::operator()(Trace<json::GetUserFillsAck> const &event) {
+void OrderEntry::operator()(Trace<json::GetUserFillsAck> const &event, size_t index) {
   auto &[trace_info, user_fills_ack] = event;
   log::info<4>("user_fills_ack={}"sv, user_fills_ack);
   for (auto &item : user_fills_ack.data) {

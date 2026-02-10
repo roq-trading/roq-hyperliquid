@@ -78,6 +78,21 @@ auto create_connection(auto &handler, auto &settings, auto &context) {
 struct create_metrics final : public utils::metrics::Factory {
   create_metrics(auto &settings, auto &group, auto const &function) : utils::metrics::Factory{settings.app.name, group, function} {}
 };
+
+constexpr auto get_exchange_from_coin(auto const &symbol, auto const &fallback) {
+#if (1)
+  return fallback;
+#else
+  auto sep = symbol.find_first_of(':');
+  if (sep == std::string_view::npos) {
+    return fallback;
+  }
+  return symbol.substr(0, sep);
+#endif
+}
+
+static_assert(get_exchange_from_coin("ETH"sv, "hyperliquid"sv) == "hyperliquid"sv);
+// static_assert(get_exchange_from_coin("xyz:SILVER"sv, "hyperliquid"sv) == "xyz"sv);
 }  // namespace
 
 // === IMPLEMENTATION ===
@@ -318,6 +333,7 @@ void DropCopy::operator()(Trace<json::OrderUpdates> const &event) {
     log::info<2>("order_updates={}"sv, order_updates);
     for (auto &item : order_updates.data) {
       log::warn("DEBUG item={}"sv, item);
+      auto exchange = get_exchange_from_coin(item.order.coin, shared_.settings.exchange);
       auto external_order_id = fmt::format("{}"sv, item.order.oid);
       auto client_order_id = json::get_client_order_id(item.order.cloid);
       auto order_status = map(item.status).get<OrderStatus>();
@@ -336,7 +352,7 @@ void DropCopy::operator()(Trace<json::OrderUpdates> const &event) {
       auto traded_quantity = item.order.orig_sz - item.order.sz;
       auto order_update = server::oms::OrderUpdate{
           .account = account_.name,
-          .exchange = shared_.settings.exchange,
+          .exchange = exchange,
           .symbol = item.order.coin,
           .side = map(item.order.side),
           .position_effect = {},

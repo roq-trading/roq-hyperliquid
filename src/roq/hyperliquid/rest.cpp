@@ -32,8 +32,8 @@ auto const SUPPORTS = Mask{
 size_t const MAX_DECODE_BUFFER_DEPTH = 2;
 
 uint32_t const OFFSET_SPOT = 10000;
-uint32_t const OFFSET_SWAP = 0;
-// uint32_t const OFFSET_SWAP = 110000;
+// uint32_t const OFFSET_SWAP = 0;
+uint32_t const OFFSET_DEX = 110000;
 }  // namespace
 
 // === HELPERS ===
@@ -80,6 +80,21 @@ struct create_metrics final : public utils::metrics::Factory {
 auto create_rate_limiter(auto &settings) {
   return core::limit::RateLimiter{settings.request.limit, settings.request.limit_interval};
 }
+
+constexpr auto get_exchange_from_coin(auto const &symbol, auto const &fallback) {
+#if (1)
+  return fallback;
+#else
+  auto sep = symbol.find_first_of(':');
+  if (sep == std::string_view::npos) {
+    return fallback;
+  }
+  return symbol.substr(0, sep);
+#endif
+}
+
+static_assert(get_exchange_from_coin("ETH"sv, "hyperliquid"sv) == "hyperliquid"sv);
+// static_assert(get_exchange_from_coin("xyz:SILVER"sv, "hyperliquid"sv) == "xyz"sv);
 }  // namespace
 
 // === IMPLEMENTATION ===
@@ -198,8 +213,9 @@ uint32_t Rest::download(RestState state) {
       get_perp_dexs();
       return 1;
     case META:
-      get_meta();
+      get_meta(0);
       return 1;
+      // return std::size(shared_.dex);
     case DONE:
       (*this)(ConnectionStatus::READY);
       return 0;
@@ -262,52 +278,6 @@ void Rest::operator()(Trace<json::GetSpotMetaAck> const &event) {
       log::fatal("Unexpected"sv);
     }
   }
-  /*
-  for (auto &item : spot_meta_ack.tokens) {
-    auto discard = shared_.discard_symbol(item.name);
-    auto tick_size = std::pow(10.0, -static_cast<double>(item.sz_decimals));
-    auto trade_vol_step_size = std::pow(10.0, -static_cast<double>(item.sz_decimals));
-    auto reference_data = ReferenceData{
-        .stream_id = stream_id_,
-        .exchange = shared_.settings.exchange,
-        .symbol = item.name,
-        .description = item.full_name,
-        .security_type = SecurityType::SPOT,
-        .external_security_id = utils::safe_cast(item.index),
-        .cfi_code = {},
-        .base_currency = {},
-        .quote_currency = {},
-        .settlement_currency = {},
-        .margin_currency = {},
-        .commission_currency = {},
-        .tick_size = tick_size,
-        .tick_size_steps = {},
-        .multiplier = NaN,
-        .min_notional = NaN,
-        .min_trade_vol = NaN,
-        .max_trade_vol = NaN,
-        .trade_vol_step_size = trade_vol_step_size,
-        .option_type = {},
-        .strike_currency = {},
-        .strike_price = NaN,
-        .underlying = {},
-        .time_zone = {},
-        .issue_date = {},
-        .settlement_date = {},
-        .expiry_datetime = {},
-        .expiry_datetime_utc = {},
-        .exchange_time_utc = {},
-        .exchange_sequence = {},
-        .sending_time_utc = {},
-        .discard = discard,
-    };
-    create_trace_and_dispatch(handler_, trace_info, reference_data, true);
-    if (discard) {
-      log::info<1>(R"(Drop symbol="{}")"sv, item.name);
-      continue;
-    }
-  }
-  */
   for (auto &item : spot_meta_ack.universe) {
     auto discard = shared_.discard_symbol(item.name);
     if (std::size(item.tokens) != 2) {
@@ -408,14 +378,38 @@ void Rest::get_perp_dexs_ack(Trace<web::rest::Response> const &event, uint32_t s
 void Rest::operator()(Trace<json::GetPerpDexsAck> const &event) {
   auto &[trace_info, perp_dexs_ack] = event;
   log::info<4>("perp_dexs_ack={}"sv, perp_dexs_ack);
+  shared_.dex.reserve(std::size(perp_dexs_ack.data));
+  for (size_t i = 0; i < std::size(perp_dexs_ack.data); ++i) {
+    auto &item = perp_dexs_ack.data[i];
+    auto asset_id_offset = static_cast<int32_t>(i * OFFSET_DEX);
+    log::warn("DEBUG item={}"sv, item);
+    if (i < std::size(shared_.dex)) {
+      auto &lhs = shared_.dex[i];
+      if (lhs.name != item.name || lhs.asset_id_offset != asset_id_offset) {
+        log::fatal("Unexpected: {}"sv, item);
+      }
+    } else {
+      auto dex = Shared::Dex{
+          .name = std::string{item.name},
+          .asset_id_offset = asset_id_offset,
+      };
+      shared_.dex.emplace_back(std::move(dex));
+    }
+  }
 }
 
 // meta
 
-void Rest::get_meta() {
+void Rest::get_meta(size_t index) {
   profile_.meta([&]() {
-    // auto body = R"({"type":"meta","dex":"SOL"})"sv;
-    auto body = R"({"type":"meta"})"sv;
+    assert(index < std::size(shared_.dex));
+    auto &dex = shared_.dex[index];
+    auto body = fmt::format(
+        R"({{)"
+        R"("type":"meta",)"
+        R"("dex":"{}")"
+        R"(}})"sv,
+        dex.name);
     auto request = web::rest::Request{
         .method = web::http::Method::POST,
         .path = shared_.api.market_data.get_info,
@@ -426,16 +420,16 @@ void Rest::get_meta() {
         .body = body,
         .quality_of_service = {},
     };
-    auto callback = [this, sequence = download_.sequence()]([[maybe_unused]] auto &request_id, auto &response) {
+    auto callback = [this, sequence = download_.sequence(), index = index]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
-      get_meta_ack(event, sequence);
+      get_meta_ack(event, sequence, index);
     };
     (*connection_)("meta"sv, request, callback);
   });
 }
 
-void Rest::get_meta_ack(Trace<web::rest::Response> const &event, uint32_t sequence) {
+void Rest::get_meta_ack(Trace<web::rest::Response> const &event, uint32_t sequence, size_t index) {
   auto const STATE = RestState::META;
   profile_.meta_ack([&]() {
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
@@ -449,8 +443,13 @@ void Rest::get_meta_ack(Trace<web::rest::Response> const &event, uint32_t sequen
       } else {
         json::GetMetaAck meta_ack{body, decode_buffer_};
         Trace event_2{event, meta_ack};
-        (*this)(event_2);
-        download_.check(STATE);
+        (*this)(event_2, index);
+        auto next_index = index + 1;
+        if (next_index >= std::size(shared_.dex)) {
+          download_.check(STATE);
+        } else {
+          get_meta(next_index);
+        }
       }
     };
     process_response(event, handle_error, handle_success);
@@ -458,24 +457,27 @@ void Rest::get_meta_ack(Trace<web::rest::Response> const &event, uint32_t sequen
 }
 
 // XXX TODO symbols update => trigger market data connection
-void Rest::operator()(Trace<json::GetMetaAck> const &event) {
+void Rest::operator()(Trace<json::GetMetaAck> const &event, size_t index) {
   auto &[trace_info, meta_ack] = event;
   log::info<4>("meta_ack={}"sv, meta_ack);
+  assert(index < std::size(shared_.dex));
+  auto &dex = shared_.dex[index];
   std::vector<Symbol> symbols;
   symbols.reserve(std::size(meta_ack.universe));  // alloc
   size_t counter = 0;
   for (size_t i = 0; i < std::size(meta_ack.universe); ++i) {
     auto &item = meta_ack.universe[i];
     auto discard = shared_.discard_symbol(item.name);
+    auto exchange = get_exchange_from_coin(item.name, shared_.settings.exchange);
     auto tick_size = std::pow(10.0, -static_cast<double>(item.sz_decimals));
     auto trade_vol_step_size = std::pow(10.0, -static_cast<double>(item.sz_decimals));
     auto reference_data = ReferenceData{
         .stream_id = stream_id_,
-        .exchange = shared_.settings.exchange,
+        .exchange = exchange,
         .symbol = item.name,
         .description = {},
         .security_type = SecurityType::SWAP,
-        .external_security_id = utils::safe_cast(OFFSET_SWAP + i),
+        .external_security_id = utils::safe_cast(dex.asset_id_offset + i),
         .cfi_code = {},
         .base_currency = {},
         .quote_currency = {},

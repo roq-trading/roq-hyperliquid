@@ -83,9 +83,9 @@ struct Rest final : public web::rest::Client::Handler {
 
   // meta
 
-  void get_meta();
-  void get_meta_ack(Trace<web::rest::Response> const &, uint32_t sequence);
-  void operator()(Trace<json::GetMetaAck> const &);
+  void get_meta(size_t index);
+  void get_meta_ack(Trace<web::rest::Response> const &, uint32_t sequence, size_t index);
+  void operator()(Trace<json::GetMetaAck> const &, size_t index);
 
   // helpers
 

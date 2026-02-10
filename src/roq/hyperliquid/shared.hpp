@@ -57,6 +57,13 @@ struct Shared final {
 
   core::Symbols symbols;
   utils::unordered_set<std::string> all_symbols;
+
+  // DEX
+  struct Dex final {
+    std::string name;
+    int32_t asset_id_offset = {};
+  };
+  std::vector<Dex> dex;
 };
 
 }  // namespace hyperliquid

@@ -3,10 +3,10 @@
   "type": "enum",
   "values": [
     {
-      "name": "clearing_house_state"
+      "name": "spot_clearing_house_state"
     },
     {
-      "name": "spot_clearing_house_state"
+      "name": "clearing_house_state"
     },
     {
       "name": "open_orders"

@@ -81,6 +81,21 @@ auto create_connection(auto &handler, auto &settings, auto &context) {
 struct create_metrics final : public utils::metrics::Factory {
   create_metrics(auto &settings, auto &group, auto const &function) : utils::metrics::Factory{settings.app.name, group, function} {}
 };
+
+constexpr auto get_exchange_from_coin(auto const &symbol, auto const &fallback) {
+#if (1)
+  return fallback;
+#else
+  auto sep = symbol.find_first_of(':');
+  if (sep == std::string_view::npos) {
+    return fallback;
+  }
+  return symbol.substr(0, sep);
+#endif
+}
+
+static_assert(get_exchange_from_coin("ETH"sv, "hyperliquid"sv) == "hyperliquid"sv);
+// static_assert(get_exchange_from_coin("xyz:SILVER"sv, "hyperliquid"sv) == "xyz"sv);
 }  // namespace
 
 // === IMPLEMENTATION ===
@@ -307,9 +322,10 @@ void MarketData::operator()(Trace<json::BBO> const &event) {
     log::info<2>("bbo={}"sv, bbo);
     (*connection_).touch(trace_info.source_receive_time);
     if (std::size(bbo.data.bbo) == 2) {
+      auto exchange = get_exchange_from_coin(bbo.data.coin, shared_.settings.exchange);
       auto top_of_book = TopOfBook{
           .stream_id = stream_id_,
-          .exchange = shared_.settings.exchange,
+          .exchange = exchange,
           .symbol = bbo.data.coin,
           .layer =
               {
@@ -358,9 +374,10 @@ void MarketData::operator()(Trace<json::L2Book> const &event) {
       helper(shared_.asks, item);
     }
     if (!(std::empty(shared_.bids) && std::empty(shared_.asks))) {
+      auto exchange = get_exchange_from_coin(l2book.data.coin, shared_.settings.exchange);
       auto market_by_price_update = MarketByPriceUpdate{
           .stream_id = stream_id_,
-          .exchange = shared_.settings.exchange,
+          .exchange = exchange,
           .symbol = l2book.data.coin,
           .bids = shared_.bids,
           .asks = shared_.asks,
@@ -390,9 +407,10 @@ void MarketData::operator()(Trace<json::Trades> const &event) {
       if (std::empty(shared_.trades)) {
         return;
       }
+      auto exchange = get_exchange_from_coin(coin, shared_.settings.exchange);
       auto trade_summary = TradeSummary{
           .stream_id = stream_id_,
-          .exchange = shared_.settings.exchange,
+          .exchange = exchange,
           .symbol = coin,
           .trades = shared_.trades,
           .exchange_time_utc = time,
@@ -445,9 +463,10 @@ void MarketData::operator()(Trace<json::ActiveAssetCtx> const &event) {
             .value = active_asset_ctx.data.ctx.funding,
         },
     }};
+    auto exchange = get_exchange_from_coin(active_asset_ctx.data.coin, shared_.settings.exchange);
     auto statistics_update = StatisticsUpdate{
         .stream_id = stream_id_,
-        .exchange = shared_.settings.exchange,
+        .exchange = exchange,
         .symbol = active_asset_ctx.data.coin,
         .statistics = statistics,
         .update_type = UpdateType::INCREMENTAL,

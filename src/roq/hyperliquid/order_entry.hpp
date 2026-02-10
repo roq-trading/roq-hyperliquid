@@ -79,9 +79,9 @@ struct OrderEntry final : public web::rest::Client::Handler {
 
   // clearing-house-state
 
-  void get_clearing_house_state();
-  void get_clearing_house_state_ack(Trace<web::rest::Response> const &, uint32_t sequence);
-  void operator()(Trace<json::GetClearingHouseStateAck> const &);
+  void get_clearing_house_state(size_t index);
+  void get_clearing_house_state_ack(Trace<web::rest::Response> const &, uint32_t sequence, size_t index);
+  void operator()(Trace<json::GetClearingHouseStateAck> const &, size_t index);
 
   // spot-clearing-house-state
 
@@ -91,15 +91,15 @@ struct OrderEntry final : public web::rest::Client::Handler {
 
   // open-orders
 
-  void get_open_orders();
-  void get_open_orders_ack(Trace<web::rest::Response> const &, uint32_t sequence);
-  void operator()(Trace<json::GetOpenOrdersAck> const &);
+  void get_open_orders(size_t index);
+  void get_open_orders_ack(Trace<web::rest::Response> const &, uint32_t sequence, size_t index);
+  void operator()(Trace<json::GetOpenOrdersAck> const &, size_t index);
 
   // user-fills
 
-  void get_user_fills();
-  void get_user_fills_ack(Trace<web::rest::Response> const &, uint32_t sequence);
-  void operator()(Trace<json::GetUserFillsAck> const &);
+  void get_user_fills(size_t index);
+  void get_user_fills_ack(Trace<web::rest::Response> const &, uint32_t sequence, size_t index);
+  void operator()(Trace<json::GetUserFillsAck> const &, size_t index);
 
   // create-order
 
@@ -142,7 +142,7 @@ struct OrderEntry final : public web::rest::Client::Handler {
     utils::metrics::Counter disconnect;
   } counter_;
   struct {
-    utils::metrics::Profile clearing_house_state, clearing_house_state_ack, spot_clearing_house_state, spot_clearing_house_state_ack, open_orders,
+    utils::metrics::Profile spot_clearing_house_state, spot_clearing_house_state_ack, clearing_house_state, clearing_house_state_ack, open_orders,
         open_orders_ack, user_fills, user_fills_ack, create_order, create_order_ack, modify_order, modify_order_ack, cancel_order, cancel_order_ack;
   } profile_;
   struct {
