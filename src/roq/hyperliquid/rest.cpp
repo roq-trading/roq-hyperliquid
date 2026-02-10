@@ -519,12 +519,10 @@ void Rest::operator()(Trace<json::GetMetaAck> const &event, size_t index) {
     }
     ++counter;
   }
-  if (!std::empty(symbols)) {
-    auto symbols_update = SymbolsUpdate{
-        .symbols = symbols,
-    };
-    handler_(symbols_update);
-  }
+  auto symbols_update = SymbolsUpdate{
+      .symbols = symbols,
+  };
+  handler_(symbols_update);
   if (counter > 0) {
     log::info("Symbols {} / {}"sv, counter, std::size(meta_ack.universe));
   }

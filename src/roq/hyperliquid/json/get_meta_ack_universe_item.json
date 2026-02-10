@@ -29,6 +29,14 @@
     {
       "name": "marginMode",
       "type": "std/string_view"
+    },
+    {
+      "name": "growthMode",
+      "type": "std/string_view"
+    },
+    {
+      "name": "lastGrowthModeChangeTime",
+      "type": "std/nanoseconds"
     }
   ]
 }
