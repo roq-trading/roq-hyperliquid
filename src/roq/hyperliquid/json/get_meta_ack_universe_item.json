@@ -36,7 +36,7 @@
     },
     {
       "name": "lastGrowthModeChangeTime",
-      "type": "std/nanoseconds"
+      "type": "std/string_view"
     }
   ]
 }
