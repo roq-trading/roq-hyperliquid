@@ -16,7 +16,8 @@ FLAGFILE="../../../share/flags/prod/flags.cfg"
 
 $PREFIX ./roq-hyperliquid \
   --name "$NAME" \
-  --exchange "hyperliquid,xyz" \
+  --exchange "hyperliquid" \
+  --dex "xyz" \
   --config_file "$CONFIG_FILE" \
   --flagfile "$FLAGFILE" \
   --cache_dir "$HOME/var/lib/roq/cache" \

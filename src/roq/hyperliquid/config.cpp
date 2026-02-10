@@ -53,11 +53,22 @@ auto create_gateway_settings(auto &settings) -> GatewaySettings {
       .oms_cancel_all_orders = OMS_CANCEL_ALL_ORDERS,
   };
 }
+
+template <typename R>
+auto create_dex(auto &settings) {
+  using result_type = std::remove_cvref_t<R>;
+  result_type result;
+  if (settings.aggregator) {
+    result = settings.dex;
+  }
+  return result;
+}
 }  // namespace
 
 // === IMPLEMENTATION ===
 
-Config::Config(Settings const &settings) : exchanges_{settings.exchange}, gateway_settings_{create_gateway_settings(settings)} {
+Config::Config(Settings const &settings)
+    : exchange_{settings.exchange}, dex_{create_dex<decltype(dex_)>(settings)}, gateway_settings_{create_gateway_settings(settings)} {
   server::config::Reader::parse_file(*this, settings);
   log::info<1>("config={}"sv, *this);
 }
@@ -91,7 +102,8 @@ std::string const &Config::get_secret(Account const &account) const {
 }
 
 void Config::dispatch(server::config::Handler &handler) const {
-  for (auto &item : exchanges_) {
+  handler(exchange_);
+  for (auto &item : dex_) {
     handler(item);
   }
   handler(symbols);

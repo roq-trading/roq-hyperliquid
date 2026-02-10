@@ -5,12 +5,19 @@
     {
       "name": "exchange",
       "type": "std/string",
+      "default": "hyperliquid",
+      "description": "Exchange identifier"
+    },
+    {
+      "name": "dex",
+      "type": "std/string",
       "array": "std/vector",
-      "default": [
-        "hyperliquid",
-        "xyz"
-      ],
-      "description": "Exchange identifier (list)"
+      "description": "DEXs (list)"
+    },
+    {
+      "name": "aggregator",
+      "type": "std/bool",
+      "description": "Treat Hyperliquid as an aggregator? The exchange field is then the name of the DEX"
     }
   ]
 }

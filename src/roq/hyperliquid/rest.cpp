@@ -81,12 +81,16 @@ auto create_rate_limiter(auto &settings) {
   return core::limit::RateLimiter{settings.request.limit, settings.request.limit_interval};
 }
 
-auto get_exchange_from_coin(auto &coin) {
-  auto sep = coin.find_first_of(':');
-  if (sep == std::string_view::npos) {
-    return "hyperliquid"sv;
+auto get_exchange_from_coin(auto &coin, auto &settings) {
+  if (settings.aggregator) {
+    auto sep = coin.find_first_of(':');
+    if (sep == std::string_view::npos) {
+      return settings.exchange;
+    }
+    return coin.substr(0, sep);
+  } else {
+    return settings.exchange;
   }
-  return coin.substr(0, sep);
 }
 }  // namespace
 
@@ -386,7 +390,7 @@ void Rest::operator()(Trace<json::GetPerpDexsAck> const &event) {
         continue;
       }
     }
-    auto discard = !std::empty(item.name) && std::ranges::find(shared_.settings.exchange, item.name) == std::end(shared_.settings.exchange);
+    auto discard = !std::empty(item.name) && std::ranges::find(shared_.settings.dex, item.name) == std::end(shared_.settings.dex);
     if (discard) {
       continue;
     }
@@ -472,7 +476,7 @@ void Rest::operator()(Trace<json::GetMetaAck> const &event, size_t index) {
   for (size_t i = 0; i < std::size(meta_ack.universe); ++i) {
     auto &item = meta_ack.universe[i];
     auto discard = shared_.discard_symbol(item.name);
-    auto exchange = get_exchange_from_coin(item.name);
+    auto exchange = get_exchange_from_coin(item.name, shared_.settings);
     auto tick_size = std::pow(10.0, -static_cast<double>(item.sz_decimals));
     auto trade_vol_step_size = std::pow(10.0, -static_cast<double>(item.sz_decimals));
     auto reference_data = ReferenceData{

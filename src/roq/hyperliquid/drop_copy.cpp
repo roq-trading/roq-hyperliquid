@@ -79,12 +79,16 @@ struct create_metrics final : public utils::metrics::Factory {
   create_metrics(auto &settings, auto &group, auto const &function) : utils::metrics::Factory{settings.app.name, group, function} {}
 };
 
-auto get_exchange_from_coin(auto &coin) {
-  auto sep = coin.find_first_of(':');
-  if (sep == std::string_view::npos) {
-    return "hyperliquid"sv;
+auto get_exchange_from_coin(auto &coin, auto &settings) {
+  if (settings.aggregator) {
+    auto sep = coin.find_first_of(':');
+    if (sep == std::string_view::npos) {
+      return settings.exchange;
+    }
+    return coin.substr(0, sep);
+  } else {
+    return settings.exchange;
   }
-  return coin.substr(0, sep);
 }
 }  // namespace
 
@@ -326,7 +330,7 @@ void DropCopy::operator()(Trace<json::OrderUpdates> const &event) {
     log::info<2>("order_updates={}"sv, order_updates);
     for (auto &item : order_updates.data) {
       log::warn("DEBUG item={}"sv, item);
-      auto exchange = get_exchange_from_coin(item.order.coin);
+      auto exchange = get_exchange_from_coin(item.order.coin, shared_.settings);
       auto external_order_id = fmt::format("{}"sv, item.order.oid);
       auto client_order_id = json::get_client_order_id(item.order.cloid);
       auto order_status = map(item.status).get<OrderStatus>();

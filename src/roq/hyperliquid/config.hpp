@@ -45,7 +45,8 @@ struct Config final : public server::config::Dispatcher, public server::config::
   void operator()(std::string_view const &key, toml::node &) override;
 
  private:
-  std::span<std::string const> const exchanges_;
+  std::string const exchange_;
+  std::span<std::string const> const dex_;
   GatewaySettings const gateway_settings_;
 
  public:
