@@ -25,8 +25,7 @@ set(SOURCES
     json_user.cpp
     json_user_fills.cpp
     json_user_fundings.cpp
-    # json_utils.cpp
-    # wallet.cpp /crypto.cpp
+    # json_utils.cpp wallet.cpp /crypto.cpp
     main.cpp)
 
 roq_gitignore(OUTPUT .gitignore SOURCES ${TARGET_NAME})

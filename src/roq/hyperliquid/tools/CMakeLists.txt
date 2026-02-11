@@ -7,7 +7,6 @@ set(SOURCES
     ecdsa.cpp
     eip712.cpp
     encoder.cpp
-    keccak256.cpp
     key.cpp
     point.cpp
     wallet.cpp)

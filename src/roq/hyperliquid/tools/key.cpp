@@ -9,8 +9,9 @@
 
 #include "roq/exceptions.hpp"
 
+#include "roq/utils/hash/keccak256.hpp"
+
 #include "roq/hyperliquid/tools/bignum.hpp"
-#include "roq/hyperliquid/tools/keccak256.hpp"
 #include "roq/hyperliquid/tools/point.hpp"
 
 using namespace std::literals;
@@ -109,12 +110,17 @@ std::string Key::derive_address() const {
     throw std::runtime_error("Failed to convert public key");
   }
 
-  auto hash = Keccak256::keccak256({pub_key_bytes.data() + 1, 64});
+  utils::hash::Keccak256 hash;  // XXX FIXME TODO re-use
+  std::span payload{pub_key_bytes.data() + 1, 64};
+  std::vector<std::byte> digest(32);
+  hash.clear();
+  hash.update(payload);
+  hash.final(digest);
 
   std::string address = "0x";
   for (size_t i = 12; i < 32; ++i) {
     char buf[3];
-    snprintf(buf, sizeof(buf), "%02x", hash[i]);
+    snprintf(buf, sizeof(buf), "%02x", static_cast<int>(digest[i]));
     address += buf;
   }
 
