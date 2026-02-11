@@ -16,6 +16,9 @@ struct Key final {
 
   explicit Key(std::string_view const &private_key);
 
+  operator value_type *() { return handle_.get(); }
+  operator value_type const *() const { return handle_.get(); }
+
   operator EC_GROUP const *() const;
 
   BIGNUM const *get_private_key() const;

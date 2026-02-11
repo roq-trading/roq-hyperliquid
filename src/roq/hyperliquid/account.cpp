@@ -37,8 +37,9 @@ auto create_crypto(auto &config, auto &name) -> tools::Crypto {
 Account::Account(Settings const &, Config const &config, std::string_view const &name) : name{name}, crypto_{create_crypto(config, name)} {
 }
 
-std::string Account::sign(std::string_view const &action, std::vector<uint8_t> const &hash, std::chrono::milliseconds now_utc) {
-  return crypto_.sign(action, hash, now_utc);
+std::string Account::sign_l1_action(
+    std::string_view const &action, std::span<std::byte> const &hash, std::chrono::milliseconds now_utc, std::chrono::milliseconds expires_after_utc) {
+  return crypto_.sign_l1_action(action, hash, now_utc, expires_after_utc);
 }
 
 }  // namespace hyperliquid

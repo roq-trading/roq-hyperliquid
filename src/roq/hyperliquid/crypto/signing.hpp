@@ -51,13 +51,7 @@ Signature signL1Action(
     std::optional<int64_t> expires_after,
     bool is_mainnet);
 
-std::string ROQ_signL1Action(
-    Wallet const &wallet,
-    nlohmann::json const &payload,
-    std::optional<std::string> const &vault_address,
-    int64_t nonce,
-    std::optional<int64_t> expires_after,
-    bool is_mainnet);
+std::string ROQ_signL1Action(Wallet const &wallet, nlohmann::json const &payload);
 
 /**
  * Sign a user-signed action (transfers, etc.) using EIP-712

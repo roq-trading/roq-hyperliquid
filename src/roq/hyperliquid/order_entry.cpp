@@ -17,8 +17,6 @@
 #include "roq/hyperliquid/json/map.hpp"
 #include "roq/hyperliquid/json/utils.hpp"
 
-#include "roq/hyperliquid/crypto/constants.hpp"  // XXX FIXME TOD mainnet/testnet
-
 #include "roq/hyperliquid/tools/encoder.hpp"
 
 using namespace std::literals;
@@ -598,8 +596,9 @@ void OrderEntry::create_order(Event<CreateOrder> const &event, server::oms::Orde
       (*connection_)(request_id, request, callback);
     };
     auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
-    auto [action, packed] = tools::Encoder::create_order(create_order, order, request_id, now_utc);
-    auto request = account_.sign(action, packed, now_utc);
+    auto expires_after_utc = now_utc + shared_.settings.rest.recv_window;
+    auto [action, packed] = tools::Encoder::create_order(create_order, order, request_id, now_utc, expires_after_utc);
+    auto request = account_.sign_l1_action(action, packed, now_utc, expires_after_utc);
     send_request(request);
   });
 }
@@ -667,8 +666,9 @@ void OrderEntry::modify_order(
       (*connection_)(request_id, request, callback);
     };
     auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
-    auto [action, packed] = tools::Encoder::modify_order(modify_order, order, request_id, previous_request_id, now_utc);
-    auto request = account_.sign(action, packed, now_utc);
+    auto expires_after_utc = now_utc + shared_.settings.rest.recv_window;
+    auto [action, packed] = tools::Encoder::modify_order(modify_order, order, request_id, previous_request_id, now_utc, expires_after_utc);
+    auto request = account_.sign_l1_action(action, packed, now_utc, expires_after_utc);
     send_request(request);
   });
 }
@@ -736,8 +736,9 @@ void OrderEntry::cancel_order(
       (*connection_)(request_id, request, callback);
     };
     auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
-    auto [action, packed] = tools::Encoder::cancel_order(cancel_order, order, request_id, previous_request_id, now_utc);
-    auto request = account_.sign(action, packed, now_utc);
+    auto expires_after_utc = now_utc + shared_.settings.rest.recv_window;
+    auto [action, packed] = tools::Encoder::cancel_order(cancel_order, order, request_id, previous_request_id, now_utc, expires_after_utc);
+    auto request = account_.sign_l1_action(action, packed, now_utc, expires_after_utc);
     send_request(request);
   });
 }

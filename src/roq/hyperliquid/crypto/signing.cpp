@@ -229,13 +229,7 @@ Signature signL1Action(
 }
 
 // HANS
-std::string ROQ_signL1Action(
-    Wallet const &wallet,
-    nlohmann::json const &payload,
-    std::optional<std::string> const &vault_address,
-    int64_t nonce,
-    std::optional<int64_t> expires_after,
-    bool is_mainnet) {
+std::string ROQ_signL1Action(Wallet const &wallet, nlohmann::json const &payload) {
   // Construct phantom agent
   // auto phantom_agent = ROQ_constructPhantomAgent(action_hash, is_mainnet);
 

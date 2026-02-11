@@ -106,9 +106,6 @@ std::vector<uint8_t> hashStruct(std::string const &struct_type, nlohmann::json c
 
 // HANS
 std::vector<uint8_t> encodeTypedData(nlohmann::json const &typed_data) {
-  // EIP-712 prefix
-  std::vector<uint8_t> result = {0x19, 0x01};
-
   // Extract components
   if (!typed_data.contains("types") || !typed_data.contains("domain") || !typed_data.contains("primaryType") || !typed_data.contains("message")) {
     throw std::runtime_error("Invalid EIP-712 typed data structure");
@@ -123,6 +120,9 @@ std::vector<uint8_t> encodeTypedData(nlohmann::json const &typed_data) {
     }
     types_map[type_name] = field_list;
   }
+
+  // EIP-712 prefix
+  std::vector<uint8_t> result = {0x19, 0x01};
 
   // Domain separator
   auto domain_hash = hashStruct("EIP712Domain", typed_data["domain"], types_map);

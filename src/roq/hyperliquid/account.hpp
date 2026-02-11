@@ -20,7 +20,8 @@ struct Account final {
 
   std::string_view get_key() const { return crypto_.get_key(); }
 
-  std::string sign(std::string_view const &action, std::vector<uint8_t> const &packed, std::chrono::milliseconds now_utc);
+  std::string sign_l1_action(
+      std::string_view const &action, std::span<std::byte> const &packed, std::chrono::milliseconds now_utc, std::chrono::milliseconds expires_after_utc);
 
   std::string const name;
 

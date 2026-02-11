@@ -3,13 +3,13 @@
 #pragma once
 
 #include <chrono>
+#include <span>
 #include <string>
 #include <string_view>
-#include <vector>
 
 #include "roq/utils/hash/keccak256.hpp"
 
-#include "roq/hyperliquid/crypto/wallet.hpp"
+#include "roq/hyperliquid/tools/wallet.hpp"
 
 namespace roq {
 namespace hyperliquid {
@@ -23,14 +23,16 @@ struct Crypto final {
 
   auto const &get_key() const { return key_; }
 
-  std::string sign(std::string_view const &action, std::vector<uint8_t> const &packed, std::chrono::milliseconds now_utc);
+  std::string sign_l1_action(
+      std::string_view const &action, std::span<std::byte const> const &packed, std::chrono::milliseconds now_utc, std::chrono::milliseconds expires_after_utc);
 
  private:
   using Hash = utils::hash::Keccak256;
   using Digest = std::array<std::byte, Hash::DIGEST_LENGTH>;
 
   std::string const key_;
-  crypto::Wallet wallet_;  // XXX FIXME TODO move to tools
+  bool const mainnet_;
+  Wallet wallet_;
   Digest digest_;
   Hash hash_;
 };

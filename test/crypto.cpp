@@ -12,7 +12,7 @@ using namespace roq::hyperliquid;
 using namespace std::literals;
 
 TEST_CASE("wallet", "[crypto]") {
-  crypto::Wallet wallet("0x0123456789012345678901234567890123456789012345678901234567890123"sv);
+  tools::Wallet wallet("0x0123456789012345678901234567890123456789012345678901234567890123"sv);
   CHECK(wallet.address() == "0x14791697260e4c9a71f18484c9f997b308e59325"sv);
 }
 

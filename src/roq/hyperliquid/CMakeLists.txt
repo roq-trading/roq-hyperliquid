@@ -16,7 +16,6 @@ set(SOURCES
     shared.cpp
     main.cpp)
 
-add_subdirectory(crypto)
 add_subdirectory(json)
 add_subdirectory(tools)
 
@@ -44,8 +43,7 @@ add_dependencies(${TARGET_NAME} autogen-headers autogen-json-headers)
 
 target_link_libraries(
   ${TARGET_NAME}
-  PRIVATE ${PROJECT_NAME}-crypto
-          ${PROJECT_NAME}-json
+  PRIVATE ${PROJECT_NAME}-json
           ${PROJECT_NAME}-tools
           ${PROJECT_NAME}-flags
           roq-api::roq-api
