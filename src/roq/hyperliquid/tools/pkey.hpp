@@ -2,10 +2,9 @@
 
 #pragma once
 
-#include <openssl/ec.h>
+#include <openssl/evp.h>
 
 #include <memory>
-#include <string_view>
 
 #include "roq/hyperliquid/tools/bignum.hpp"
 #include "roq/hyperliquid/tools/group.hpp"
@@ -15,11 +14,11 @@ namespace roq {
 namespace hyperliquid {
 namespace tools {
 
-struct Key final {
-  using value_type = EC_KEY;
+struct PKey final {
+  using value_type = EVP_PKEY;
 
-  explicit Key(value_type *);
-  explicit Key(value_type const *);
+  explicit PKey(value_type *);
+  explicit PKey(value_type const *);
 
   operator value_type *() { return handle_.get(); }
   operator value_type const *() const { return handle_.get(); }
@@ -28,14 +27,7 @@ struct Key final {
   BigNum get_private_key() const;
   Point get_public_key() const;
 
-  void set_private_key(BigNum const &);
-  void set_public_key(Point const &);
-
-  void validate() const;
-
-  std::string derive_address() const;
-
-  static Key create_from_private_key(std::string_view const &private_key);
+  static PKey create_from_private_key(std::string_view const &);
 
  private:
   std::unique_ptr<value_type, void (*)(value_type *)> handle_;

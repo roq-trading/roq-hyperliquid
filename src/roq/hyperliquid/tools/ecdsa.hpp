@@ -1,15 +1,17 @@
 #pragma once
 
-#include <cstdint>
+#include <cstddef>
 #include <span>
 #include <string>
+
+#include "roq/hyperliquid/tools/key.hpp"
 
 namespace roq {
 namespace hyperliquid {
 namespace tools {
 
 struct ECDSA final {
-  static std::string signHash(void const *ec_key, std::span<std::byte const> const &hash);
+  static std::string signHash(Key const &, std::span<std::byte const> const &hash);
 };
 
 }  // namespace tools

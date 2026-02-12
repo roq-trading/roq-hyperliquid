@@ -2,17 +2,13 @@
 
 #include "roq/hyperliquid/tools/key.hpp"
 
-#include <vector>
-
 #include <openssl/evp.h>
-#include <openssl/obj_mac.h>
+
+#include <vector>
 
 #include "roq/exceptions.hpp"
 
 #include "roq/utils/hash/keccak256.hpp"
-
-#include "roq/hyperliquid/tools/bignum.hpp"
-#include "roq/hyperliquid/tools/point.hpp"
 
 using namespace std::literals;
 
@@ -31,87 +27,88 @@ void deleter(value_type *ptr) {
   }
 }
 
-void set_private_key(auto &handle, auto &bignum) {
-  if (EC_KEY_set_private_key(handle.get(), bignum) != 1) {
-    throw RuntimeError{"EC_KEY_set_private_key"sv};
-  }
-}
-
-auto get_group(auto &handle) {
-  return EC_KEY_get0_group(handle.get());
-}
-
-auto set_public_key(auto &handle, auto &point) {
-  if (EC_KEY_set_public_key(handle.get(), point) != 1) {
-    throw RuntimeError{"EC_KEY_set_public_key"sv};
-  }
-}
-
-void validate(auto &handle) {
-  if (EC_KEY_check_key(handle.get()) != 1) {
-    throw RuntimeError{"EC_KEY_check_key"sv};
-  }
+void noop_deleter(value_type *) {
 }
 
 template <typename R>
-R create(auto &private_key) {
-  R result{EC_KEY_new_by_curve_name(NID_secp256k1), deleter};
-  if (!result) {
-    throw RuntimeError{"EC_KEY_new_by_curve_name"sv};
-  }
-  BigNum bignum{private_key};
-  set_private_key(result, bignum);
-  auto group = get_group(result);
-  Point public_key{group};
-  public_key.multiply(group, bignum, nullptr, nullptr);
-  set_public_key(result, public_key);
-  validate(result);
+R create_1(auto value) {
+  R result{value, deleter};
+  return result;
+}
+
+template <typename R>
+R create_2(auto value) {
+  R result{value, noop_deleter};
   return result;
 }
 }  // namespace
 
 // === IMPLEMENTATION ===
 
-Key::Key(std::string_view const &private_key) : handle_{create<decltype(handle_)>(private_key)} {
+Key::Key(value_type *value) : handle_{create_1<decltype(handle_)>(value)} {
 }
 
-Key::operator EC_GROUP const *() const {
-  auto result = EC_KEY_get0_group(handle_.get());
-  if (!result) {
+Key::Key(value_type const *value) : handle_{create_2<decltype(handle_)>(const_cast<value_type *>(value))} {
+}
+
+Group Key::get_group() const {
+  auto handle = EC_KEY_get0_group(handle_.get());
+  if (!handle) {
     throw RuntimeError{"EC_KEY_get0_group"sv};
   }
+  Group result{handle};
   return result;
 }
 
-BIGNUM const *Key::get_private_key() const {
-  auto result = EC_KEY_get0_private_key(handle_.get());
-  if (!result) {
+BigNum Key::get_private_key() const {
+  auto handle = EC_KEY_get0_private_key(handle_.get());
+  if (!handle) {
     throw RuntimeError{"EC_KEY_get0_private_key"sv};
   }
+  BigNum result{handle};
   return result;
 }
 
-EC_POINT const *Key::get_public_key() const {
-  auto result = EC_KEY_get0_public_key(handle_.get());
-  if (!result) {
+Point Key::get_public_key() const {
+  auto handle = EC_KEY_get0_public_key(handle_.get());
+  if (!handle) {
     throw RuntimeError{"EC_KEY_get0_public_key"sv};
   }
+  Point result{handle};
   return result;
+}
+
+void Key::set_private_key(BigNum const &private_key) {
+  if (EC_KEY_set_private_key(handle_.get(), private_key) != 1) {
+    throw RuntimeError{"EC_KEY_set_private_key"sv};
+  }
+}
+
+void Key::set_public_key(Point const &public_key) {
+  if (EC_KEY_set_public_key(handle_.get(), public_key) != 1) {
+    throw RuntimeError{"EC_KEY_set_public_key"sv};
+  }
+}
+
+void Key::validate() const {
+  if (EC_KEY_check_key(handle_.get()) != 1) {
+    throw RuntimeError{"EC_KEY_check_key"sv};
+  }
 }
 
 std::string Key::derive_address() const {
-  auto group = EC_KEY_get0_group(handle_.get());
-  auto pub_key = EC_KEY_get0_public_key(handle_.get());
+  auto group = get_group();
+  auto pub_key = get_public_key();
 
   std::vector<uint8_t> pub_key_bytes(65);
-  size_t len = EC_POINT_point2oct(group, pub_key, POINT_CONVERSION_UNCOMPRESSED, pub_key_bytes.data(), 65, nullptr);
+  size_t len = EC_POINT_point2oct(group, pub_key, POINT_CONVERSION_UNCOMPRESSED, std::data(pub_key_bytes), 65, nullptr);
 
   if (len != 65) {
-    throw std::runtime_error("Failed to convert public key");
+    throw RuntimeError{"Failed to convert public key"};
   }
 
   utils::hash::Keccak256 hash;  // XXX FIXME TODO re-use
-  std::span payload{pub_key_bytes.data() + 1, 64};
+  std::span payload{std::data(pub_key_bytes) + 1, 64};
   std::vector<std::byte> digest(32);
   hash.clear();
   hash.update(payload);
@@ -125,6 +122,22 @@ std::string Key::derive_address() const {
   }
 
   return address;
+}
+
+Key Key::create_from_private_key(std::string_view const &private_key) {
+  auto handle = EC_KEY_new_by_curve_name(NID_secp256k1);
+  if (!handle) {
+    throw RuntimeError{"EC_KEY_new_by_curve_name"sv};
+  }
+  Key result{handle};
+  auto bignum = BigNum::create_from_hex(private_key);
+  result.set_private_key(bignum);
+  auto group = result.get_group();
+  auto public_key = Point::create_from_group(group);
+  public_key.multiply(group, bignum, nullptr, nullptr);
+  result.set_public_key(public_key);
+  result.validate();
+  return result;
 }
 
 }  // namespace tools

@@ -12,22 +12,22 @@ namespace tools {
 
 // === HELPERS ===
 
-namespace {}  // namespace
+namespace {
+template <typename R>
+auto create_key(auto &private_key) {
+  using result_type = std::remove_cvref_t<R>;
+  auto result = result_type::create_from_private_key(private_key);
+  return result;
+}
+}  // namespace
 
 // === IMPLEMENTATION ===
 
-Wallet::Wallet(std::string_view const &private_key) : key_{private_key}, address_{key_.derive_address()} {
+Wallet::Wallet(std::string_view const &private_key) : key_{create_key<decltype(key_)>(private_key)}, address_{key_.derive_address()} {
 }
 
 std::string Wallet::sign_ecdsa(std::span<std::byte const> const &hash) const {
-  /*
-  std::vector<uint8_t> tmp;
-  for (auto b : hash) {
-    tmp.emplace_back(static_cast<uint8_t>(b));
-  }
-  */
-  auto key = reinterpret_cast<void const *>(static_cast<Key::value_type const *>(key_));
-  return ECDSA::signHash(key, hash);
+  return ECDSA::signHash(key_, hash);
 }
 
 }  // namespace tools

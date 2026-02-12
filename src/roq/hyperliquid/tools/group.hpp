@@ -2,29 +2,27 @@
 
 #pragma once
 
-#include <openssl/bn.h>
 #include <openssl/ec.h>
 
 #include <memory>
+
+#include "roq/hyperliquid/tools/bignum.hpp"
 
 namespace roq {
 namespace hyperliquid {
 namespace tools {
 
-struct Point final {
-  using value_type = EC_POINT;
+struct Group final {
+  using value_type = EC_GROUP;
 
-  explicit Point(value_type *);
-  explicit Point(value_type const *);
+  explicit Group(value_type *);
+  explicit Group(value_type const *);
 
   operator value_type *() { return handle_.get(); }
   operator value_type const *() const { return handle_.get(); }
 
-  void multiply(EC_GROUP const *, BIGNUM const *n, EC_POINT const *q, BIGNUM const *m, BN_CTX * = nullptr);
-
-  void get_affine_coordinates(EC_GROUP const *, BIGNUM *x, BIGNUM *y, BN_CTX * = nullptr);
-
-  static Point create_from_group(EC_GROUP const *);
+  BigNum get_order() const;
+  BigNum get_curve() const;
 
  private:
   std::unique_ptr<value_type, void (*)(value_type *)> handle_;

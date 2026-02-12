@@ -7,7 +7,9 @@ set(SOURCES
     ecdsa.cpp
     eip712.cpp
     encoder.cpp
+    group.cpp
     key.cpp
+    pkey.cpp
     point.cpp
     wallet.cpp)
 

@@ -1,8 +1,8 @@
 #include "roq/hyperliquid/tools/ecdsa.hpp"
 
-#include <openssl/bn.h>
+// #include <openssl/bn.h>
 #include <openssl/core_names.h>
-#include <openssl/ec.h>
+// #include <openssl/ec.h>
 #include <openssl/ecdsa.h>
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
@@ -16,6 +16,11 @@
 #include <string>
 #include <vector>
 
+#include "roq/exceptions.hpp"
+
+#include "roq/hyperliquid/tools/bignum.hpp"
+#include "roq/hyperliquid/tools/group.hpp"
+#include "roq/hyperliquid/tools/point.hpp"
 #include "roq/hyperliquid/tools/signature.hpp"
 
 namespace roq {
@@ -25,51 +30,47 @@ namespace tools {
 // === HELPERS ===
 
 namespace {
-std::string bnToHex(const BIGNUM *bn, int min_bytes = 32) {
-  int num_bytes = BN_num_bytes(bn);
-  std::vector<uint8_t> bytes(std::max(num_bytes, min_bytes), 0);
+std::string bnToHex(BigNum const &bn, size_t min_bytes = 32) {
+  auto num_bytes = std::size(bn);
+  std::vector<std::byte> bytes(std::max(num_bytes, min_bytes), std::byte{0x00});
 
-  // BN_bn2bin writes big-endian bytes
-  int actual_bytes = BN_bn2bin(bn, bytes.data() + (bytes.size() - num_bytes));
-  if (actual_bytes != num_bytes) {
-    throw std::runtime_error("BN_bn2bin failed");
-  }
+  // big-endian bytes
+  [[maybe_unused]] auto tmp = bn.to_binary(bytes);  // XXX FIXME TODO use tmp ???
 
   std::ostringstream oss;
   oss << std::hex << std::setfill('0');
 
   // Skip leading zeros (but keep at least one byte)
   size_t start = 0;
-  while (start < bytes.size() - 1 && bytes[start] == 0) {
+  while (start < std::size(bytes) - 1 && bytes[start] == std::byte{0x00}) {
     start++;
   }
 
-  for (size_t i = start; i < bytes.size(); i++) {
+  for (size_t i = start; i < std::size(bytes); i++) {
     oss << std::setw(2) << static_cast<int>(bytes[i]);
   }
   return oss.str();
 }
 
 // RFC 6979 deterministic k generation
-BIGNUM *generateDeterministicK(const BIGNUM *priv_key, std::span<std::byte const> const &hash, const EC_GROUP *group) {
+BigNum generateDeterministicK(BigNum const &priv_key, std::span<std::byte const> const &hash, Group const &group) {
   // Get curve order
-  BIGNUM *order = BN_new();
-  EC_GROUP_get_order(group, order, nullptr);
+  auto order = group.get_order();
 
   // Convert private key and hash to bytes
-  std::vector<std::byte> priv_bytes(32);
   std::vector<std::byte> hash_bytes;
   for (auto b : hash) {
     hash_bytes.emplace_back(b);
   }
 
-  BN_bn2binpad(priv_key, reinterpret_cast<unsigned char *>(priv_bytes.data()), 32);
+  std::vector<std::byte> priv_bytes(32);
+  priv_key.to_binary(priv_bytes);
 
   // Ensure hash is 32 bytes
-  if (hash_bytes.size() > 32) {
+  if (std::size(hash_bytes) > 32) {
     hash_bytes.resize(32);
   } else {
-    while (hash_bytes.size() < 32) {
+    while (std::size(hash_bytes) < 32) {
       hash_bytes.insert(hash_bytes.begin(), std::byte{0x00});
     }
   }
@@ -94,21 +95,21 @@ BIGNUM *generateDeterministicK(const BIGNUM *priv_key, std::span<std::byte const
   unsigned int len;
   HMAC(
       EVP_sha256(),
-      reinterpret_cast<unsigned char const *>(K.data()),
-      K.size(),
-      reinterpret_cast<unsigned char const *>(data.data()),
-      data.size(),
-      reinterpret_cast<unsigned char *>(K.data()),
+      reinterpret_cast<unsigned char const *>(std::data(K)),
+      std::size(K),
+      reinterpret_cast<unsigned char const *>(std::data(data)),
+      std::size(data),
+      reinterpret_cast<unsigned char *>(std::data(K)),
       &len);
 
   // Step f: V = HMAC_K(V)
   HMAC(
       EVP_sha256(),
-      reinterpret_cast<unsigned char const *>(K.data()),
-      K.size(),
-      reinterpret_cast<unsigned char const *>(V.data()),
-      V.size(),
-      reinterpret_cast<unsigned char *>(V.data()),
+      reinterpret_cast<unsigned char const *>(std::data(K)),
+      std::size(K),
+      reinterpret_cast<unsigned char const *>(std::data(V)),
+      std::size(V),
+      reinterpret_cast<unsigned char *>(std::data(V)),
       &len);
 
   // Step g: K = HMAC_K(V || 0x01 || priv || hash)
@@ -120,98 +121,92 @@ BIGNUM *generateDeterministicK(const BIGNUM *priv_key, std::span<std::byte const
 
   HMAC(
       EVP_sha256(),
-      reinterpret_cast<unsigned char const *>(K.data()),
-      K.size(),
-      reinterpret_cast<unsigned char const *>(data.data()),
-      data.size(),
-      reinterpret_cast<unsigned char *>(K.data()),
+      reinterpret_cast<unsigned char const *>(std::data(K)),
+      std::size(K),
+      reinterpret_cast<unsigned char const *>(std::data(data)),
+      std::size(data),
+      reinterpret_cast<unsigned char *>(std::data(K)),
       &len);
 
   // Step h: V = HMAC_K(V)
   HMAC(
       EVP_sha256(),
-      reinterpret_cast<unsigned char const *>(K.data()),
-      K.size(),
-      reinterpret_cast<unsigned char const *>(V.data()),
-      V.size(),
-      reinterpret_cast<unsigned char *>(V.data()),
+      reinterpret_cast<unsigned char const *>(std::data(K)),
+      std::size(K),
+      reinterpret_cast<unsigned char const *>(std::data(V)),
+      std::size(V),
+      reinterpret_cast<unsigned char *>(std::data(V)),
       &len);
 
   // Step h3: Generate k
-  BIGNUM *k = nullptr;
   while (true) {
     // T = V = HMAC_K(V)
     HMAC(
         EVP_sha256(),
-        reinterpret_cast<unsigned char const *>(K.data()),
-        K.size(),
-        reinterpret_cast<unsigned char const *>(V.data()),
-        V.size(),
-        reinterpret_cast<unsigned char *>(V.data()),
+        reinterpret_cast<unsigned char const *>(std::data(K)),
+        std::size(K),
+        reinterpret_cast<unsigned char const *>(std::data(V)),
+        std::size(V),
+        reinterpret_cast<unsigned char *>(std::data(V)),
         &len);
 
-    k = BN_bin2bn(reinterpret_cast<unsigned char const *>(V.data()), V.size(), k);
+    auto k = BigNum::create_from_binary(V);
 
     // Check if k is in [1, order-1]
-    if (BN_is_zero(k) || BN_cmp(k, order) >= 0) {
+    if (std::empty(k) || k.compare(order) >= 0) {
       // K = HMAC_K(V || 0x00)
       data.clear();
       data.insert(data.end(), V.begin(), V.end());
       data.push_back(std::byte{0x00});
       HMAC(
           EVP_sha256(),
-          reinterpret_cast<unsigned char const *>(K.data()),
-          K.size(),
-          reinterpret_cast<unsigned char const *>(data.data()),
-          data.size(),
-          reinterpret_cast<unsigned char *>(K.data()),
+          reinterpret_cast<unsigned char const *>(std::data(K)),
+          std::size(K),
+          reinterpret_cast<unsigned char const *>(std::data(data)),
+          std::size(data),
+          reinterpret_cast<unsigned char *>(std::data(K)),
           &len);
 
       // V = HMAC_K(V)
       HMAC(
           EVP_sha256(),
-          reinterpret_cast<unsigned char const *>(K.data()),
-          K.size(),
-          reinterpret_cast<unsigned char const *>(V.data()),
-          V.size(),
-          reinterpret_cast<unsigned char *>(V.data()),
+          reinterpret_cast<unsigned char const *>(std::data(K)),
+          std::size(K),
+          reinterpret_cast<unsigned char const *>(std::data(V)),
+          std::size(V),
+          reinterpret_cast<unsigned char *>(std::data(V)),
           &len);
     } else {
-      break;
+      return k;
     }
   }
-
-  BN_free(order);
-  return k;
 }
 
-int calculateRecoveryId(const EC_KEY *ec_key, std::span<std::byte const> const &hash, const ECDSA_SIG *sig) {
-  const EC_GROUP *group = EC_KEY_get0_group(ec_key);
-  const EC_POINT *pub_key = EC_KEY_get0_public_key(ec_key);
+int calculateRecoveryId(Key const &key, std::span<std::byte const> const &hash, const ECDSA_SIG *sig) {
+  auto group = key.get_group();
+  auto pub_key = key.get_public_key();
 
   const BIGNUM *r, *s;
   ECDSA_SIG_get0(sig, &r, &s);
 
   // Get the order of the curve
-  BIGNUM *order = BN_new();
-  EC_GROUP_get_order(group, order, nullptr);
+  auto order = group.get_order();
 
   // Get curve parameters
-  BIGNUM *p = BN_new();
-  EC_GROUP_get_curve(group, p, nullptr, nullptr, nullptr);
+  auto p = group.get_curve();
 
   BN_CTX *ctx = BN_CTX_new();
 
   // Try both recovery IDs (0 and 1)
   for (int recovery_id = 0; recovery_id < 2; ++recovery_id) {
     // Calculate x coordinate of R (which is r)
-    BIGNUM *x = BN_dup(r);
+    BigNum x{r};
 
     // Calculate y from x
     // y^2 = x^3 + 7 (for secp256k1)
-    BIGNUM *y_squared = BN_new();
-    BIGNUM *y = BN_new();
-    BIGNUM *tmp = BN_new();
+    BigNum y_squared;
+    BigNum y;
+    BigNum tmp;
 
     // y_squared = x^3
     BN_mod_mul(tmp, x, x, p, ctx);
@@ -230,22 +225,22 @@ int calculateRecoveryId(const EC_KEY *ec_key, std::span<std::byte const> const &
     }
 
     // Create point R = (x, y)
-    EC_POINT *R = EC_POINT_new(group);
+    auto R = Point::create_from_group(group);
     EC_POINT_set_affine_coordinates(group, R, x, y, ctx);
 
     // Recover public key: Q = r^-1 * (s*R - e*G)
-    BIGNUM *r_inv = BN_new();
+    BigNum r_inv;
     BN_mod_inverse(r_inv, r, order, ctx);
 
-    BIGNUM *e = BN_bin2bn(reinterpret_cast<unsigned char const *>(hash.data()), hash.size(), nullptr);
+    auto e = BigNum::create_from_binary(hash);
 
-    EC_POINT *sR = EC_POINT_new(group);
+    auto sR = Point::create_from_group(group);
     EC_POINT_mul(group, sR, nullptr, R, s, ctx);
 
-    EC_POINT *eG = EC_POINT_new(group);
+    auto eG = Point::create_from_group(group);
     EC_POINT_mul(group, eG, e, nullptr, nullptr, ctx);
 
-    EC_POINT *Q = EC_POINT_new(group);
+    auto Q = Point::create_from_group(group);
     EC_POINT_invert(group, eG, ctx);
     EC_POINT_add(group, Q, sR, eG, ctx);
     EC_POINT_mul(group, Q, nullptr, Q, r_inv, ctx);
@@ -253,28 +248,12 @@ int calculateRecoveryId(const EC_KEY *ec_key, std::span<std::byte const> const &
     // Compare recovered public key with actual public key
     int match = (EC_POINT_cmp(group, Q, pub_key, ctx) == 0);
 
-    // Cleanup
-    EC_POINT_free(R);
-    EC_POINT_free(sR);
-    EC_POINT_free(eG);
-    EC_POINT_free(Q);
-    BN_free(x);
-    BN_free(y);
-    BN_free(y_squared);
-    BN_free(tmp);
-    BN_free(r_inv);
-    BN_free(e);
-
     if (match) {
-      BN_free(order);
-      BN_free(p);
       BN_CTX_free(ctx);
       return recovery_id;
     }
   }
 
-  BN_free(order);
-  BN_free(p);
   BN_CTX_free(ctx);
 
   // Default to 0 if recovery fails
@@ -284,53 +263,47 @@ int calculateRecoveryId(const EC_KEY *ec_key, std::span<std::byte const> const &
 
 // === IMPLEMENTATION ===
 
-std::string ECDSA::signHash(void const *ec_key_ptr, std::span<std::byte const> const &hash) {
-  EC_KEY *ec_key = static_cast<EC_KEY *>(const_cast<void *>(ec_key_ptr));
-
-  if (hash.size() != 32) {
-    throw std::invalid_argument("Hash must be 32 bytes");
+std::string ECDSA::signHash(Key const &key, std::span<std::byte const> const &hash) {
+  if (std::size(hash) != 32) {
+    throw RuntimeError{"Hash must be 32 bytes"};
   }
 
-  const EC_GROUP *group = EC_KEY_get0_group(ec_key);
-  const BIGNUM *priv_key = EC_KEY_get0_private_key(ec_key);
-  if (!priv_key) {
-    throw std::runtime_error("Failed to get private key");
-  }
+  auto group = key.get_group();
+  auto priv_key = key.get_private_key();
 
   // Generate deterministic k using RFC 6979
-  BIGNUM *k = generateDeterministicK(priv_key, hash, group);
+  auto k = generateDeterministicK(priv_key, hash, group);
 
   // Get curve order
-  BIGNUM *order = BN_new();
-  EC_GROUP_get_order(group, order, nullptr);
+  auto order = group.get_order();
 
   BN_CTX *ctx = BN_CTX_new();
 
   // Calculate r = (k * G).x mod order
-  EC_POINT *kG = EC_POINT_new(group);
+  auto kG = Point::create_from_group(group);
   EC_POINT_mul(group, kG, k, nullptr, nullptr, ctx);
 
-  BIGNUM *r = BN_new();
-  BIGNUM *y_coord = BN_new();
+  BigNum r;
+  BigNum y_coord;
   EC_POINT_get_affine_coordinates(group, kG, r, y_coord, ctx);
   BN_mod(r, r, order, ctx);
 
   // Calculate s = k^-1 * (hash + r * priv_key) mod order
-  BIGNUM *k_inv = BN_new();
+  BigNum k_inv;
   BN_mod_inverse(k_inv, k, order, ctx);
 
-  BIGNUM *e = BN_bin2bn(reinterpret_cast<unsigned char const *>(hash.data()), hash.size(), nullptr);
-  BIGNUM *s = BN_new();
-  BIGNUM *tmp = BN_new();
+  auto e = BigNum::create_from_binary(hash);
+  BigNum s;
+  BigNum tmp;
 
   BN_mod_mul(tmp, r, priv_key, order, ctx);  // r * priv_key
   BN_mod_add(tmp, e, tmp, order, ctx);       // hash + r * priv_key
   BN_mod_mul(s, k_inv, tmp, order, ctx);     // k^-1 * (hash + r * priv_key)
 
   // Ensure s is in the lower half (ETH requirement for non-malleability)
-  BIGNUM *half_order = BN_new();
+  BigNum half_order;
   BN_rshift1(half_order, order);
-  if (BN_cmp(s, half_order) > 0) {
+  if (s.compare(half_order) > 0) {
     BN_sub(s, order, s);
   }
 
@@ -344,21 +317,11 @@ std::string ECDSA::signHash(void const *ec_key_ptr, std::span<std::byte const> c
   result.s = "0x" + bnToHex(s, 32);
 
   // Calculate recovery ID (v)
-  int recovery_id = calculateRecoveryId(ec_key, hash, sig);
+  int recovery_id = calculateRecoveryId(key, hash, sig);
   result.v = recovery_id + 27;  // Ethereum uses 27/28
 
   // Cleanup
   ECDSA_SIG_free(sig);
-  EC_POINT_free(kG);
-  BN_free(k);
-  BN_free(order);
-  BN_free(r);
-  BN_free(s);
-  BN_free(y_coord);
-  BN_free(k_inv);
-  BN_free(e);
-  BN_free(tmp);
-  BN_free(half_order);
   BN_CTX_free(ctx);
 
   return result.toJson().dump();
