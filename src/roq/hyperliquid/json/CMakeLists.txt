@@ -50,6 +50,8 @@ set(AUTOGEN_SCHEMAS
     modify_order_ack.json
     modify_order_ack_response_data.json
     modify_order_ack_response.json
+    notification_data_item.json
+    notification.json
     order_status.json
     order_updates_data_item.json
     order_updates_data_item_order.json

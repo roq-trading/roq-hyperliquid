@@ -17,6 +17,7 @@ set(SOURCES
     json_get_user_fills_ack.cpp
     json_l2_book.cpp
     json_modify_order_ack.cpp
+    json_notification.cpp
     json_order_updates.cpp
     json_pong.cpp
     json_spot_meta.cpp

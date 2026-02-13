@@ -45,6 +45,8 @@ modify_order_ack.hpp
 modify_order_ack.hpp
 modify_order_ack_response_data.hpp
 modify_order_ack_response.hpp
+notification_data_item.hpp
+notification.hpp
 order_status.hpp
 order_updates_data_item.hpp
 order_updates_data_item_order.hpp
@@ -120,6 +122,8 @@ modify_order_ack.cpp
 modify_order_ack.cpp
 modify_order_ack_response_data.cpp
 modify_order_ack_response.cpp
+notification_data_item.cpp
+notification.cpp
 order_status.cpp
 order_updates_data_item.cpp
 order_updates_data_item_order.cpp

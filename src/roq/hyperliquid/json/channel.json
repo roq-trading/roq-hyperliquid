@@ -37,6 +37,9 @@
     },
     {
       "name": "orderUpdates"
+    },
+    {
+      "name": "notification"
     }
   ]
 }

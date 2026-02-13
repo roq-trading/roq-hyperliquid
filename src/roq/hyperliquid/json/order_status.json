@@ -13,6 +13,9 @@
     },
     {
       "name": "minTradeNtlRejected"
+    },
+    {
+      "name": "iocCancelRejected"
     }
   ]
 }

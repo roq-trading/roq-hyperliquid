@@ -61,6 +61,8 @@ constexpr Helper<hyperliquid::json::OrderStatus>::operator std::optional<roq::Or
       return roq::OrderStatus::CANCELED;
     case MIN_TRADE_NTL_REJECTED:
       return roq::OrderStatus::REJECTED;
+    case IOC_CANCEL_REJECTED:
+      return roq::OrderStatus::REJECTED;
   }
   return {};
 }
@@ -70,6 +72,7 @@ static_assert(Helper{hyperliquid::json::OrderStatus{hyperliquid::json::OrderStat
 static_assert(Helper{hyperliquid::json::OrderStatus{hyperliquid::json::OrderStatus::FILLED}} == roq::OrderStatus::COMPLETED);
 static_assert(Helper{hyperliquid::json::OrderStatus{hyperliquid::json::OrderStatus::CANCELED}} == roq::OrderStatus::CANCELED);
 static_assert(Helper{hyperliquid::json::OrderStatus{hyperliquid::json::OrderStatus::MIN_TRADE_NTL_REJECTED}} == roq::OrderStatus::REJECTED);
+static_assert(Helper{hyperliquid::json::OrderStatus{hyperliquid::json::OrderStatus::IOC_CANCEL_REJECTED}} == roq::OrderStatus::REJECTED);
 
 template <>
 template <>
@@ -122,7 +125,7 @@ constexpr Helper<roq::TimeInForce>::operator std::optional<hyperliquid::json::Ti
     case OPG:
       return hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL;
     case IOC:
-      return hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL;
+      return hyperliquid::json::TimeInForce::IOC;
     case FOK:
       return hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL;
     case GTX:
@@ -149,7 +152,7 @@ static_assert(Helper{roq::TimeInForce::UNDEFINED} == hyperliquid::json::TimeInFo
 static_assert(Helper{roq::TimeInForce::GFD} == hyperliquid::json::TimeInForce{hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL});
 static_assert(Helper{roq::TimeInForce::GTC} == hyperliquid::json::TimeInForce{hyperliquid::json::TimeInForce::GTC});
 static_assert(Helper{roq::TimeInForce::OPG} == hyperliquid::json::TimeInForce{hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL});
-static_assert(Helper{roq::TimeInForce::IOC} == hyperliquid::json::TimeInForce{hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL});
+static_assert(Helper{roq::TimeInForce::IOC} == hyperliquid::json::TimeInForce{hyperliquid::json::TimeInForce::IOC});
 static_assert(Helper{roq::TimeInForce::FOK} == hyperliquid::json::TimeInForce{hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL});
 static_assert(Helper{roq::TimeInForce::GTX} == hyperliquid::json::TimeInForce{hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL});
 static_assert(Helper{roq::TimeInForce::GTD} == hyperliquid::json::TimeInForce{hyperliquid::json::TimeInForce::UNDEFINED_INTERNAL});

@@ -19,6 +19,7 @@
 //
 #include "roq/hyperliquid/json/spot_meta.hpp"
 //
+#include "roq/hyperliquid/json/notification.hpp"
 #include "roq/hyperliquid/json/order_updates.hpp"
 #include "roq/hyperliquid/json/user.hpp"
 #include "roq/hyperliquid/json/user_fills.hpp"
@@ -45,6 +46,7 @@ struct Parser final {
     virtual void operator()(Trace<json::UserFundings> const &) = 0;
     virtual void operator()(Trace<json::UserFills> const &) = 0;
     virtual void operator()(Trace<json::OrderUpdates> const &) = 0;
+    virtual void operator()(Trace<json::Notification> const &) = 0;
   };
 
   static bool dispatch(Handler &, std::string_view const &message, core::json::BufferStack &, TraceInfo const &, bool allow_unknown_event_types);

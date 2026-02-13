@@ -132,6 +132,9 @@ bool Parser::dispatch(
           case ORDER_UPDATES:
             result = dispatch_helper<OrderUpdates>(handler, message, buffer_stack, trace_info);
             return true;
+          case NOTIFICATION:
+            result = dispatch_helper<Notification>(handler, message, buffer_stack, trace_info);
+            return true;
         }
         break;
       }

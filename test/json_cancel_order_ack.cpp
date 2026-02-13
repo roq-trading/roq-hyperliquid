@@ -13,7 +13,15 @@ using namespace std::literals;
 
 using value_type = json::CancelOrderAck;
 
-TEST_CASE("failure_by_oid", "[json_cancel_order_ack]") {
+/*
+status
+error
+statuses[]:
+  error->string
+  success->{}
+*/
+
+TEST_CASE("already_canceled_or_filled", "[json_cancel_order_ack]") {
   auto message = R"({)"
                  R"("status":"ok",)"
                  R"("response":{)"
@@ -37,7 +45,7 @@ TEST_CASE("failure_by_oid", "[json_cancel_order_ack]") {
   helper(obj);
 }
 
-TEST_CASE("success_by_oid", "[json_cancel_order_ack]") {
+TEST_CASE("success", "[json_cancel_order_ack]") {
   auto message = R"({)"
                  R"("status":"ok",)"
                  R"("response":{)"

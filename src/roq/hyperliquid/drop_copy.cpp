@@ -109,6 +109,7 @@ DropCopy::DropCopy(Handler &handler, io::Context &context, uint16_t stream_id, A
           .user_fundings = create_metrics(shared.settings, name_, "user_fundings"sv),
           .user_fills = create_metrics(shared.settings, name_, "user_fills"sv),
           .order_updates = create_metrics(shared.settings, name_, "order_updates"sv),
+          .notification = create_metrics(shared.settings, name_, "notification"sv),
       },
       latency_{
           .ping = create_metrics(shared.settings, name_, "ping"sv),
@@ -146,6 +147,7 @@ void DropCopy::operator()(metrics::Writer &writer) const {
       .write(profile_.user_fundings, metrics::Type::PROFILE)
       .write(profile_.user_fills, metrics::Type::PROFILE)
       .write(profile_.order_updates, metrics::Type::PROFILE)
+      .write(profile_.notification, metrics::Type::PROFILE)
       // latency
       .write(latency_.ping, metrics::Type::LATENCY)
       .write(latency_.heartbeat, metrics::Type::LATENCY);
@@ -389,6 +391,15 @@ void DropCopy::operator()(Trace<json::OrderUpdates> const &event) {
     }
   });
 }
+
+void DropCopy::operator()(Trace<json::Notification> const &event) {
+  profile_.notification([&]() {
+    auto &[trace_info, notification] = event;
+    log::warn("DEBUG {}"sv, notification);
+  });
+}
+
+// helpers
 
 void DropCopy::operator()(Trace<server::oms::OrderUpdate> const &event, std::string_view const &client_order_id) {
   auto &[trace_info, order_update] = event;

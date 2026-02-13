@@ -48,9 +48,17 @@ auto order_type_helper_2(auto &order) {
     case UNDEFINED:
       break;
     case MARKET:
+      return nlohmann::ordered_json{
+          {"isMarket", true},
+      };
       break;
     case LIMIT: {
-      auto tif = map(order.time_in_force).template get<json::TimeInForce>();
+      auto tif = [&]() -> json::TimeInForce {
+        if (order.execution_instructions.has(ExecutionInstruction::PARTICIPATE_DO_NOT_INITIATE)) {
+          return json::TimeInForce::ALO;
+        }
+        return map(order.time_in_force).template get<json::TimeInForce>();
+      }();
       return nlohmann::ordered_json{
           {"limit",
            {
@@ -131,7 +139,7 @@ std::pair<std::string, std::vector<std::byte>> Encoder::create_order(
     std::chrono::milliseconds now_utc,
     std::chrono::milliseconds expires_after_utc) {
   auto is_buy = is_buy_helper(order.side);
-  auto reduce_only = false;  // XXX FIXME TODO
+  auto reduce_only = create_order.execution_instructions.has(ExecutionInstruction::DO_NOT_INCREASE);
   auto cloid = fmt::format("0x{:0>32}"sv, request_id);
   auto order_type = order_type_helper_2(order);
   auto sz_decimals = utils::decimal_digits(order.quantity_precision.precision);
@@ -143,7 +151,7 @@ std::pair<std::string, std::vector<std::byte>> Encoder::create_order(
     auto order_2 = nlohmann::ordered_json{
         {"a", order.external_security_id},
         {"b", is_buy},
-        {"p", price},
+        {"p", price},  // XXX FIXME TODO market order ???
         {"s", size},
         {"r", reduce_only},
         {"t", order_type},

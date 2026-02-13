@@ -15,6 +15,15 @@ using namespace Catch::literals;
 
 using value_type = json::CreateOrderAck;
 
+/*
+status
+error
+statuses[]:
+  error->string
+  resting->{oid,cloid}
+  filled->{total/avg/oid,cloid}
+*/
+
 TEST_CASE("success_created", "[json_create_order_ack]") {
   auto message = R"({)"
                  R"("status":"ok",)"
@@ -117,6 +126,31 @@ TEST_CASE("failure_quantity", "[json_create_order_ack]") {
     REQUIRE(std::size(obj.response.data.statuses) == 1);
     auto &s0 = obj.response.data.statuses[0];
     CHECK(s0.error == "Order must have minimum value of $10. asset=1"sv);
+  };
+  core::json::BufferStack buffers{8192, 1};
+  value_type obj{message, buffers};
+  helper(obj);
+}
+
+TEST_CASE("ioc_failed", "[json_create_order_ack]") {
+  auto message = R"({)"
+                 R"("status":"ok",)"
+                 R"("response":{)"
+                 R"("type":"order",)"
+                 R"("data":{)"
+                 R"("statuses":[{)"
+                 R"("error":"Order could not immediately match against any resting orders. asset=5")"
+                 R"(})"
+                 R"(])"
+                 R"(})"
+                 R"(})"
+                 R"(})";
+  auto helper = [&](value_type &obj) {
+    CHECK(obj.status == json::Status::OK);
+    CHECK(obj.response.type == json::ResponseType::ORDER);
+    REQUIRE(std::size(obj.response.data.statuses) == 1);
+    auto &s0 = obj.response.data.statuses[0];
+    CHECK(s0.error == "Order could not immediately match against any resting orders. asset=5"sv);
   };
   core::json::BufferStack buffers{8192, 1};
   value_type obj{message, buffers};

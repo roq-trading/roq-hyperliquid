@@ -495,5 +495,9 @@ void MarketData::operator()(Trace<json::OrderUpdates> const &) {
   log::fatal("Unexpected"sv);
 }
 
+void MarketData::operator()(Trace<json::Notification> const &) {
+  log::fatal("Unexpected"sv);
+}
+
 }  // namespace hyperliquid
 }  // namespace roq

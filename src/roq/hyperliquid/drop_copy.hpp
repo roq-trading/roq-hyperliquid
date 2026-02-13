@@ -93,6 +93,7 @@ struct DropCopy final : public web::socket::Client::Handler, public json::Parser
   void operator()(Trace<json::UserFundings> const &) override;
   void operator()(Trace<json::UserFills> const &) override;
   void operator()(Trace<json::OrderUpdates> const &) override;
+  void operator()(Trace<json::Notification> const &) override;
 
   // helpers
 
@@ -113,7 +114,7 @@ struct DropCopy final : public web::socket::Client::Handler, public json::Parser
     utils::metrics::Counter disconnect;
   } counter_;
   struct {
-    utils::metrics::Profile parse, pong, error, subscription_response, user, user_fundings, user_fills, order_updates;
+    utils::metrics::Profile parse, pong, error, subscription_response, user, user_fundings, user_fills, order_updates, notification;
   } profile_;
   struct {
     utils::metrics::Latency ping, heartbeat;

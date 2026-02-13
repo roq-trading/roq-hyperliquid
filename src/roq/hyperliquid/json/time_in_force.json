@@ -3,6 +3,12 @@
   "type": "enum",
   "values": [
     {
+      "name": "Alo"
+    },
+    {
+      "name": "Ioc"
+    },
+    {
       "name": "Gtc"
     }
   ]
