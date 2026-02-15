@@ -10,9 +10,14 @@
 #include "roq/utils/safe_cast.hpp"
 #include "roq/utils/update.hpp"
 
+#include "roq/utils/exceptions/unhandled.hpp"
+
 #include "roq/utils/metrics/factory.hpp"
 
 #include "roq/server/oms/exceptions.hpp"
+
+#include "roq/hyperliquid/json/cancel_order_ack_parser.hpp"
+#include "roq/hyperliquid/json/create_order_ack_parser.hpp"
 
 #include "roq/hyperliquid/json/map.hpp"
 #include "roq/hyperliquid/json/utils.hpp"
@@ -605,6 +610,7 @@ void OrderEntry::create_order(Event<CreateOrder> const &event, server::oms::Orde
 
 void OrderEntry::create_order_ack(Trace<web::rest::Response> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
   profile_.create_order_ack([&]() {
+    auto &[trace_info, response] = event;
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::debug(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
       auto response = server::oms::Response{
@@ -624,9 +630,30 @@ void OrderEntry::create_order_ack(Trace<web::rest::Response> const &event, uint8
     };
     auto handle_success = [&](auto &body) {
       log::warn(R"(DEBUG body="{}")"sv, body);
-      json::CreateOrderAck create_order_ack{body, decode_buffer_};
-      Trace event_2{event, create_order_ack};
-      (*this)(event_2, user_id, order_id, version);
+      auto log_message = [&]() { log::warn(R"(*** PLEASE REPORT *** message="{}")"sv, body); };
+      auto handle_error_2 = [&](auto &text) { handle_error(Origin::EXCHANGE, RequestStatus::FAILED, Error::UNKNOWN, text); };
+      auto handle_success_2 = [&](auto &event_2) {
+        auto &statuses = event_2.value.response.data.statuses;
+        if (std::empty(statuses)) {
+          log::warn(R"(Unexpected: message="{}")"sv, body);
+        } else {
+          auto &status = statuses[0];  // XXX FIXME TODO process all
+          if (std::empty(status.error)) {
+            (*this)(event_2, user_id, order_id, version);
+          } else {
+            handle_error_2(status.error);
+          }
+        }
+      };
+      try {
+        if (!json::CreateOrderAckParser::dispatch(
+                body, decode_buffer_, trace_info, shared_.settings.experimental.allow_unknown_event_types, handle_error_2, handle_success_2)) {
+          log_message();
+        }
+      } catch (...) {
+        log_message();
+        utils::exceptions::Unhandled::terminate();
+      }
     };
     process_response(event, handle_error, handle_success);
   });
@@ -745,6 +772,7 @@ void OrderEntry::cancel_order(
 
 void OrderEntry::cancel_order_ack(Trace<web::rest::Response> const &event, uint8_t user_id, uint64_t order_id, uint32_t version) {
   profile_.cancel_order_ack([&]() {
+    auto &[trace_info, response] = event;
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
       auto response = server::oms::Response{
@@ -764,9 +792,30 @@ void OrderEntry::cancel_order_ack(Trace<web::rest::Response> const &event, uint8
     };
     auto handle_success = [&](auto &body) {
       log::warn(R"(DEBUG body="{}")"sv, body);
-      json::CancelOrderAck cancel_order_ack{body, decode_buffer_};
-      Trace event_2{event, cancel_order_ack};
-      (*this)(event_2, user_id, order_id, version);
+      auto log_message = [&]() { log::warn(R"(*** PLEASE REPORT *** message="{}")"sv, body); };
+      auto handle_error_2 = [&](auto &text) { handle_error(Origin::EXCHANGE, RequestStatus::FAILED, Error::UNKNOWN, text); };
+      auto handle_success_2 = [&](auto &event_2) {
+        auto &statuses = event_2.value.response.data.statuses;
+        if (std::empty(statuses)) {
+          log::warn(R"(Unexpected: message="{}")"sv, body);
+        } else {
+          auto &status = statuses[0];  // XXX FIXME TODO process all
+          if (std::empty(status.error)) {
+            (*this)(event_2, user_id, order_id, version);
+          } else {
+            handle_error_2(status.error);
+          }
+        }
+      };
+      try {
+        if (!json::CancelOrderAckParser::dispatch(
+                body, decode_buffer_, trace_info, shared_.settings.experimental.allow_unknown_event_types, handle_error_2, handle_success_2)) {
+          log_message();
+        }
+      } catch (...) {
+        log_message();
+        utils::exceptions::Unhandled::terminate();
+      }
     };
     process_response(event, handle_error, handle_success);
   });

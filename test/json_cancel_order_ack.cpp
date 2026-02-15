@@ -5,6 +5,7 @@
 #include "roq/core/json/buffer_stack.hpp"
 
 #include "roq/hyperliquid/json/cancel_order_ack.hpp"
+#include "roq/hyperliquid/json/cancel_order_ack_parser.hpp"
 
 using namespace roq;
 using namespace roq::hyperliquid;
@@ -21,6 +22,29 @@ statuses[]:
   success->{}
 */
 
+// === HELPERS ===
+
+namespace {
+auto helper = [](auto &message, auto error_handler, auto success_handler) {
+  auto found = false;
+  auto error_handler_2 = [&](auto const &text) {
+    found = true;
+    error_handler(text);
+  };
+  auto success_handler_2 = [&](auto &event) {
+    found = true;
+    success_handler(event);
+  };
+  core::json::BufferStack buffers{8192, 1};
+  TraceInfo trace_info;
+  auto result = json::CancelOrderAckParser::dispatch(message, buffers, trace_info, false, error_handler_2, success_handler_2);
+  CHECK(result == true);
+  return found;
+};
+}  // namespace
+
+// === IMPLEMENTATION ===
+
 TEST_CASE("already_canceled_or_filled", "[json_cancel_order_ack]") {
   auto message = R"({)"
                  R"("status":"ok",)"
@@ -34,15 +58,15 @@ TEST_CASE("already_canceled_or_filled", "[json_cancel_order_ack]") {
                  R"(})"
                  R"(})"
                  R"(})";
-  auto helper = [&](value_type &obj) {
+  auto error_handler = []([[maybe_unused]] auto const &text) { FAIL(); };
+  auto success_handler = [](value_type const &obj) {
     CHECK(obj.status == json::Status::OK);
     CHECK(obj.response.type == json::ResponseType::CANCEL);
-    // REQUIRE(std::size(obj.response.data.statuses) == 1);
-    // CHECK(obj.response.data.statuses[0] == "success"sv);
+    REQUIRE(std::size(obj.response.data.statuses) == 1);
+    CHECK(obj.response.data.statuses[0].error == "Order was never placed, already canceled, or filled. asset=0"sv);
   };
-  core::json::BufferStack buffers{8192, 1};
-  value_type obj{message, buffers};
-  helper(obj);
+  auto found = helper(message, error_handler, success_handler);
+  CHECK(found == true);
 }
 
 TEST_CASE("success", "[json_cancel_order_ack]") {
@@ -57,13 +81,8 @@ TEST_CASE("success", "[json_cancel_order_ack]") {
                  R"(})"
                  R"(})"
                  R"(})";
-  auto helper = [&](value_type &obj) {
-    CHECK(obj.status == json::Status::OK);
-    CHECK(obj.response.type == json::ResponseType::CANCEL);
-    // REQUIRE(std::size(obj.response.data.statuses) == 1);
-    // CHECK(obj.response.data.statuses[0] == "success"sv);
-  };
-  core::json::BufferStack buffers{8192, 1};
-  value_type obj{message, buffers};
-  helper(obj);
+  auto error_handler = []([[maybe_unused]] auto const &text) { FAIL(); };
+  auto success_handler = [](value_type const &) { FAIL(); };
+  auto found = helper(message, error_handler, success_handler);
+  CHECK(found == false);  // note! we can normally get away with not ack'ing success
 }

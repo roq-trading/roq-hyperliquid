@@ -1,6 +1,6 @@
 set(TARGET_NAME ${PROJECT_NAME}-json)
 
-set(SOURCES map.cpp parser.cpp utils.cpp)
+set(SOURCES cancel_order_ack_parser.cpp create_order_ack_parser.cpp map.cpp parser.cpp utils.cpp)
 
 include(RoqAutogen)
 
@@ -12,6 +12,7 @@ set(AUTOGEN_SCHEMAS
     bbo_data.json
     bbo.json
     cancel_order_ack.json
+    cancel_order_ack_response_data_statuses_item.json
     cancel_order_ack_response_data.json
     cancel_order_ack_response.json
     channel.json
@@ -23,6 +24,7 @@ set(AUTOGEN_SCHEMAS
     create_order_ack_response.json
     direction.json
     error.json
+    general_error.json
     get_clearing_house_state_ack_cross_margin_summary.json
     get_clearing_house_state_ack.json
     get_clearing_house_state_ack_margin_summary.json

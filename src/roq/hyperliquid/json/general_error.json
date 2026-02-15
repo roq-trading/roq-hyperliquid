@@ -1,0 +1,14 @@
+{
+  "name": "roq/hyperliquid/json/GeneralError",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "status",
+      "type": "roq/hyperliquid/json/Status"
+    },
+    {
+      "name": "response",
+      "type": "std/string_view"
+    }
+  ]
+}

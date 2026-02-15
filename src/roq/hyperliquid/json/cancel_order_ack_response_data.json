@@ -3,7 +3,9 @@
   "type": "dictionary",
   "values": [
     {
-      "name": "statuses"
+      "name": "statuses",
+      "type": "roq/hyperliquid/json/CancelOrderAckResponseDataStatusesItem",
+      "array": "std/span"
     }
   ]
 }

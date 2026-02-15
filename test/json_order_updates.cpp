@@ -50,7 +50,7 @@ TEST_CASE("create_resting", "[json_order_updates]") {
   ParserTester<value_type>::dispatch(helper, message, 8192, 2);
 }
 
-TEST_CASE("create_failure", "[json_order_updates]") {
+TEST_CASE("create_failure_min_notional", "[json_order_updates]") {
   auto message = R"({)"
                  R"("channel":"orderUpdates",)"
                  R"("data":[{)"
@@ -83,6 +83,43 @@ TEST_CASE("create_failure", "[json_order_updates]") {
     CHECK(d0.order.cloid == "0x0003005119ba40ba000001000000004d"sv);
     CHECK(d0.status == json::OrderStatus::MIN_TRADE_NTL_REJECTED);
     CHECK(d0.status_timestamp == 1770522010049ms);
+  };
+  ParserTester<value_type>::dispatch(helper, message, 8192, 2);
+}
+
+TEST_CASE("create_failure_", "[json_order_updates]") {
+  auto message = R"({)"
+                 R"("channel":"orderUpdates",)"
+                 R"("data":[{)"
+                 R"("order":{)"
+                 R"("coin":"SOL",)"
+                 R"("side":"B",)"
+                 R"("limitPx":"50.0",)"
+                 R"("sz":"1000.0",)"
+                 R"("oid":321519065621,)"
+                 R"("timestamp":1771168943567,)"
+                 R"("origSz":"1000.0",)"
+                 R"("cloid":"0x000300529b522d0e00000100000000fd")"
+                 R"(},)"
+                 R"("status":"perpMarginRejected",)"
+                 R"("statusTimestamp":1771168943567)"
+                 R"(})"
+                 R"(])"
+                 R"(})"sv;
+  auto helper = [](value_type const &obj) {
+    CHECK(obj.channel == json::Channel::ORDER_UPDATES);
+    REQUIRE(std::size(obj.data) == 1);
+    auto &d0 = obj.data[0];
+    CHECK(d0.order.coin == "SOL"sv);
+    CHECK(d0.order.side == json::Side::BID);
+    CHECK(d0.order.limit_px == 50.0_a);
+    CHECK(d0.order.sz == 1000.0_a);
+    CHECK(d0.order.oid == 321519065621);
+    CHECK(d0.order.timestamp == 1771168943567ms);
+    CHECK(d0.order.orig_sz == 1000.0_a);
+    CHECK(d0.order.cloid == "0x000300529b522d0e00000100000000fd"sv);
+    CHECK(d0.status == json::OrderStatus::PERP_MARGIN_REJECTED);
+    CHECK(d0.status_timestamp == 1771168943567ms);
   };
   ParserTester<value_type>::dispatch(helper, message, 8192, 2);
 }

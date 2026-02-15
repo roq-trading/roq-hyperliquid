@@ -2,9 +2,8 @@
 
 #include <catch2/catch_all.hpp>
 
-#include "roq/core/json/buffer_stack.hpp"
-
 #include "roq/hyperliquid/json/create_order_ack.hpp"
+#include "roq/hyperliquid/json/create_order_ack_parser.hpp"
 
 using namespace roq;
 using namespace roq::hyperliquid;
@@ -24,6 +23,29 @@ statuses[]:
   filled->{total/avg/oid,cloid}
 */
 
+// === HELPERS ===
+
+namespace {
+auto helper = [](auto &message, auto error_handler, auto success_handler) {
+  auto found = false;
+  auto error_handler_2 = [&](auto const &text) {
+    found = true;
+    error_handler(text);
+  };
+  auto success_handler_2 = [&](auto &event) {
+    found = true;
+    success_handler(event);
+  };
+  core::json::BufferStack buffers{8192, 1};
+  TraceInfo trace_info;
+  auto result = json::CreateOrderAckParser::dispatch(message, buffers, trace_info, false, error_handler_2, success_handler_2);
+  CHECK(result == true);
+  CHECK(found == true);
+};
+}  // namespace
+
+// === IMPLEMENTATION ===
+
 TEST_CASE("success_created", "[json_create_order_ack]") {
   auto message = R"({)"
                  R"("status":"ok",)"
@@ -40,7 +62,8 @@ TEST_CASE("success_created", "[json_create_order_ack]") {
                  R"(})"
                  R"(})"
                  R"(})";
-  auto helper = [&](value_type &obj) {
+  auto error_handler = []([[maybe_unused]] auto const &text) { FAIL(); };
+  auto success_handler = [](value_type const &obj) {
     CHECK(obj.status == json::Status::OK);
     CHECK(obj.response.type == json::ResponseType::ORDER);
     REQUIRE(std::size(obj.response.data.statuses) == 1);
@@ -48,9 +71,7 @@ TEST_CASE("success_created", "[json_create_order_ack]") {
     CHECK(s0.resting.oid == 311642020084);
     CHECK(s0.resting.cloid == "0x430882655000030000000001000000b9"sv);
   };
-  core::json::BufferStack buffers{8192, 1};
-  value_type obj{message, buffers};
-  helper(obj);
+  helper(message, error_handler, success_handler);
 }
 
 TEST_CASE("success_filled", "[json_create_order_ack]") {
@@ -60,14 +81,19 @@ TEST_CASE("success_filled", "[json_create_order_ack]") {
                  R"("type":"order",)"
                  R"("data":{)"
                  R"("statuses":[{)"
-                 R"("filled":{"totalSz":"0.01","avgPx":"2080.2","oid":315445859529,"cloid":"0x000300511abd579f000001000000007b")"
+                 R"("filled":{)"
+                 R"("totalSz":"0.01",)"
+                 R"("avgPx":"2080.2",)"
+                 R"("oid":315445859529,)"
+                 R"("cloid":"0x000300511abd579f000001000000007b")"
                  R"(})"
                  R"(})"
                  R"(])"
                  R"(})"
                  R"(})"
                  R"(})";
-  auto helper = [&](value_type &obj) {
+  auto error_handler = []([[maybe_unused]] auto const &text) { FAIL(); };
+  auto success_handler = [](value_type const &obj) {
     CHECK(obj.status == json::Status::OK);
     CHECK(obj.response.type == json::ResponseType::ORDER);
     REQUIRE(std::size(obj.response.data.statuses) == 1);
@@ -77,9 +103,7 @@ TEST_CASE("success_filled", "[json_create_order_ack]") {
     CHECK(s0.filled.oid == 315445859529);
     CHECK(s0.filled.cloid == "0x000300511abd579f000001000000007b"sv);
   };
-  core::json::BufferStack buffers{8192, 1};
-  value_type obj{message, buffers};
-  helper(obj);
+  helper(message, error_handler, success_handler);
 }
 
 TEST_CASE("failure_price", "[json_create_order_ack]") {
@@ -95,16 +119,15 @@ TEST_CASE("failure_price", "[json_create_order_ack]") {
                  R"(})"
                  R"(})"
                  R"(})";
-  auto helper = [&](value_type &obj) {
+  auto error_handler = []([[maybe_unused]] auto const &text) { FAIL(); };
+  auto success_handler = [](value_type const &obj) {
     CHECK(obj.status == json::Status::OK);
     CHECK(obj.response.type == json::ResponseType::ORDER);
     REQUIRE(std::size(obj.response.data.statuses) == 1);
     auto &s0 = obj.response.data.statuses[0];
     CHECK(s0.error == "Order price cannot be more than 95% away from the reference price"sv);
   };
-  core::json::BufferStack buffers{8192, 1};
-  value_type obj{message, buffers};
-  helper(obj);
+  helper(message, error_handler, success_handler);
 }
 
 TEST_CASE("failure_quantity", "[json_create_order_ack]") {
@@ -120,16 +143,15 @@ TEST_CASE("failure_quantity", "[json_create_order_ack]") {
                  R"(})"
                  R"(})"
                  R"(})";
-  auto helper = [&](value_type &obj) {
+  auto error_handler = []([[maybe_unused]] auto const &text) { FAIL(); };
+  auto success_handler = [](value_type const &obj) {
     CHECK(obj.status == json::Status::OK);
     CHECK(obj.response.type == json::ResponseType::ORDER);
     REQUIRE(std::size(obj.response.data.statuses) == 1);
     auto &s0 = obj.response.data.statuses[0];
     CHECK(s0.error == "Order must have minimum value of $10. asset=1"sv);
   };
-  core::json::BufferStack buffers{8192, 1};
-  value_type obj{message, buffers};
-  helper(obj);
+  helper(message, error_handler, success_handler);
 }
 
 TEST_CASE("ioc_failed", "[json_create_order_ack]") {
@@ -145,29 +167,49 @@ TEST_CASE("ioc_failed", "[json_create_order_ack]") {
                  R"(})"
                  R"(})"
                  R"(})";
-  auto helper = [&](value_type &obj) {
+  auto error_handler = []([[maybe_unused]] auto const &text) { FAIL(); };
+  auto success_handler = [](value_type const &obj) {
     CHECK(obj.status == json::Status::OK);
     CHECK(obj.response.type == json::ResponseType::ORDER);
     REQUIRE(std::size(obj.response.data.statuses) == 1);
     auto &s0 = obj.response.data.statuses[0];
     CHECK(s0.error == "Order could not immediately match against any resting orders. asset=5"sv);
   };
-  core::json::BufferStack buffers{8192, 1};
-  value_type obj{message, buffers};
-  helper(obj);
+  helper(message, error_handler, success_handler);
 }
-/*
-TEST_CASE("failure_xxx", "[json_create_order_ack]") {
+
+TEST_CASE("insufficient_margin", "[json_create_order_ack]") {
+  auto message = R"({)"
+                 R"("status":"ok",)"
+                 R"("response":{)"
+                 R"("type":"order",)"
+                 R"("data":{)"
+                 R"("statuses":[{)"
+                 R"("error":"Insufficient margin to place order. asset=5")"
+                 R"(})"
+                 R"(])"
+                 R"(})"
+                 R"(})"
+                 R"(})";
+  auto error_handler = []([[maybe_unused]] auto const &text) { FAIL(); };
+  auto success_handler = [](value_type const &obj) {
+    CHECK(obj.status == json::Status::OK);
+    CHECK(obj.response.type == json::ResponseType::ORDER);
+    REQUIRE(std::size(obj.response.data.statuses) == 1);
+    auto &s0 = obj.response.data.statuses[0];
+    CHECK(s0.error == "Insufficient margin to place order. asset=5"sv);
+  };
+  helper(message, error_handler, success_handler);
+}
+
+TEST_CASE("general_failure", "[json_create_order_ack]") {
   auto message = R"({)"
                  R"("status":"err",)"
                  R"("response":"User or API Wallet 0x4b6c5b1287e38b78e61d5dbca726d5e267eda747 does not exist.")"
                  R"(})";
-  auto helper = [&](value_type &obj) {
-    CHECK(obj.status == json::Status::ERR);
-    // CHECK(s0.error == "Order must have minimum value of $10. asset=1"sv);
+  auto error_handler = []([[maybe_unused]] auto const &text) {
+    CHECK(text == "User or API Wallet 0x4b6c5b1287e38b78e61d5dbca726d5e267eda747 does not exist."sv);
   };
-  core::json::BufferStack buffers{8192, 1};
-  value_type obj{message, buffers};
-  helper(obj);
+  auto success_handler = [](value_type const &) { FAIL(); };
+  helper(message, error_handler, success_handler);
 }
-*/
