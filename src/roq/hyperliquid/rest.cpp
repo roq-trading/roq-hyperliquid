@@ -3,6 +3,7 @@
 #include "roq/hyperliquid/rest.hpp"
 
 #include <algorithm>
+#include <limits>
 #include <utility>
 
 #include "roq/mask.hpp"
@@ -14,6 +15,8 @@
 
 #include "roq/hyperliquid/json/map.hpp"
 #include "roq/hyperliquid/json/utils.hpp"
+
+#include "roq/hyperliquid/tools/tick_size_steps.hpp"
 
 using namespace std::literals;
 
@@ -478,6 +481,7 @@ void Rest::operator()(Trace<json::GetMetaAck> const &event, size_t index) {
     auto discard = shared_.discard_symbol(item.name);
     auto exchange = get_exchange_from_coin(item.name, shared_.settings);
     auto tick_size = std::pow(10.0, -static_cast<double>(item.sz_decimals));
+    auto tick_size_steps = tools::TickSizeSteps::get(item.sz_decimals, false);
     auto trade_vol_step_size = std::pow(10.0, -static_cast<double>(item.sz_decimals));
     auto reference_data = ReferenceData{
         .stream_id = stream_id_,
@@ -493,7 +497,7 @@ void Rest::operator()(Trace<json::GetMetaAck> const &event, size_t index) {
         .margin_currency = {},
         .commission_currency = {},
         .tick_size = tick_size,
-        .tick_size_steps = {},
+        .tick_size_steps = tick_size_steps,
         .multiplier = NaN,
         .min_notional = NaN,
         .min_trade_vol = NaN,

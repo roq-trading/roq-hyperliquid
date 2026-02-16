@@ -266,35 +266,32 @@ Order Management
 Comments
 ~~~~~~~~
 
-* There is currently only support for mainnet.
+* Only mainnet is currently supported.
 
 * The :code:`login` (TOML config) should be your account's **public address**.
 
 * The :code:`secret` (TOML config) should be your account's **private** key.
 
   .. note::
-     The account's public key (not address!) can be derived from the private key.
+     The account's public key (not address!) can be derived from the private key is therefore not required.
 
 * Downloaded orders lack several attributes, e.g. :code:`TimeInForce`.
 
 * Order management can only be enabled after downloading reference data.
-  This is due to protocol using asset IDs (as opposed to symbol names) and very strict usage of decimals.
-
-* Currently only support for :code:`OrderType::LIMIT` and :code:`TimeInForce::GTC`.
-
-* REST response seems to not have any fixed structure.
+  This is due to protocol using asset IDs (as opposed to symbol names) and very strict usage of significant decimals.
 
 * REST response has very little information for rejects.
 
-  .. warning::
+  .. warn::
+     The generic error :code:`User or API Wallet [...] does not exist.` is sometimes received.
 
-     JSON parsing may fail for various reasons.
+     Reasons for this error message includes wrong signature but also seems to be generated for other reasons.
 
-* It does not currently seem possible to use :code:`ModifyOrder`.
+     These "other reasons" are not well understood, maybe they include time issues around "expires-after".
+
+* :code:`ModifyOrder` does not currently work.
 
 * Q: Do we need vault address for anything?
-
-* Q: Do we need expires after?
 
 
 References

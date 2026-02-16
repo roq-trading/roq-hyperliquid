@@ -11,6 +11,7 @@ set(SOURCES
     key.cpp
     pkey.cpp
     point.cpp
+    tick_size_steps.cpp
     wallet.cpp)
 
 add_library(${TARGET_NAME} OBJECT ${SOURCES})
