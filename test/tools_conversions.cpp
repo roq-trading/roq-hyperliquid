@@ -3,6 +3,7 @@
 #include <catch2/catch_all.hpp>
 
 #include <array>
+#include <limits>
 
 #include "roq/tick_size_step.hpp"
 
@@ -95,8 +96,8 @@ TEST_CASE("format_price", "[tools_conversions]") {
 }
 
 TEST_CASE("format_price_tick_size_steps", "[tools_conversions]") {
-  std::array<TickSizeStep, 6> decimals_2{{
-      {.min_price = 0.0, .tick_size = 0.0001},
+  std::array<TickSizeStep, 6> perps_2{{
+      {.min_price = -std::numeric_limits<double>::infinity(), .tick_size = 0.0001},
       {.min_price = 10.0, .tick_size = 0.001},
       {.min_price = 100.0, .tick_size = 0.01},
       {.min_price = 1000.0, .tick_size = 0.1},
