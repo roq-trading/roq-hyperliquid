@@ -88,8 +88,10 @@ auto const SPOT_7 = std::array<TickSizeStep, 6>{{
 
 // - perps
 
-auto const PERPS_0 = std::array<TickSizeStep, 6>{{
-    {.min_price = -std::numeric_limits<double>::infinity(), .tick_size = 0.0001},
+auto const PERPS_0 = std::array<TickSizeStep, 8>{{
+    {.min_price = -std::numeric_limits<double>::infinity(), .tick_size = 0.000001},
+    {.min_price = 0.1, .tick_size = 0.00001},
+    {.min_price = 1.0, .tick_size = 0.0001},
     {.min_price = 10.0, .tick_size = 0.001},
     {.min_price = 100.0, .tick_size = 0.01},
     {.min_price = 1000.0, .tick_size = 0.1},
@@ -97,8 +99,9 @@ auto const PERPS_0 = std::array<TickSizeStep, 6>{{
     {.min_price = 100000.0, .tick_size = 10.0},
 }};
 
-auto const PERPS_1 = std::array<TickSizeStep, 6>{{
-    {.min_price = -std::numeric_limits<double>::infinity(), .tick_size = 0.0001},
+auto const PERPS_1 = std::array<TickSizeStep, 7>{{
+    {.min_price = -std::numeric_limits<double>::infinity(), .tick_size = 0.00001},
+    {.min_price = 1.0, .tick_size = 0.0001},
     {.min_price = 10.0, .tick_size = 0.001},
     {.min_price = 100.0, .tick_size = 0.01},
     {.min_price = 1000.0, .tick_size = 0.1},
@@ -115,29 +118,23 @@ auto const PERPS_2 = std::array<TickSizeStep, 6>{{
     {.min_price = 100000.0, .tick_size = 10.0},
 }};
 
-auto const PERPS_3 = std::array<TickSizeStep, 6>{{
-    {.min_price = -std::numeric_limits<double>::infinity(), .tick_size = 0.0001},
-    {.min_price = 10.0, .tick_size = 0.001},
+auto const PERPS_3 = std::array<TickSizeStep, 5>{{
+    {.min_price = -std::numeric_limits<double>::infinity(), .tick_size = 0.001},
     {.min_price = 100.0, .tick_size = 0.01},
     {.min_price = 1000.0, .tick_size = 0.1},
     {.min_price = 10000.0, .tick_size = 1.0},
     {.min_price = 100000.0, .tick_size = 10.0},
 }};
 
-auto const PERPS_4 = std::array<TickSizeStep, 6>{{
-    {.min_price = -std::numeric_limits<double>::infinity(), .tick_size = 0.0001},
-    {.min_price = 10.0, .tick_size = 0.001},
-    {.min_price = 100.0, .tick_size = 0.01},
+auto const PERPS_4 = std::array<TickSizeStep, 4>{{
+    {.min_price = -std::numeric_limits<double>::infinity(), .tick_size = 0.01},
     {.min_price = 1000.0, .tick_size = 0.1},
     {.min_price = 10000.0, .tick_size = 1.0},
     {.min_price = 100000.0, .tick_size = 10.0},
 }};
 
-auto const PERPS_5 = std::array<TickSizeStep, 6>{{
-    {.min_price = -std::numeric_limits<double>::infinity(), .tick_size = 0.0001},
-    {.min_price = 10.0, .tick_size = 0.001},
-    {.min_price = 100.0, .tick_size = 0.01},
-    {.min_price = 1000.0, .tick_size = 0.1},
+auto const PERPS_5 = std::array<TickSizeStep, 3>{{
+    {.min_price = -std::numeric_limits<double>::infinity(), .tick_size = 0.1},
     {.min_price = 10000.0, .tick_size = 1.0},
     {.min_price = 100000.0, .tick_size = 10.0},
 }};
