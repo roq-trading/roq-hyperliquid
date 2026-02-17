@@ -167,28 +167,28 @@ void OrderEntry::operator()(metrics::Writer &writer) const {
 }
 
 uint16_t OrderEntry::operator()(
-    Event<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &, std::string_view const &request_id) {
-  create_order(event, order, request_id);
+    Event<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &ref_data, std::string_view const &request_id) {
+  create_order(event, order, ref_data, request_id);
   return stream_id_;
 }
 
 uint16_t OrderEntry::operator()(
     Event<ModifyOrder> const &event,
     server::oms::Order const &order,
-    server::oms::RefData const &,
+    server::oms::RefData const &ref_data,
     std::string_view const &request_id,
     std::string_view const &previous_request_id) {
-  modify_order(event, order, request_id, previous_request_id);
+  modify_order(event, order, ref_data, request_id, previous_request_id);
   return stream_id_;
 }
 
 uint16_t OrderEntry::operator()(
     Event<CancelOrder> const &event,
     server::oms::Order const &order,
-    server::oms::RefData const &,
+    server::oms::RefData const &ref_data,
     std::string_view const &request_id,
     std::string_view const &previous_request_id) {
-  cancel_order(event, order, request_id, previous_request_id);
+  cancel_order(event, order, ref_data, request_id, previous_request_id);
   return stream_id_;
 }
 
@@ -585,7 +585,8 @@ void OrderEntry::operator()(Trace<json::GetUserFillsAck> const &event, size_t in
 
 // create-order
 
-void OrderEntry::create_order(Event<CreateOrder> const &event, server::oms::Order const &order, std::string_view const &request_id) {
+void OrderEntry::create_order(
+    Event<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &ref_data, std::string_view const &request_id) {
   profile_.create_order([&]() {
     auto &[message_info, create_order] = event;
     auto send_request = [&](auto &body) {
@@ -611,7 +612,7 @@ void OrderEntry::create_order(Event<CreateOrder> const &event, server::oms::Orde
     };
     auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
     auto expires_after_utc = now_utc + shared_.settings.rest.recv_window;
-    auto [action, packed] = tools::Encoder::create_order(create_order, order, request_id, now_utc, expires_after_utc);
+    auto [action, packed] = tools::Encoder::create_order(create_order, order, ref_data, request_id, now_utc, expires_after_utc);
     auto request = account_.sign_l1_action(action, packed, now_utc, expires_after_utc);
     send_request(request);
   });
@@ -676,6 +677,7 @@ void OrderEntry::operator()(Trace<json::CreateOrderAck> const &, uint8_t user_id
 void OrderEntry::modify_order(
     Event<ModifyOrder> const &event,
     server::oms::Order const &order,
+    server::oms::RefData const &ref_data,
     [[maybe_unused]] std::string_view const &request_id,
     [[maybe_unused]] std::string_view const &previous_request_id) {
   profile_.modify_order([&]() {
@@ -703,7 +705,7 @@ void OrderEntry::modify_order(
     };
     auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
     auto expires_after_utc = now_utc + shared_.settings.rest.recv_window;
-    auto [action, packed] = tools::Encoder::modify_order(modify_order, order, request_id, previous_request_id, now_utc, expires_after_utc);
+    auto [action, packed] = tools::Encoder::modify_order(modify_order, order, ref_data, request_id, previous_request_id, now_utc, expires_after_utc);
     auto request = account_.sign_l1_action(action, packed, now_utc, expires_after_utc);
     send_request(request);
   });
@@ -746,6 +748,7 @@ void OrderEntry::operator()(Trace<json::ModifyOrderAck> const &, uint8_t user_id
 void OrderEntry::cancel_order(
     Event<CancelOrder> const &event,
     server::oms::Order const &order,
+    server::oms::RefData const &ref_data,
     [[maybe_unused]] std::string_view const &request_id,
     [[maybe_unused]] std::string_view const &previous_request_id) {
   profile_.cancel_order([&]() {
@@ -773,7 +776,7 @@ void OrderEntry::cancel_order(
     };
     auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
     auto expires_after_utc = now_utc + shared_.settings.rest.recv_window;
-    auto [action, packed] = tools::Encoder::cancel_order(cancel_order, order, request_id, previous_request_id, now_utc, expires_after_utc);
+    auto [action, packed] = tools::Encoder::cancel_order(cancel_order, order, ref_data, request_id, previous_request_id, now_utc, expires_after_utc);
     auto request = account_.sign_l1_action(action, packed, now_utc, expires_after_utc);
     send_request(request);
   });

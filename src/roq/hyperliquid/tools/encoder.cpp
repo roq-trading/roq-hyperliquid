@@ -135,6 +135,7 @@ auto pack_helper(auto &action, auto now_utc, auto expires_after_utc) {
 std::pair<std::string, std::vector<std::byte>> Encoder::create_order(
     CreateOrder const &create_order,
     server::oms::Order const &order,
+    server::oms::RefData const &ref_data,
     std::string_view const &request_id,
     std::chrono::milliseconds now_utc,
     std::chrono::milliseconds expires_after_utc) {
@@ -142,14 +143,14 @@ std::pair<std::string, std::vector<std::byte>> Encoder::create_order(
   auto reduce_only = create_order.execution_instructions.has(ExecutionInstruction::DO_NOT_INCREASE);
   auto cloid = fmt::format("0x{:0>32}"sv, request_id);
   auto order_type = order_type_helper_2(order);
-  auto sz_decimals = utils::decimal_digits(order.quantity_precision.precision);
-  auto is_spot = order.external_security_id >= 10000;
+  auto sz_decimals = utils::decimal_digits(ref_data.quantity.precision);
+  auto is_spot = ref_data.external_security_id >= 10000;
   auto price = Conversions::floatToWire(Conversions::roundPrice(create_order.price, sz_decimals, is_spot));
   auto size = Conversions::floatToWire(Conversions::roundSize(create_order.quantity, sz_decimals));
   auto action = [&]() {
     auto order_type = order_type_helper_2(order);
     auto order_2 = nlohmann::ordered_json{
-        {"a", order.external_security_id},
+        {"a", ref_data.external_security_id},
         {"b", is_buy},
         {"p", price},  // XXX FIXME TODO market order ???
         {"s", size},
@@ -174,12 +175,13 @@ std::pair<std::string, std::vector<std::byte>> Encoder::create_order(
 // {"action":{"type":"order","orders":[{"a":1,"b":true,"p":"1500","s":"1","r":false,"t":{"limit":{"tif":"Gtc"}},"c":"0x000300515099a47a0000010000000003"}],"grouping":"na"}
 
 std::pair<std::string, std::vector<std::byte>> Encoder::modify_order(
-    ModifyOrder const &modify_order,
-    server::oms::Order const &order,
+    ModifyOrder const &,
+    server::oms::Order const &,
+    server::oms::RefData const &,
     [[maybe_unused]] std::string_view const &request_id,
     [[maybe_unused]] std::string_view const &previous_request_id,
-    std::chrono::milliseconds now_utc,
-    std::chrono::milliseconds expires_after_utc) {
+    [[maybe_unused]] std::chrono::milliseconds now_utc,
+    [[maybe_unused]] std::chrono::milliseconds expires_after_utc) {
   throw server::oms::NotSupported{"not supported"sv};
   /*
   std::string coin{order.symbol};
@@ -191,7 +193,7 @@ std::pair<std::string, std::vector<std::byte>> Encoder::modify_order(
   auto reduce_only = true;  // XXX FIXME TODO
   auto order_type = order_type_helper(order);
   auto action =
-      exchange.ROQ_modifyOrder(oid, coin, order.external_security_id, is_buy, modify_order.quantity, modify_order.price, order_type, reduce_only, cloid);
+      exchange.ROQ_modifyOrder(oid, coin, ref_data.external_security_id, is_buy, modify_order.quantity, modify_order.price, order_type, reduce_only, cloid);
   auto packed = pack_helper(action, now_utc, expires_after_utc);
   auto action_2 = action.dump();
   return {action_2, packed};
@@ -203,6 +205,7 @@ std::pair<std::string, std::vector<std::byte>> Encoder::modify_order(
 std::pair<std::string, std::vector<std::byte>> Encoder::cancel_order(
     CancelOrder const &,
     server::oms::Order const &order,
+    server::oms::RefData const &ref_data,
     [[maybe_unused]] std::string_view const &request_id,
     [[maybe_unused]] std::string_view const &previous_request_id,
     std::chrono::milliseconds now_utc,
@@ -216,7 +219,7 @@ std::pair<std::string, std::vector<std::byte>> Encoder::cancel_order(
     auto cloid = fmt::format("0x{:0>32}"sv, static_cast<std::string_view>(order.client_order_id));
     auto action = [&]() {
       auto cancel = nlohmann::ordered_json{
-          {"asset", order.external_security_id},
+          {"asset", ref_data.external_security_id},
           {"cloid", cloid},
       };
       auto cancels = nlohmann::ordered_json{
@@ -233,7 +236,7 @@ std::pair<std::string, std::vector<std::byte>> Encoder::cancel_order(
     auto oid = utils::charconv::from_chars<int64_t>(order.external_order_id);
     auto action = [&]() {
       auto cancel = nlohmann::ordered_json{
-          {"a", order.external_security_id},
+          {"a", ref_data.external_security_id},
           {"o", oid},
       };
       auto cancels = nlohmann::ordered_json{
