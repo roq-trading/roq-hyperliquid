@@ -384,7 +384,7 @@ void Rest::operator()(Trace<json::GetPerpDexsAck> const &event) {
   for (size_t i = 0; i < std::size(perp_dexs_ack.data); ++i) {
     auto &item = perp_dexs_ack.data[i];
     auto asset_id_offset = static_cast<int32_t>(i * OFFSET_DEX);
-    log::warn("DEBUG item={}"sv, item);
+    // log::warn("DEBUG item={}"sv, item);
     for (auto &item_2 : shared_.dex) {
       if (item_2.name == item.name) {
         if (item_2.asset_id_offset != asset_id_offset) {

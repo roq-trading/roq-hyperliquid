@@ -260,15 +260,16 @@ uint32_t OrderEntry::download(OrderEntryState state) {
     case CLEARING_HOUSE_STATE:
       get_clearing_house_state(0);
       return 1;
-      // return std::size(shared_.dex);
     case OPEN_ORDERS:
       get_open_orders(0);
       return 1;
-      // return std::size(shared_.dex);
     case USER_FILLS:
-      get_user_fills(0);
-      return 1;
-      // return std::size(shared_.dex);
+      if (shared_.settings.download.trades_lookback.count()) {
+        get_user_fills(0);
+        return 1;
+      } else {
+        return 0;
+      }
     case DONE:
       (*this)(ConnectionStatus::READY);
       return 0;
@@ -297,7 +298,7 @@ void OrderEntry::get_spot_clearing_house_state() {
         .body = body,
         .quality_of_service = {},
     };
-    log::warn("DEBUG request={}"sv, request);
+    // log::warn("DEBUG request={}"sv, request);
     auto callback = [this, sequence = download_.sequence()]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
@@ -315,7 +316,7 @@ void OrderEntry::get_spot_clearing_house_state_ack(Trace<web::rest::Response> co
       download_.retry(STATE);
     };
     auto handle_success = [&](auto &body) {
-      log::warn("DEBUG {}"sv, body);
+      // log::warn("DEBUG {}"sv, body);
       if (download_.skip(sequence, STATE)) {
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
@@ -332,7 +333,7 @@ void OrderEntry::get_spot_clearing_house_state_ack(Trace<web::rest::Response> co
 void OrderEntry::operator()(Trace<json::GetSpotClearingHouseStateAck> const &event) {
   auto &[trace_info, spot_clearing_house_state_ack] = event;
   log::info<4>("spot_clearing_house_state_ack={}"sv, spot_clearing_house_state_ack);
-  log::warn("DEBUG spot_clearing_house_state_ack={}"sv, spot_clearing_house_state_ack);
+  // log::warn("DEBUG spot_clearing_house_state_ack={}"sv, spot_clearing_house_state_ack);
 }
 
 // clearing-house-state
@@ -359,7 +360,7 @@ void OrderEntry::get_clearing_house_state(size_t index) {
         .body = body,
         .quality_of_service = {},
     };
-    log::warn("DEBUG request={}"sv, request);
+    // log::warn("DEBUG request={}"sv, request);
     auto callback = [this, sequence = download_.sequence(), index = index]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
@@ -377,7 +378,7 @@ void OrderEntry::get_clearing_house_state_ack(Trace<web::rest::Response> const &
       download_.retry(STATE);
     };
     auto handle_success = [&](auto &body) {
-      log::warn("DEBUG {}"sv, body);
+      // log::warn("DEBUG {}"sv, body);
       if (download_.skip(sequence, STATE)) {
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
@@ -399,7 +400,7 @@ void OrderEntry::get_clearing_house_state_ack(Trace<web::rest::Response> const &
 void OrderEntry::operator()(Trace<json::GetClearingHouseStateAck> const &event, size_t index) {
   auto &[trace_info, clearing_house_state_ack] = event;
   log::info<4>("clearing_house_state_ack={}"sv, clearing_house_state_ack);
-  log::warn("DEBUG clearing_house_state_ack={}"sv, clearing_house_state_ack);
+  // log::warn("DEBUG clearing_house_state_ack={}"sv, clearing_house_state_ack);
 }
 
 // open-orders
@@ -426,7 +427,7 @@ void OrderEntry::get_open_orders(size_t index) {
         .body = body,
         .quality_of_service = {},
     };
-    log::warn("DEBUG request={}"sv, request);
+    // log::warn("DEBUG request={}"sv, request);
     auto callback = [this, sequence = download_.sequence(), index = index]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
@@ -444,7 +445,7 @@ void OrderEntry::get_open_orders_ack(Trace<web::rest::Response> const &event, ui
       download_.retry(STATE);
     };
     auto handle_success = [&](auto &body) {
-      log::warn("DEBUG {}"sv, body);
+      // log::warn("DEBUG {}"sv, body);
       if (download_.skip(sequence, STATE)) {
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
@@ -467,7 +468,7 @@ void OrderEntry::operator()(Trace<json::GetOpenOrdersAck> const &event, size_t i
   auto &[trace_info, open_orders_ack] = event;
   log::info<4>("open_orders_ack={}"sv, open_orders_ack);
   for (auto &item : open_orders_ack.data) {
-    log::warn("DEBUG item={}"sv, item);
+    // log::warn("DEBUG item={}"sv, item);
     auto exchange = get_exchange_from_coin(item.coin, shared_.settings);
     auto external_order_id = fmt::format("{}"sv, item.oid);
     auto client_order_id = json::get_client_order_id(item.cloid);
@@ -508,7 +509,7 @@ void OrderEntry::operator()(Trace<json::GetOpenOrdersAck> const &event, size_t i
         .update_type = UpdateType::SNAPSHOT,
         .sending_time_utc = {},
     };
-    log::warn("DEBUG order_update={}"sv, order_update);
+    // log::warn("DEBUG order_update={}"sv, order_update);
     Trace event_2{trace_info, order_update};
     (*this)(event_2, client_order_id);
   }
@@ -538,7 +539,7 @@ void OrderEntry::get_user_fills(size_t index) {
         .body = body,
         .quality_of_service = {},
     };
-    log::warn("DEBUG request={}"sv, request);
+    // log::warn("DEBUG request={}"sv, request);
     auto callback = [this, sequence = download_.sequence(), index = index]([[maybe_unused]] auto &request_id, auto &response) {
       TraceInfo trace_info;
       Trace event{trace_info, response};
@@ -556,7 +557,7 @@ void OrderEntry::get_user_fills_ack(Trace<web::rest::Response> const &event, uin
       download_.retry(STATE);
     };
     auto handle_success = [&](auto &body) {
-      log::warn("DEBUG {}"sv, body);
+      // log::warn("DEBUG {}"sv, body);
       if (download_.skip(sequence, STATE)) {
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
@@ -579,7 +580,7 @@ void OrderEntry::operator()(Trace<json::GetUserFillsAck> const &event, size_t in
   auto &[trace_info, user_fills_ack] = event;
   log::info<4>("user_fills_ack={}"sv, user_fills_ack);
   for (auto &item : user_fills_ack.data) {
-    log::warn("DEBUG item={}"sv, item);
+    // log::warn("DEBUG item={}"sv, item);
   }
 }
 
@@ -607,7 +608,7 @@ void OrderEntry::create_order(
         Trace event{trace_info, response};
         create_order_ack(event, user_id, order_id, version);
       };
-      log::warn(R"(DEBUG request="{}")"sv, request);
+      // log::warn(R"(DEBUG request="{}")"sv, request);
       (*connection_)(request_id, request, callback);
     };
     auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
@@ -771,7 +772,7 @@ void OrderEntry::cancel_order(
         Trace event{trace_info, response};
         cancel_order_ack(event, user_id, order_id, version);
       };
-      log::warn(R"(DEBUG request="{}")"sv, request);
+      // log::warn(R"(DEBUG request="{}")"sv, request);
       (*connection_)(request_id, request, callback);
     };
     auto now_utc = clock::get_realtime<std::chrono::milliseconds>();

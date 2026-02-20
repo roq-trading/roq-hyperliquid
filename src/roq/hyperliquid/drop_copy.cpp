@@ -229,7 +229,7 @@ void DropCopy::subscribe(std::string_view const &type) {
       R"(}})"sv,
       type,
       account_.get_key());
-  log::warn("DEBUG {}"sv, message);
+  // log::warn("DEBUG {}"sv, message);
   (*connection_).send_text(message);
 }
 
@@ -242,7 +242,7 @@ void DropCopy::send_ping(std::chrono::nanoseconds now) {
 
 void DropCopy::parse(std::string_view const &message) {
   profile_.parse([&]() {
-    log::warn("DEBUG {}"sv, message);
+    // log::warn("DEBUG {}"sv, message);
     auto log_message = [&]() { log::warn(R"(*** PLEASE REPORT *** message="{}")"sv, message); };
     try {
       TraceInfo trace_info;
@@ -305,7 +305,7 @@ void DropCopy::operator()(Trace<json::SpotMeta> const &) {
 void DropCopy::operator()(Trace<json::User> const &event) {
   profile_.user([&]() {
     auto &[trace_info, user] = event;
-    log::warn("DEBUG {}"sv, user);
+    // log::warn("DEBUG {}"sv, user);
     // XXX FIXME TODO funding
     // XXX FIXME TODO fills
   });
@@ -314,14 +314,14 @@ void DropCopy::operator()(Trace<json::User> const &event) {
 void DropCopy::operator()(Trace<json::UserFundings> const &event) {
   profile_.user_fundings([&]() {
     auto &[trace_info, user_fundings] = event;
-    log::warn("DEBUG {}"sv, user_fundings);
+    // log::warn("DEBUG {}"sv, user_fundings);
   });
 }
 
 void DropCopy::operator()(Trace<json::UserFills> const &event) {
   profile_.user_fills([&]() {
     auto &[trace_info, user_fills] = event;
-    log::warn("DEBUG {}"sv, user_fills);
+    // log::warn("DEBUG {}"sv, user_fills);
   });
 }
 
@@ -330,7 +330,7 @@ void DropCopy::operator()(Trace<json::OrderUpdates> const &event) {
     auto &[trace_info, order_updates] = event;
     log::info<2>("order_updates={}"sv, order_updates);
     for (auto &item : order_updates.data) {
-      log::warn("DEBUG item={}"sv, item);
+      // log::warn("DEBUG item={}"sv, item);
       auto exchange = get_exchange_from_coin(item.order.coin, shared_.settings);
       auto external_order_id = fmt::format("{}"sv, item.order.oid);
       auto client_order_id = json::get_client_order_id(item.order.cloid);
@@ -394,7 +394,7 @@ void DropCopy::operator()(Trace<json::OrderUpdates> const &event) {
 void DropCopy::operator()(Trace<json::Notification> const &event) {
   profile_.notification([&]() {
     auto &[trace_info, notification] = event;
-    log::warn("DEBUG {}"sv, notification);
+    // log::warn("DEBUG {}"sv, notification);
   });
 }
 
