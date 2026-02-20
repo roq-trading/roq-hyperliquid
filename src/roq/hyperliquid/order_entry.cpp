@@ -853,11 +853,21 @@ void OrderEntry::process_response(web::rest::Response const &response, auto erro
         break;
       case REDIRECTION:
         log::fatal("Unexpected: URL is being redirected"sv);
-      case CLIENT_ERROR: {
-        auto message = fmt::format("{}"sv, status);
-        error_handler(Origin::EXCHANGE, RequestStatus::REJECTED, Error::UNKNOWN, message);
+      case CLIENT_ERROR:
+        switch (status) {
+          using enum web::http::Status;
+          case TOO_MANY_REQUESTS: {  // 429
+            (*connection_).suspend(shared_.settings.misc.suspend_after_429);
+            auto message = fmt::format("{}"sv, status);
+            error_handler(Origin::EXCHANGE, RequestStatus::REJECTED, Error::REQUEST_RATE_LIMIT_REACHED, message);
+            break;
+          }
+          default: {
+            auto message = fmt::format("{}"sv, status);
+            error_handler(Origin::EXCHANGE, RequestStatus::REJECTED, Error::UNKNOWN, message);
+          }
+        }
         break;
-      }
       case SERVER_ERROR: {
         auto message = fmt::format("{}"sv, status);
         error_handler(Origin::EXCHANGE, RequestStatus::REJECTED, Error::UNKNOWN, message);
