@@ -196,26 +196,26 @@ uint16_t OrderEntry::operator()(Event<CancelAllOrders> const &, [[maybe_unused]]
   throw server::oms::NotSupported{"not supported"sv};
 }
 
-void OrderEntry::operator()(ConnectionStatus status) {
-  if (utils::update(status_, status)) {
-    TraceInfo trace_info;
-    auto stream_status = StreamStatus{
-        .stream_id = stream_id_,
-        .account = {},
-        .supports = SUPPORTS,
-        .transport = Transport::TCP,
-        .protocol = Protocol::HTTP,
-        .encoding = {Encoding::JSON},
-        .priority = Priority::PRIMARY,
-        .connection_status = status_,
-        .interface = (*connection_).get_interface(),
-        .authority = (*connection_).get_current_authority(),
-        .path = (*connection_).get_current_path(),
-        .proxy = (*connection_).get_proxy(),
-    };
-    log::info("stream_status={}"sv, stream_status);
-    create_trace_and_dispatch(handler_, trace_info, stream_status);
-  }
+void OrderEntry::operator()(ConnectionStatus connection_status, std::string_view const &reason) {
+  connection_status_ = connection_status;
+  TraceInfo trace_info;
+  auto stream_status = StreamStatus{
+      .stream_id = stream_id_,
+      .account = {},
+      .supports = SUPPORTS,
+      .transport = Transport::TCP,
+      .protocol = Protocol::HTTP,
+      .encoding = {Encoding::JSON},
+      .priority = Priority::PRIMARY,
+      .connection_status = connection_status_,
+      .reason = reason,
+      .interface = (*connection_).get_interface(),
+      .authority = (*connection_).get_current_authority(),
+      .path = (*connection_).get_current_path(),
+      .proxy = (*connection_).get_proxy(),
+  };
+  log::info("stream_status={}"sv, stream_status);
+  create_trace_and_dispatch(handler_, trace_info, stream_status);
 }
 
 // web::rest::Client::Handler
@@ -224,7 +224,6 @@ void OrderEntry::operator()(Trace<web::rest::Client::Connected> const &) {
   if (download_.downloading()) {
     download_.bump();
   } else {
-    (*this)(ConnectionStatus::DOWNLOADING);
     download_.begin();
   }
 }
@@ -255,16 +254,20 @@ uint32_t OrderEntry::download(OrderEntryState state) {
       assert(false);
       break;
     case SPOT_CLEARING_HOUSE_STATE:
+      (*this)(ConnectionStatus::DOWNLOADING, "spot-clearing-house-state"sv);
       get_spot_clearing_house_state();
       return 1;
     case CLEARING_HOUSE_STATE:
+      (*this)(ConnectionStatus::DOWNLOADING, "clearing-house-state"sv);
       get_clearing_house_state(0);
       return 1;
     case OPEN_ORDERS:
+      (*this)(ConnectionStatus::DOWNLOADING, "open-orders"sv);
       get_open_orders(0);
       return 1;
     case USER_FILLS:
       if (shared_.settings.download.trades_lookback.count()) {
+        (*this)(ConnectionStatus::DOWNLOADING, "user-fills"sv);
         get_user_fills(0);
         return 1;
       } else {
