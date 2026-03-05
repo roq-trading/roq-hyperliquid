@@ -27,6 +27,10 @@
     },
     {
       "name": "Sell"
+    },
+    {
+      "raw": "Short > Long",
+      "name": "ShortLong"
     }
   ]
 }
