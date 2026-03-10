@@ -33,6 +33,10 @@
     {
       "name": "cloid",
       "type": "std/string_view"
+    },
+    {
+      "name": "reduceOnly",
+      "type": "std/bool"
     }
   ]
 }
