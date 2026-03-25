@@ -54,8 +54,8 @@ TEST_CASE("simple", "[json_user_fundings]") {
                  R"(})"sv;
   auto helper = [](value_type const &obj) {
     CHECK(obj.channel == json::Channel::USER_FUNDINGS);
-    auto &data = obj.data;
     /*
+    auto &data = obj.data;
     CHECK(data.coin == "BTC"sv);
     CHECK(data.time == 1757130041083ms);
     auto &levels = data.levels;

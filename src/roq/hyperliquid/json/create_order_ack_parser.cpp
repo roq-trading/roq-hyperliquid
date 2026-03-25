@@ -42,7 +42,8 @@ bool dispatch_helper(auto &handler, auto &message, auto &buffer_stack, auto &tra
 bool CreateOrderAckParser::dispatch(
     Handler &handler, std::string_view const &message, core::json::BufferStack &buffer_stack, TraceInfo const &trace_info, bool allow_unknown_event_types) {
   auto result = false;
-  auto status_helper = [&](auto &key, auto &value) {
+  /*
+  auto status_helper = [&](auto &key, [[maybe_unused]] auto &value) {
     auto key_2 = utils::hash::FNV::compute(key);
     switch (key_2) {
       case utils::hash::FNV::compute(KEY_ERROR):
@@ -50,6 +51,7 @@ bool CreateOrderAckParser::dispatch(
     }
     return false;
   };
+  */
   auto data_helper = [&](auto &key, auto &value) {
     auto key_2 = utils::hash::FNV::compute(key);
     switch (key_2) {
@@ -69,7 +71,7 @@ bool CreateOrderAckParser::dispatch(
                   // generic error
                   return true;
                 },
-                [&](core::json::Object &value) {
+                [&](core::json::Object &) {
                   result = dispatch_helper<CreateOrderAck>(handler, message, buffer_stack, trace_info);
                   // value.dispatch(status_helper);
                   return true;

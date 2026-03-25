@@ -190,7 +190,7 @@ TEST_CASE("format_price_5", "[tools_conversions]") {
   CHECK(price_helper(100000.5, SZ_DECIMALS, false) == "100000"s);
   CHECK(price_helper(100005.0, SZ_DECIMALS, false) == "100010"s);  // XXX
 }
-
+/*
 TEST_CASE("format_price_tick_size_steps", "[tools_conversions]") {
   std::array<TickSizeStep, 6> perps_2{{
       {.min_price = -std::numeric_limits<double>::infinity(), .tick_size = 0.0001},
@@ -201,7 +201,7 @@ TEST_CASE("format_price_tick_size_steps", "[tools_conversions]") {
       {.min_price = 100000.0, .tick_size = 10.0},
   }};
 }
-
+*/
 TEST_CASE("format_quantity_2", "[tools_conversions]") {
   constexpr auto const SZ_DECIMALS = 2;
 

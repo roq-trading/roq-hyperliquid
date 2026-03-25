@@ -65,7 +65,7 @@ Point PKey::get_public_key() const {
   // EVP_PKEY_get_raw_public_key ???
 }
 
-PKey PKey::create_from_private_key(std::string_view const &private_key) {
+PKey PKey::create_from_private_key([[maybe_unused]] std::string_view const &private_key) {
   throw RuntimeError{"NOT IMPLEMENTED"sv};
 }
 
