@@ -305,7 +305,7 @@ void DropCopy::operator()(Trace<json::SpotMeta> const &) {
 void DropCopy::operator()(Trace<json::User> const &event) {
   profile_.user([&]() {
     auto &[trace_info, user] = event;
-    // log::warn("DEBUG {}"sv, user);
+    log::info<2>("user={}"sv, user);
     // XXX FIXME TODO funding
     // XXX FIXME TODO fills
   });
@@ -314,14 +314,14 @@ void DropCopy::operator()(Trace<json::User> const &event) {
 void DropCopy::operator()(Trace<json::UserFundings> const &event) {
   profile_.user_fundings([&]() {
     auto &[trace_info, user_fundings] = event;
-    // log::warn("DEBUG {}"sv, user_fundings);
+    log::info<2>("user_fundings={}"sv, user_fundings);
   });
 }
 
 void DropCopy::operator()(Trace<json::UserFills> const &event) {
   profile_.user_fills([&]() {
     auto &[trace_info, user_fills] = event;
-    // log::warn("DEBUG {}"sv, user_fills);
+    log::info<2>("user_fills={}"sv, user_fills);
   });
 }
 
@@ -394,7 +394,7 @@ void DropCopy::operator()(Trace<json::OrderUpdates> const &event) {
 void DropCopy::operator()(Trace<json::Notification> const &event) {
   profile_.notification([&]() {
     auto &[trace_info, notification] = event;
-    // log::warn("DEBUG {}"sv, notification);
+    log::info<2>("notification={}"sv, notification);
   });
 }
 

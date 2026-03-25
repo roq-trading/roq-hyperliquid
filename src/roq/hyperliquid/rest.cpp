@@ -34,7 +34,7 @@ auto const SUPPORTS = Mask{
 
 size_t const MAX_DECODE_BUFFER_DEPTH = 2;
 
-uint32_t const OFFSET_SPOT = 10000;
+// uint32_t const OFFSET_SPOT = 10000;
 // uint32_t const OFFSET_SWAP = 0;
 uint32_t const OFFSET_DEX = 110000;
 }  // namespace

@@ -400,7 +400,7 @@ void OrderEntry::get_clearing_house_state_ack(Trace<web::rest::Response> const &
   });
 }
 
-void OrderEntry::operator()(Trace<json::GetClearingHouseStateAck> const &event, size_t index) {
+void OrderEntry::operator()(Trace<json::GetClearingHouseStateAck> const &event, [[maybe_unused]] size_t index) {
   auto &[trace_info, clearing_house_state_ack] = event;
   log::info<4>("clearing_house_state_ack={}"sv, clearing_house_state_ack);
   // log::warn("DEBUG clearing_house_state_ack={}"sv, clearing_house_state_ack);
@@ -467,7 +467,7 @@ void OrderEntry::get_open_orders_ack(Trace<web::rest::Response> const &event, ui
   });
 }
 
-void OrderEntry::operator()(Trace<json::GetOpenOrdersAck> const &event, size_t index) {
+void OrderEntry::operator()(Trace<json::GetOpenOrdersAck> const &event, [[maybe_unused]] size_t index) {
   auto &[trace_info, open_orders_ack] = event;
   log::info<4>("open_orders_ack={}"sv, open_orders_ack);
   for (auto &item : open_orders_ack.data) {
@@ -579,11 +579,11 @@ void OrderEntry::get_user_fills_ack(Trace<web::rest::Response> const &event, uin
   });
 }
 
-void OrderEntry::operator()(Trace<json::GetUserFillsAck> const &event, size_t index) {
+void OrderEntry::operator()(Trace<json::GetUserFillsAck> const &event, [[maybe_unused]] size_t index) {
   auto &[trace_info, user_fills_ack] = event;
   log::info<4>("user_fills_ack={}"sv, user_fills_ack);
   for (auto &item : user_fills_ack.data) {
-    // log::warn("DEBUG item={}"sv, item);
+    log::info<4>("item={}"sv, item);
   }
 }
 
@@ -673,7 +673,8 @@ void OrderEntry::create_order_ack(Trace<web::rest::Response> const &event, uint8
   });
 }
 
-void OrderEntry::operator()(Trace<json::CreateOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version) {
+void OrderEntry::operator()(
+    Trace<json::CreateOrderAck> const &, [[maybe_unused]] uint8_t user_id, [[maybe_unused]] uint64_t order_id, [[maybe_unused]] uint32_t version) {
 }
 
 // modify-order
@@ -744,7 +745,8 @@ void OrderEntry::modify_order_ack(Trace<web::rest::Response> const &event, uint8
   });
 }
 
-void OrderEntry::operator()(Trace<json::ModifyOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version) {
+void OrderEntry::operator()(
+    Trace<json::ModifyOrderAck> const &, [[maybe_unused]] uint8_t user_id, [[maybe_unused]] uint64_t order_id, [[maybe_unused]] uint32_t version) {
 }
 
 // cancel-order
@@ -837,7 +839,8 @@ void OrderEntry::cancel_order_ack(Trace<web::rest::Response> const &event, uint8
   });
 }
 
-void OrderEntry::operator()(Trace<json::CancelOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version) {
+void OrderEntry::operator()(
+    Trace<json::CancelOrderAck> const &, [[maybe_unused]] uint8_t user_id, [[maybe_unused]] uint64_t order_id, [[maybe_unused]] uint32_t version) {
 }
 
 // helpers
