@@ -282,7 +282,7 @@ Comments
 
 * REST response has very little information for rejects.
 
-  .. warn::
+  .. warning::
      The generic error :code:`User or API Wallet [...] does not exist.` is sometimes received.
 
      Reasons for this error message includes wrong signature but also seems to be generated for other reasons.
