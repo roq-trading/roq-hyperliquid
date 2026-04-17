@@ -22,8 +22,6 @@ constexpr auto const KEY_TYPE = "type"sv;
 constexpr auto const KEY_DATA = "data"sv;
 //
 constexpr auto const KEY_STATUSES = "statuses"sv;
-//
-constexpr auto const KEY_ERROR = "error"sv;
 }  // namespace
 
 // === HELPERS ===
