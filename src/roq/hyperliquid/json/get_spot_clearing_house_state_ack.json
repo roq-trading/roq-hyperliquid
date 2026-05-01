@@ -6,6 +6,10 @@
       "name": "balances",
       "type": "roq/hyperliquid/json/GetSpotClearingHouseStateAckBalancesItem",
       "array": "std/span"
+    },
+    {
+      "name": "tokenToAvailableAfterMaintenance",
+      "comment": "array"
     }
   ]
 }
