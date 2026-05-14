@@ -23,7 +23,6 @@
 #include "roq/core/limit/rate_limiter.hpp"
 
 #include "roq/hyperliquid/account.hpp"
-#include "roq/hyperliquid/order_entry_state.hpp"
 #include "roq/hyperliquid/shared.hpp"
 
 #include "roq/hyperliquid/json/get_clearing_house_state_ack.hpp"
@@ -85,7 +84,16 @@ struct OrderEntry final : public web::rest::Client::Handler {
 
   void operator()(ConnectionStatus, std::string_view const &reason = {});
 
-  uint32_t download(OrderEntryState);
+  enum class State {
+    UNDEFINED = 0,
+    SPOT_CLEARING_HOUSE_STATE,
+    CLEARING_HOUSE_STATE,
+    OPEN_ORDERS,
+    USER_FILLS,
+    DONE,
+  };
+
+  uint32_t download(State);
 
   // clearing-house-state
 
@@ -174,7 +182,7 @@ struct OrderEntry final : public web::rest::Client::Handler {
   Shared &shared_;
   // state
   ConnectionStatus connection_status_ = {};
-  core::Download<OrderEntryState> download_;
+  core::Download<State> download_;
   // ...
   core::limit::RateLimiter rate_limiter;
 };

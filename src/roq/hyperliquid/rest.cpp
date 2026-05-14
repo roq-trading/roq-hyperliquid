@@ -199,9 +199,9 @@ void Rest::operator()(Trace<web::rest::Client::Latency> const &event) {
   latency_.ping.update(latency.sample);
 }
 
-uint32_t Rest::download(RestState state) {
+uint32_t Rest::download(State state) {
   switch (state) {
-    using enum RestState;
+    using enum State;
     case UNDEFINED:
       assert(false);
       break;
@@ -251,7 +251,7 @@ void Rest::get_spot_meta() {
 }
 
 void Rest::get_spot_meta_ack(Trace<web::rest::Response> const &event, uint32_t sequence) {
-  auto const STATE = RestState::SPOT_META;
+  auto const STATE = State::SPOT_META;
   profile_.spot_meta_ack([&]() {
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
@@ -358,7 +358,7 @@ void Rest::get_perp_dexs() {
 }
 
 void Rest::get_perp_dexs_ack(Trace<web::rest::Response> const &event, uint32_t sequence) {
-  auto const STATE = RestState::PERP_DEXS;
+  auto const STATE = State::PERP_DEXS;
   profile_.perp_dexs_ack([&]() {
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
@@ -443,7 +443,7 @@ void Rest::get_meta(size_t index) {
 }
 
 void Rest::get_meta_ack(Trace<web::rest::Response> const &event, uint32_t sequence, size_t index) {
-  auto const STATE = RestState::META;
+  auto const STATE = State::META;
   profile_.meta_ack([&]() {
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);

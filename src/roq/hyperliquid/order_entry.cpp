@@ -247,9 +247,9 @@ void OrderEntry::operator()(Trace<web::rest::Client::Latency> const &event) {
   latency_.ping.update(latency.sample);
 }
 
-uint32_t OrderEntry::download(OrderEntryState state) {
+uint32_t OrderEntry::download(State state) {
   switch (state) {
-    using enum OrderEntryState;
+    using enum State;
     case UNDEFINED:
       assert(false);
       break;
@@ -312,7 +312,7 @@ void OrderEntry::get_spot_clearing_house_state() {
 }
 
 void OrderEntry::get_spot_clearing_house_state_ack(Trace<web::rest::Response> const &event, uint32_t sequence) {
-  auto const STATE = OrderEntryState::SPOT_CLEARING_HOUSE_STATE;
+  auto const STATE = State::SPOT_CLEARING_HOUSE_STATE;
   profile_.spot_clearing_house_state_ack([&]() {
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
@@ -374,7 +374,7 @@ void OrderEntry::get_clearing_house_state(size_t index) {
 }
 
 void OrderEntry::get_clearing_house_state_ack(Trace<web::rest::Response> const &event, uint32_t sequence, size_t index) {
-  auto const STATE = OrderEntryState::CLEARING_HOUSE_STATE;
+  auto const STATE = State::CLEARING_HOUSE_STATE;
   profile_.clearing_house_state_ack([&]() {
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
@@ -441,7 +441,7 @@ void OrderEntry::get_open_orders(size_t index) {
 }
 
 void OrderEntry::get_open_orders_ack(Trace<web::rest::Response> const &event, uint32_t sequence, size_t index) {
-  auto const STATE = OrderEntryState::OPEN_ORDERS;
+  auto const STATE = State::OPEN_ORDERS;
   profile_.open_orders_ack([&]() {
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
@@ -553,7 +553,7 @@ void OrderEntry::get_user_fills(size_t index) {
 }
 
 void OrderEntry::get_user_fills_ack(Trace<web::rest::Response> const &event, uint32_t sequence, size_t index) {
-  auto const STATE = OrderEntryState::USER_FILLS;
+  auto const STATE = State::USER_FILLS;
   profile_.user_fills_ack([&]() {
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);

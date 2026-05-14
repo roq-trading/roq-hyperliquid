@@ -22,7 +22,6 @@
 
 #include "roq/core/limit/rate_limiter.hpp"
 
-#include "roq/hyperliquid/rest_state.hpp"
 #include "roq/hyperliquid/shared.hpp"
 
 #include "roq/hyperliquid/json/get_meta_ack.hpp"
@@ -67,7 +66,15 @@ struct Rest final : public web::rest::Client::Handler {
 
   void operator()(ConnectionStatus, std::string_view const &reason = {});
 
-  uint32_t download(RestState);
+  enum class State {
+    UNDEFINED = 0,
+    SPOT_META,
+    PERP_DEXS,
+    META,
+    DONE,
+  };
+
+  uint32_t download(State);
 
   // spot-meta
 
@@ -114,7 +121,7 @@ struct Rest final : public web::rest::Client::Handler {
   Shared &shared_;
   // state
   ConnectionStatus connection_status_ = {};
-  core::Download<RestState> download_;
+  core::Download<State> download_;
   // ...
   core::limit::RateLimiter rate_limiter;
 };
