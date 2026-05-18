@@ -15,12 +15,13 @@
 
 #include "roq/hyperliquid/account.hpp"
 #include "roq/hyperliquid/config.hpp"
+#include "roq/hyperliquid/settings.hpp"
+#include "roq/hyperliquid/shared.hpp"
+
 #include "roq/hyperliquid/drop_copy.hpp"
 #include "roq/hyperliquid/market_data.hpp"
 #include "roq/hyperliquid/order_entry.hpp"
 #include "roq/hyperliquid/rest.hpp"
-#include "roq/hyperliquid/settings.hpp"
-#include "roq/hyperliquid/shared.hpp"
 
 namespace roq {
 namespace hyperliquid {
