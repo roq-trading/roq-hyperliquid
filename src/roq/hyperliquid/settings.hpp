@@ -2,57 +2,12 @@
 
 #pragma once
 
-#include <fmt/format.h>
-
-#include "roq/server/flags/settings.hpp"
-
-#include "roq/hyperliquid/flags/flags.hpp"
-#include "roq/hyperliquid/flags/mbp.hpp"
-#include "roq/hyperliquid/flags/misc.hpp"
-#include "roq/hyperliquid/flags/request.hpp"
-#include "roq/hyperliquid/flags/rest.hpp"
-#include "roq/hyperliquid/flags/ws.hpp"
+#include "roq/hyperliquid/flags/settings.hpp"
 
 namespace roq {
 namespace hyperliquid {
 
-struct Settings final : public server::flags::Settings, public flags::Flags {
-  explicit Settings(args::Parser const &);
-
-  flags::Misc misc;
-  flags::REST rest;
-  flags::WS ws;
-  flags::MBP mbp;
-  flags::Request request;
-
- private:
-  Settings(args::Parser const &, flags::Flags const &);
-};
+using Settings = flags::Settings;
 
 }  // namespace hyperliquid
 }  // namespace roq
-
-template <>
-struct fmt::formatter<roq::hyperliquid::Settings> {
-  constexpr auto parse(format_parse_context &context) { return std::begin(context); }
-  auto format(roq::hyperliquid::Settings const &value, format_context &context) const {
-    using namespace std::literals;
-    return fmt::format_to(
-        context.out(),
-        R"({{)"
-        R"(misc={}, )"
-        R"(rest={}, )"
-        R"(ws={}, )"
-        R"(mbp={}, )"
-        R"(request={}, )"
-        R"(server={})"
-        R"(}})"sv,
-        value.misc,
-        value.rest,
-        value.ws,
-        value.download,
-        value.mbp,
-        value.request,
-        static_cast<roq::server::Settings const &>(value));
-  }
-};
