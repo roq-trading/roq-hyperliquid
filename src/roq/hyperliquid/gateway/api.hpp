@@ -4,10 +4,11 @@
 
 #include <string_view>
 
-#include "roq/hyperliquid/settings.hpp"
+#include "roq/hyperliquid/gateway/settings.hpp"
 
 namespace roq {
 namespace hyperliquid {
+namespace gateway {
 
 struct API final {
   struct {
@@ -30,5 +31,6 @@ struct API final {
   static API create(Settings const &);
 };
 
+}  // namespace gateway
 }  // namespace hyperliquid
 }  // namespace roq

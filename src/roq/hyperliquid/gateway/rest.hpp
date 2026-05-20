@@ -22,7 +22,7 @@
 
 #include "roq/core/limit/rate_limiter.hpp"
 
-#include "roq/hyperliquid/shared.hpp"
+#include "roq/hyperliquid/gateway/shared.hpp"
 
 #include "roq/hyperliquid/json/get_meta_ack.hpp"
 #include "roq/hyperliquid/json/get_perp_dexs_ack.hpp"
@@ -30,6 +30,7 @@
 
 namespace roq {
 namespace hyperliquid {
+namespace gateway {
 
 struct Rest final : public web::rest::Client::Handler {
   struct SymbolsUpdate final {
@@ -126,5 +127,6 @@ struct Rest final : public web::rest::Client::Handler {
   core::limit::RateLimiter rate_limiter;
 };
 
+}  // namespace gateway
 }  // namespace hyperliquid
 }  // namespace roq

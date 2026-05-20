@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2026, Hans Erik Thrane */
 
-#include "roq/hyperliquid/account.hpp"
+#include "roq/hyperliquid/gateway/account.hpp"
 
 #include "roq/logging.hpp"
 
@@ -9,6 +9,7 @@ using namespace std::chrono_literals;
 
 namespace roq {
 namespace hyperliquid {
+namespace gateway {
 
 // === HELPERS ===
 
@@ -42,5 +43,6 @@ std::string Account::sign_l1_action(
   return crypto_.sign_l1_action(action, hash, now_utc, expires_after_utc);
 }
 
+}  // namespace gateway
 }  // namespace hyperliquid
 }  // namespace roq

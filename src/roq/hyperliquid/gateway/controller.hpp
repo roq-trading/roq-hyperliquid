@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "roq/compat.hpp"
+
 #include <memory>
 #include <string>
 #include <utility>
@@ -13,23 +15,28 @@
 
 #include "roq/io/context.hpp"
 
-#include "roq/hyperliquid/account.hpp"
-#include "roq/hyperliquid/config.hpp"
-#include "roq/hyperliquid/settings.hpp"
-#include "roq/hyperliquid/shared.hpp"
+#include "roq/hyperliquid/gateway/account.hpp"
+#include "roq/hyperliquid/gateway/config.hpp"
+#include "roq/hyperliquid/gateway/settings.hpp"
+#include "roq/hyperliquid/gateway/shared.hpp"
 
-#include "roq/hyperliquid/drop_copy.hpp"
-#include "roq/hyperliquid/market_data.hpp"
-#include "roq/hyperliquid/order_entry.hpp"
-#include "roq/hyperliquid/rest.hpp"
+#include "roq/hyperliquid/gateway/drop_copy.hpp"
+#include "roq/hyperliquid/gateway/market_data.hpp"
+#include "roq/hyperliquid/gateway/order_entry.hpp"
+#include "roq/hyperliquid/gateway/rest.hpp"
 
 namespace roq {
 namespace hyperliquid {
+namespace gateway {
 
-struct Gateway final : public server::Handler, public Rest::Handler, public MarketData::Handler, public OrderEntry::Handler, public DropCopy::Handler {
-  Gateway(server::Dispatcher &, Settings const &, Config const &, io::Context &);
+struct Controller final : public server::Handler, public Rest::Handler, public MarketData::Handler, public OrderEntry::Handler, public DropCopy::Handler {
+  ROQ_PUBLIC static std::unique_ptr<server::Handler> create(server::Dispatcher &, Settings const &, Config const &, io::Context &);
 
-  Gateway(Gateway const &) = delete;
+  Controller(server::Dispatcher &, Settings const &, Config const &, io::Context &);
+
+  Controller(Controller const &) = delete;
+
+  virtual ~Controller() = default;
 
  protected:
   // server::Handler
@@ -109,5 +116,6 @@ struct Gateway final : public server::Handler, public Rest::Handler, public Mark
   std::vector<MBPUpdate> bids_, asks_;
 };
 
+}  // namespace gateway
 }  // namespace hyperliquid
 }  // namespace roq

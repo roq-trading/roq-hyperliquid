@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2026, Hans Erik Thrane */
 
-#include "roq/hyperliquid/shared.hpp"
+#include "roq/hyperliquid/gateway/shared.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -13,6 +13,7 @@ using namespace std::literals;
 
 namespace roq {
 namespace hyperliquid {
+namespace gateway {
 
 // === IMPLEMENTATION ===
 
@@ -21,5 +22,6 @@ Shared::Shared(server::Dispatcher &dispatcher, Settings const &settings)
       symbols{settings.ws.max_subscriptions_per_stream} {
 }
 
+}  // namespace gateway
 }  // namespace hyperliquid
 }  // namespace roq

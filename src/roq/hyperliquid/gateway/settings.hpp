@@ -6,8 +6,10 @@
 
 namespace roq {
 namespace hyperliquid {
+namespace gateway {
 
 using Settings = flags::Settings;
 
+}  // namespace gateway
 }  // namespace hyperliquid
 }  // namespace roq

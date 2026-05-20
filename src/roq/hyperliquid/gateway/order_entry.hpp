@@ -22,8 +22,8 @@
 
 #include "roq/core/limit/rate_limiter.hpp"
 
-#include "roq/hyperliquid/account.hpp"
-#include "roq/hyperliquid/shared.hpp"
+#include "roq/hyperliquid/gateway/account.hpp"
+#include "roq/hyperliquid/gateway/shared.hpp"
 
 #include "roq/hyperliquid/json/get_clearing_house_state_ack.hpp"
 #include "roq/hyperliquid/json/get_open_orders_ack.hpp"
@@ -36,6 +36,7 @@
 
 namespace roq {
 namespace hyperliquid {
+namespace gateway {
 
 struct OrderEntry final : public web::rest::Client::Handler {
   struct SymbolsUpdate final {
@@ -187,5 +188,6 @@ struct OrderEntry final : public web::rest::Client::Handler {
   core::limit::RateLimiter rate_limiter;
 };
 
+}  // namespace gateway
 }  // namespace hyperliquid
 }  // namespace roq

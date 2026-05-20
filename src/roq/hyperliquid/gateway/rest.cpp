@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2026, Hans Erik Thrane */
 
-#include "roq/hyperliquid/rest.hpp"
+#include "roq/hyperliquid/gateway/rest.hpp"
 
 #include <algorithm>
 #include <limits>
@@ -22,6 +22,7 @@ using namespace std::literals;
 
 namespace roq {
 namespace hyperliquid {
+namespace gateway {
 
 // === CONSTANTS ===
 
@@ -584,5 +585,6 @@ void Rest::process_response(web::rest::Response const &response, auto error_hand
   }
 }
 
+}  // namespace gateway
 }  // namespace hyperliquid
 }  // namespace roq

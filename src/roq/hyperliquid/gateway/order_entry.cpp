@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2026, Hans Erik Thrane */
 
-#include "roq/hyperliquid/order_entry.hpp"
+#include "roq/hyperliquid/gateway/order_entry.hpp"
 
 #include <algorithm>
 #include <utility>
@@ -28,6 +28,7 @@ using namespace std::literals;
 
 namespace roq {
 namespace hyperliquid {
+namespace gateway {
 
 // === CONSTANTS ===
 
@@ -906,5 +907,6 @@ void OrderEntry::operator()(Trace<server::oms::Response> const &event, uint8_t u
   }
 }
 
+}  // namespace gateway
 }  // namespace hyperliquid
 }  // namespace roq

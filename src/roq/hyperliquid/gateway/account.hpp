@@ -5,13 +5,14 @@
 #include <string>
 #include <string_view>
 
-#include "roq/hyperliquid/config.hpp"
-#include "roq/hyperliquid/settings.hpp"
+#include "roq/hyperliquid/gateway/config.hpp"
+#include "roq/hyperliquid/gateway/settings.hpp"
 
 #include "roq/hyperliquid/tools/crypto.hpp"
 
 namespace roq {
 namespace hyperliquid {
+namespace gateway {
 
 struct Account final {
   Account(Settings const &, Config const &, std::string_view const &name);
@@ -29,5 +30,6 @@ struct Account final {
   tools::Crypto crypto_;
 };
 
+}  // namespace gateway
 }  // namespace hyperliquid
 }  // namespace roq

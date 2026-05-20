@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2026, Hans Erik Thrane */
 
-#include "roq/hyperliquid/drop_copy.hpp"
+#include "roq/hyperliquid/gateway/drop_copy.hpp"
 
 #include <algorithm>
 #include <utility>
@@ -27,6 +27,7 @@ using namespace std::literals;
 
 namespace roq {
 namespace hyperliquid {
+namespace gateway {
 
 // === CONSTANTS ===
 
@@ -408,5 +409,6 @@ void DropCopy::operator()(Trace<server::oms::OrderUpdate> const &event, std::str
   }
 }
 
+}  // namespace gateway
 }  // namespace hyperliquid
 }  // namespace roq

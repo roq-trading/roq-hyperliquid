@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2026, Hans Erik Thrane */
 
-#include "roq/hyperliquid/api.hpp"
+#include "roq/hyperliquid/gateway/api.hpp"
 
 #include "roq/exceptions.hpp"
 
@@ -10,6 +10,7 @@ using namespace std::literals;
 
 namespace roq {
 namespace hyperliquid {
+namespace gateway {
 
 // === IMPLEMENTATION ===
 
@@ -32,5 +33,6 @@ API API::create(Settings const &) {
   };
 }
 
+}  // namespace gateway
 }  // namespace hyperliquid
 }  // namespace roq

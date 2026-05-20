@@ -14,11 +14,12 @@
 
 #include "roq/core/limit/rate_limiter.hpp"
 
-#include "roq/hyperliquid/api.hpp"
-#include "roq/hyperliquid/settings.hpp"
+#include "roq/hyperliquid/gateway/api.hpp"
+#include "roq/hyperliquid/gateway/settings.hpp"
 
 namespace roq {
 namespace hyperliquid {
+namespace gateway {
 
 struct Shared final {
   Shared(server::Dispatcher &, Settings const &);
@@ -66,5 +67,6 @@ struct Shared final {
   std::vector<Dex> dex;
 };
 
+}  // namespace gateway
 }  // namespace hyperliquid
 }  // namespace roq

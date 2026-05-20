@@ -22,15 +22,15 @@
 
 #include "roq/server.hpp"
 
-#include "roq/hyperliquid/account.hpp"
-#include "roq/hyperliquid/shared.hpp"
+#include "roq/hyperliquid/gateway/shared.hpp"
 
 #include "roq/hyperliquid/json/parser.hpp"
 
 namespace roq {
 namespace hyperliquid {
+namespace gateway {
 
-struct DropCopy final : public web::socket::Client::Handler, public json::Parser::Handler {
+struct MarketData final : public web::socket::Client::Handler, public json::Parser::Handler {
   struct Handler {
     virtual void operator()(Trace<StreamStatus> const &) = 0;
     virtual void operator()(Trace<ExternalLatency> const &) = 0;
@@ -41,9 +41,9 @@ struct DropCopy final : public web::socket::Client::Handler, public json::Parser
     virtual void operator()(Trace<StatisticsUpdate> const &, bool is_last) = 0;
   };
 
-  DropCopy(Handler &, io::Context &, uint16_t stream_id, Account &, Shared &);
+  MarketData(Handler &, io::Context &, uint16_t stream_id, Shared &, size_t index);
 
-  DropCopy(DropCopy const &) = delete;
+  MarketData(MarketData const &) = delete;
 
   uint16_t stream_id() const { return stream_id_; }
 
@@ -54,6 +54,8 @@ struct DropCopy final : public web::socket::Client::Handler, public json::Parser
   void operator()(Event<Timer> const &);
 
   void operator()(metrics::Writer &) const;
+
+  void subscribe(size_t start_from = 0);
 
  protected:
   // web::socket::Client::Handler
@@ -69,8 +71,10 @@ struct DropCopy final : public web::socket::Client::Handler, public json::Parser
  private:
   void operator()(ConnectionStatus, std::string_view const &reason = {});
 
-  void subscribe();
-  void subscribe(std::string_view const &type);
+  void get_spot_meta();
+
+  void subscribe(std::span<Symbol const> const &symbols);
+  void subscribe(std::string_view const &channel, std::span<Symbol const> const &symbols);
 
   void send_ping(std::chrono::nanoseconds now);
 
@@ -95,32 +99,29 @@ struct DropCopy final : public web::socket::Client::Handler, public json::Parser
   void operator()(Trace<json::OrderUpdates> const &) override;
   void operator()(Trace<json::Notification> const &) override;
 
-  // helpers
-
-  void operator()(Trace<server::oms::OrderUpdate> const &, std::string_view const &client_order_id);
-
  private:
   Handler &handler_;
   // config
   uint16_t const stream_id_;
   std::string const name_;
+  size_t const index_;
   std::chrono::nanoseconds const ping_frequency_;
   // web socket
   std::unique_ptr<web::socket::Client> const connection_;
   // buffers
   core::json::BufferStack decode_buffer_;
+  // session
+  uint64_t request_id_ = {};
   // metrics
   struct {
     utils::metrics::Counter disconnect;
   } counter_;
   struct {
-    utils::metrics::Profile parse, pong, error, subscription_response, user, user_fundings, user_fills, order_updates, notification;
+    utils::metrics::Profile parse, pong, error, subscription_response, bbo, l2book, trades, active_asset_ctx, spot_meta;
   } profile_;
   struct {
     utils::metrics::Latency ping, heartbeat;
   } latency_;
-  // account
-  Account &account_;
   // cache
   Shared &shared_;
   // state
@@ -129,5 +130,6 @@ struct DropCopy final : public web::socket::Client::Handler, public json::Parser
   std::chrono::nanoseconds next_ping_ = {};
 };
 
+}  // namespace gateway
 }  // namespace hyperliquid
 }  // namespace roq

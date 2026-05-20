@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2026, Hans Erik Thrane */
 
-#include "roq/hyperliquid/config.hpp"
+#include "roq/hyperliquid/gateway/config.hpp"
 
 #include <utility>
 
@@ -12,6 +12,7 @@ using namespace std::literals;
 
 namespace roq {
 namespace hyperliquid {
+namespace gateway {
 
 namespace {
 auto const SUPPORTS = Mask{
@@ -146,5 +147,6 @@ void Config::operator()(std::string_view const &key, toml::node &) {
   log::warn(R"(Unexpected: key="{}")"sv, key);
 }
 
+}  // namespace gateway
 }  // namespace hyperliquid
 }  // namespace roq

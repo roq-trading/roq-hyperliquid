@@ -1,6 +1,6 @@
 /* Copyright (c) 2017-2026, Hans Erik Thrane */
 
-#include "roq/hyperliquid/market_data.hpp"
+#include "roq/hyperliquid/gateway/market_data.hpp"
 
 #include <algorithm>
 #include <utility>
@@ -27,6 +27,7 @@ using namespace std::literals;
 
 namespace roq {
 namespace hyperliquid {
+namespace gateway {
 
 // === CONSTANTS ===
 
@@ -498,5 +499,6 @@ void MarketData::operator()(Trace<json::Notification> const &) {
   log::fatal("Unexpected"sv);
 }
 
+}  // namespace gateway
 }  // namespace hyperliquid
 }  // namespace roq
