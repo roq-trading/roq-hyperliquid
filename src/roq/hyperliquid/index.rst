@@ -14,8 +14,8 @@
 .. |footnote-3| unicode:: U+2778
 
 
-roq-hyperliquid
-===============
+`roq-hyperliquid <https://github.com/roq-trading/roq-hyperliquid/>`__
+=====================================================================
 
 .. tab:: Unstable
 
@@ -305,6 +305,12 @@ Common
 * :ref:`Using Flags <abseil-cpp>`
 * :ref:`Gateway Flags <gateway-flags>`
 * :ref:`Gateway Config <gateway-config>`
+
+
+GitHub
+~~~~~~
+
+* `roq-hyperliquid <https://github.com/roq-trading/roq-hyperliquid/>`__
 
 
 Exchange
