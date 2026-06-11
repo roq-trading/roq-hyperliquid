@@ -11,7 +11,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-using value_type = json::UserFundings;
+using value_type = protocol::json::UserFundings;
 
 // note! trunacted
 TEST_CASE("simple", "[json_user_fundings]") {
@@ -53,7 +53,7 @@ TEST_CASE("simple", "[json_user_fundings]") {
                  R"(})"
                  R"(})"sv;
   auto helper = [](value_type const &obj) {
-    CHECK(obj.channel == json::Channel::USER_FUNDINGS);
+    CHECK(obj.channel == protocol::json::Channel::USER_FUNDINGS);
     /*
     auto &data = obj.data;
     CHECK(data.coin == "BTC"sv);

@@ -2,8 +2,8 @@
 
 #include <catch2/catch_all.hpp>
 
-#include "roq/hyperliquid/json/create_order_ack.hpp"
-#include "roq/hyperliquid/json/create_order_ack_parser.hpp"
+#include "roq/hyperliquid/protocol/json/create_order_ack.hpp"
+#include "roq/hyperliquid/protocol/json/create_order_ack_parser.hpp"
 
 using namespace roq;
 using namespace roq::hyperliquid;
@@ -12,7 +12,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-using value_type = json::CreateOrderAck;
+using value_type = protocol::json::CreateOrderAck;
 
 /*
 status
@@ -38,7 +38,7 @@ auto helper = [](auto &message, auto error_handler, auto success_handler) {
   };
   core::json::BufferStack buffers{8192, 1};
   TraceInfo trace_info;
-  auto result = json::CreateOrderAckParser::dispatch(message, buffers, trace_info, false, error_handler_2, success_handler_2);
+  auto result = protocol::json::CreateOrderAckParser::dispatch(message, buffers, trace_info, false, error_handler_2, success_handler_2);
   CHECK(result == true);
   CHECK(found == true);
 };
@@ -64,8 +64,8 @@ TEST_CASE("success_created", "[json_create_order_ack]") {
                  R"(})";
   auto error_handler = []([[maybe_unused]] auto const &text) { FAIL(); };
   auto success_handler = [](value_type const &obj) {
-    CHECK(obj.status == json::Status::OK);
-    CHECK(obj.response.type == json::ResponseType::ORDER);
+    CHECK(obj.status == protocol::json::Status::OK);
+    CHECK(obj.response.type == protocol::json::ResponseType::ORDER);
     REQUIRE(std::size(obj.response.data.statuses) == 1);
     auto &s0 = obj.response.data.statuses[0];
     CHECK(s0.resting.oid == 311642020084);
@@ -94,8 +94,8 @@ TEST_CASE("success_filled", "[json_create_order_ack]") {
                  R"(})";
   auto error_handler = []([[maybe_unused]] auto const &text) { FAIL(); };
   auto success_handler = [](value_type const &obj) {
-    CHECK(obj.status == json::Status::OK);
-    CHECK(obj.response.type == json::ResponseType::ORDER);
+    CHECK(obj.status == protocol::json::Status::OK);
+    CHECK(obj.response.type == protocol::json::ResponseType::ORDER);
     REQUIRE(std::size(obj.response.data.statuses) == 1);
     auto &s0 = obj.response.data.statuses[0];
     CHECK(s0.filled.total_sz == 0.01_a);
@@ -121,8 +121,8 @@ TEST_CASE("failure_price", "[json_create_order_ack]") {
                  R"(})";
   auto error_handler = []([[maybe_unused]] auto const &text) { FAIL(); };
   auto success_handler = [](value_type const &obj) {
-    CHECK(obj.status == json::Status::OK);
-    CHECK(obj.response.type == json::ResponseType::ORDER);
+    CHECK(obj.status == protocol::json::Status::OK);
+    CHECK(obj.response.type == protocol::json::ResponseType::ORDER);
     REQUIRE(std::size(obj.response.data.statuses) == 1);
     auto &s0 = obj.response.data.statuses[0];
     CHECK(s0.error == "Order price cannot be more than 95% away from the reference price"sv);
@@ -145,8 +145,8 @@ TEST_CASE("failure_quantity", "[json_create_order_ack]") {
                  R"(})";
   auto error_handler = []([[maybe_unused]] auto const &text) { FAIL(); };
   auto success_handler = [](value_type const &obj) {
-    CHECK(obj.status == json::Status::OK);
-    CHECK(obj.response.type == json::ResponseType::ORDER);
+    CHECK(obj.status == protocol::json::Status::OK);
+    CHECK(obj.response.type == protocol::json::ResponseType::ORDER);
     REQUIRE(std::size(obj.response.data.statuses) == 1);
     auto &s0 = obj.response.data.statuses[0];
     CHECK(s0.error == "Order must have minimum value of $10. asset=1"sv);
@@ -169,8 +169,8 @@ TEST_CASE("ioc_failed", "[json_create_order_ack]") {
                  R"(})";
   auto error_handler = []([[maybe_unused]] auto const &text) { FAIL(); };
   auto success_handler = [](value_type const &obj) {
-    CHECK(obj.status == json::Status::OK);
-    CHECK(obj.response.type == json::ResponseType::ORDER);
+    CHECK(obj.status == protocol::json::Status::OK);
+    CHECK(obj.response.type == protocol::json::ResponseType::ORDER);
     REQUIRE(std::size(obj.response.data.statuses) == 1);
     auto &s0 = obj.response.data.statuses[0];
     CHECK(s0.error == "Order could not immediately match against any resting orders. asset=5"sv);
@@ -193,8 +193,8 @@ TEST_CASE("insufficient_margin", "[json_create_order_ack]") {
                  R"(})";
   auto error_handler = []([[maybe_unused]] auto const &text) { FAIL(); };
   auto success_handler = [](value_type const &obj) {
-    CHECK(obj.status == json::Status::OK);
-    CHECK(obj.response.type == json::ResponseType::ORDER);
+    CHECK(obj.status == protocol::json::Status::OK);
+    CHECK(obj.response.type == protocol::json::ResponseType::ORDER);
     REQUIRE(std::size(obj.response.data.statuses) == 1);
     auto &s0 = obj.response.data.statuses[0];
     CHECK(s0.error == "Insufficient margin to place order. asset=5"sv);

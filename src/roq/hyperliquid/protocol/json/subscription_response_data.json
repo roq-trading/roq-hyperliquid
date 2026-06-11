@@ -1,0 +1,14 @@
+{
+  "name": "roq/hyperliquid/protocol/json/SubscriptionResponseData",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "method",
+      "type": "std/string_view"
+    },
+    {
+      "name": "subscription",
+      "type": "roq/hyperliquid/protocol/json/SubscriptionResponseDataSubscription"
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "name": "roq/hyperliquid/protocol/json/GetPerpDexsAckItem",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "name",
+      "type": "std/string_view"
+    },
+    {
+      "name": "fullName",
+      "type": "std/string_view"
+    },
+    {
+      "name": "deployer",
+      "type": "std/string_view"
+    },
+    {
+      "name": "oracleUpdater",
+      "type": "std/string_view"
+    },
+    {
+      "name": "feeRecipient",
+      "type": "std/string_view"
+    },
+    {
+      "name": "assetToStreamingOiCap",
+      "comment": "array"
+    },
+    {
+      "name": "subDeployers",
+      "comment": "array"
+    },
+    {
+      "name": "deployerFeeScale",
+      "type": "std/double"
+    },
+    {
+      "name": "lastDeployerFeeScaleChangeTime",
+      "type": "std/string_view"
+    },
+    {
+      "name": "assetToFundingMultiplier"
+    },
+    {
+      "name": "assetToFundingInterestRate"
+    }
+  ]
+}

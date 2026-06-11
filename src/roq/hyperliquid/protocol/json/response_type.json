@@ -1,0 +1,21 @@
+{
+  "name": "roq/hyperliquid/protocol/json/ResponseType",
+  "type": "enum",
+  "values": [
+    {
+      "name": "info"
+    },
+    {
+      "name": "action"
+    },
+    {
+      "name": "error"
+    },
+    {
+      "name": "order"
+    },
+    {
+      "name": "cancel"
+    }
+  ]
+}

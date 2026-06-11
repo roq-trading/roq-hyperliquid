@@ -24,9 +24,9 @@
 
 #include "roq/hyperliquid/gateway/shared.hpp"
 
-#include "roq/hyperliquid/json/get_meta_ack.hpp"
-#include "roq/hyperliquid/json/get_perp_dexs_ack.hpp"
-#include "roq/hyperliquid/json/get_spot_meta_ack.hpp"
+#include "roq/hyperliquid/protocol/json/get_meta_ack.hpp"
+#include "roq/hyperliquid/protocol/json/get_perp_dexs_ack.hpp"
+#include "roq/hyperliquid/protocol/json/get_spot_meta_ack.hpp"
 
 namespace roq {
 namespace hyperliquid {
@@ -81,19 +81,19 @@ struct Rest final : public web::rest::Client::Handler {
 
   void get_spot_meta();
   void get_spot_meta_ack(Trace<web::rest::Response> const &, uint32_t sequence);
-  void operator()(Trace<json::GetSpotMetaAck> const &);
+  void operator()(Trace<protocol::json::GetSpotMetaAck> const &);
 
   // perp-dexs
 
   void get_perp_dexs();
   void get_perp_dexs_ack(Trace<web::rest::Response> const &, uint32_t sequence);
-  void operator()(Trace<json::GetPerpDexsAck> const &);
+  void operator()(Trace<protocol::json::GetPerpDexsAck> const &);
 
   // meta
 
   void get_meta(size_t index);
   void get_meta_ack(Trace<web::rest::Response> const &, uint32_t sequence, size_t index);
-  void operator()(Trace<json::GetMetaAck> const &, size_t index);
+  void operator()(Trace<protocol::json::GetMetaAck> const &, size_t index);
 
   // helpers
 

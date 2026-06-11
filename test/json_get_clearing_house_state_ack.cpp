@@ -4,7 +4,7 @@
 
 #include "roq/core/json/buffer_stack.hpp"
 
-#include "roq/hyperliquid/json/get_clearing_house_state_ack.hpp"
+#include "roq/hyperliquid/protocol/json/get_clearing_house_state_ack.hpp"
 
 using namespace roq;
 using namespace roq::hyperliquid;
@@ -13,7 +13,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-using value_type = json::GetClearingHouseStateAck;
+using value_type = protocol::json::GetClearingHouseStateAck;
 
 TEST_CASE("empty", "[json_get_clearing_house_state_ack]") {
   auto message = R"({)"

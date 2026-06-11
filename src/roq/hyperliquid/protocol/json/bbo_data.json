@@ -1,0 +1,19 @@
+{
+  "name": "roq/hyperliquid/protocol/json/BBOData",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "coin",
+      "type": "std/string_view"
+    },
+    {
+      "name": "time",
+      "type": "std/milliseconds"
+    },
+    {
+      "name": "bbo",
+      "type": "roq/hyperliquid/protocol/json/BBODataBBOItem",
+      "array": "std/span"
+    }
+  ]
+}

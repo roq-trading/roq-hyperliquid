@@ -11,7 +11,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-using value_type = json::L2Book;
+using value_type = protocol::json::L2Book;
 
 TEST_CASE("simple", "[json_l2_book]") {
   // truncated
@@ -67,7 +67,7 @@ TEST_CASE("simple", "[json_l2_book]") {
                  R"(})"
                  R"(})"sv;
   auto helper = [](value_type const &obj) {
-    CHECK(obj.channel == json::Channel::L2_BOOK);
+    CHECK(obj.channel == protocol::json::Channel::L2_BOOK);
     auto &data = obj.data;
     CHECK(data.coin == "BTC"sv);
     CHECK(data.time == 1757130041083ms);

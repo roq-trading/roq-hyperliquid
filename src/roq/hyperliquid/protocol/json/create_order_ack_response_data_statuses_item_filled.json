@@ -1,0 +1,22 @@
+{
+  "name": "roq/hyperliquid/protocol/json/CreateOrderAckResponseDataStatusesItemFilled",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "oid",
+      "type": "std/int64"
+    },
+    {
+      "name": "cloid",
+      "type": "std/string_view"
+    },
+    {
+      "name": "totalSz",
+      "type": "std/double"
+    },
+    {
+      "name": "avgPx",
+      "type": "std/double"
+    }
+  ]
+}

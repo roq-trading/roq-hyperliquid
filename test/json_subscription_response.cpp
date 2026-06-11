@@ -11,7 +11,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-using value_type = json::SubscriptionResponse;
+using value_type = protocol::json::SubscriptionResponse;
 
 TEST_CASE("simple", "[json_subscription_response]") {
   auto message = R"({)"
@@ -25,7 +25,7 @@ TEST_CASE("simple", "[json_subscription_response]") {
                  R"(})"
                  R"(})"sv;
   auto helper = [](value_type const &obj) {
-    CHECK(obj.channel == json::Channel::SUBSCRIPTION_RESPONSE);
+    CHECK(obj.channel == protocol::json::Channel::SUBSCRIPTION_RESPONSE);
     CHECK(obj.data.method == "subscribe"sv);
   };
   ParserTester<value_type>::dispatch(helper, message, 8192, 1);

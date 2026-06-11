@@ -1,0 +1,9 @@
+{
+  "name": "roq/hyperliquid/protocol/json/PayloadType",
+  "type": "enum",
+  "values": [
+    {
+      "name": "spotMeta"
+    }
+  ]
+}

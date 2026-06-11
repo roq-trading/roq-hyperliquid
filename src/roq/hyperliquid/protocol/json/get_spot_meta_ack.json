@@ -1,0 +1,16 @@
+{
+  "name": "roq/hyperliquid/protocol/json/GetSpotMetaAck",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "tokens",
+      "type": "roq/hyperliquid/protocol/json/GetSpotMetaAckTokensItem",
+      "array": "std/span"
+    },
+    {
+      "name": "universe",
+      "type": "roq/hyperliquid/protocol/json/GetSpotMetaAckUniverseItem",
+      "array": "std/span"
+    }
+  ]
+}

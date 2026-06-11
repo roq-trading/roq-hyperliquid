@@ -1,0 +1,26 @@
+{
+  "name": "roq/hyperliquid/protocol/json/GetSpotClearingHouseStateAckBalancesItem",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "coin",
+      "type": "std/string_view"
+    },
+    {
+      "name": "token",
+      "type": "std/int32"
+    },
+    {
+      "name": "total",
+      "type": "std/double"
+    },
+    {
+      "name": "hold",
+      "type": "std/double"
+    },
+    {
+      "name": "entryNtl",
+      "type": "std/double"
+    }
+  ]
+}

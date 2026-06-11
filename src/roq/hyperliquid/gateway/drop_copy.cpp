@@ -20,8 +20,8 @@
 
 #include "roq/web/socket/client.hpp"
 
-#include "roq/hyperliquid/json/map.hpp"
-#include "roq/hyperliquid/json/utils.hpp"
+#include "roq/hyperliquid/protocol/json/map.hpp"
+#include "roq/hyperliquid/protocol/json/utils.hpp"
 
 using namespace std::literals;
 
@@ -247,7 +247,7 @@ void DropCopy::parse(std::string_view const &message) {
     auto log_message = [&]() { log::warn(R"(*** PLEASE REPORT *** message="{}")"sv, message); };
     try {
       TraceInfo trace_info;
-      if (!json::Parser::dispatch(*this, message, decode_buffer_, trace_info, shared_.settings.experimental.allow_unknown_event_types)) {
+      if (!protocol::json::Parser::dispatch(*this, message, decode_buffer_, trace_info, shared_.settings.experimental.allow_unknown_event_types)) {
         log_message();
       }
     } catch (...) {
@@ -257,9 +257,9 @@ void DropCopy::parse(std::string_view const &message) {
   });
 }
 
-// json::Parser::Handler
+// protocol::json::Parser::Handler
 
-void DropCopy::operator()(Trace<json::Pong> const &event) {
+void DropCopy::operator()(Trace<protocol::json::Pong> const &event) {
   profile_.pong([&]() {
     auto &[trace_info, pong] = event;
     log::info<5>("pong={}"sv, pong);
@@ -267,7 +267,7 @@ void DropCopy::operator()(Trace<json::Pong> const &event) {
   });
 }
 
-void DropCopy::operator()(Trace<json::Error> const &event) {
+void DropCopy::operator()(Trace<protocol::json::Error> const &event) {
   profile_.error([&]() {
     auto &[trace_info, error] = event;
     log::error("error={}"sv, error);
@@ -275,7 +275,7 @@ void DropCopy::operator()(Trace<json::Error> const &event) {
   });
 }
 
-void DropCopy::operator()(Trace<json::SubscriptionResponse> const &event) {
+void DropCopy::operator()(Trace<protocol::json::SubscriptionResponse> const &event) {
   profile_.subscription_response([&]() {
     auto &[trace_info, subscription_response] = event;
     log::info<2>("subscription_response={}"sv, subscription_response);
@@ -283,27 +283,27 @@ void DropCopy::operator()(Trace<json::SubscriptionResponse> const &event) {
   });
 }
 
-void DropCopy::operator()(Trace<json::BBO> const &) {
+void DropCopy::operator()(Trace<protocol::json::BBO> const &) {
   log::fatal("Unexpected"sv);
 }
 
-void DropCopy::operator()(Trace<json::L2Book> const &) {
+void DropCopy::operator()(Trace<protocol::json::L2Book> const &) {
   log::fatal("Unexpected"sv);
 }
 
-void DropCopy::operator()(Trace<json::Trades> const &) {
+void DropCopy::operator()(Trace<protocol::json::Trades> const &) {
   log::fatal("Unexpected"sv);
 }
 
-void DropCopy::operator()(Trace<json::ActiveAssetCtx> const &) {
+void DropCopy::operator()(Trace<protocol::json::ActiveAssetCtx> const &) {
   log::fatal("Unexpected"sv);
 }
 
-void DropCopy::operator()(Trace<json::SpotMeta> const &) {
+void DropCopy::operator()(Trace<protocol::json::SpotMeta> const &) {
   log::fatal("Unexpected"sv);
 }
 
-void DropCopy::operator()(Trace<json::User> const &event) {
+void DropCopy::operator()(Trace<protocol::json::User> const &event) {
   profile_.user([&]() {
     auto &[trace_info, user] = event;
     log::info<2>("user={}"sv, user);
@@ -312,21 +312,21 @@ void DropCopy::operator()(Trace<json::User> const &event) {
   });
 }
 
-void DropCopy::operator()(Trace<json::UserFundings> const &event) {
+void DropCopy::operator()(Trace<protocol::json::UserFundings> const &event) {
   profile_.user_fundings([&]() {
     auto &[trace_info, user_fundings] = event;
     log::info<2>("user_fundings={}"sv, user_fundings);
   });
 }
 
-void DropCopy::operator()(Trace<json::UserFills> const &event) {
+void DropCopy::operator()(Trace<protocol::json::UserFills> const &event) {
   profile_.user_fills([&]() {
     auto &[trace_info, user_fills] = event;
     log::info<2>("user_fills={}"sv, user_fills);
   });
 }
 
-void DropCopy::operator()(Trace<json::OrderUpdates> const &event) {
+void DropCopy::operator()(Trace<protocol::json::OrderUpdates> const &event) {
   profile_.order_updates([&]() {
     auto &[trace_info, order_updates] = event;
     log::info<2>("order_updates={}"sv, order_updates);
@@ -334,7 +334,7 @@ void DropCopy::operator()(Trace<json::OrderUpdates> const &event) {
       // log::warn("DEBUG item={}"sv, item);
       auto exchange = get_exchange_from_coin(item.order.coin, shared_.settings);
       auto external_order_id = fmt::format("{}"sv, item.order.oid);
-      auto client_order_id = json::get_client_order_id(item.order.cloid);
+      auto client_order_id = protocol::json::get_client_order_id(item.order.cloid);
       auto order_status = map(item.status).get<OrderStatus>();
       auto error = [&]() -> Error {
         if (order_status == OrderStatus::REJECTED) {
@@ -392,7 +392,7 @@ void DropCopy::operator()(Trace<json::OrderUpdates> const &event) {
   });
 }
 
-void DropCopy::operator()(Trace<json::Notification> const &event) {
+void DropCopy::operator()(Trace<protocol::json::Notification> const &event) {
   profile_.notification([&]() {
     auto &[trace_info, notification] = event;
     log::info<2>("notification={}"sv, notification);

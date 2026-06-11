@@ -4,7 +4,7 @@
 
 #include "roq/core/json/buffer_stack.hpp"
 
-#include "roq/hyperliquid/json/get_user_fills_ack.hpp"
+#include "roq/hyperliquid/protocol/json/get_user_fills_ack.hpp"
 
 using namespace roq;
 using namespace roq::hyperliquid;
@@ -13,7 +13,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-using value_type = json::GetUserFillsAck;
+using value_type = protocol::json::GetUserFillsAck;
 
 TEST_CASE("simple", "[json_get_user_fills_ack]") {
   auto message = R"([{)"

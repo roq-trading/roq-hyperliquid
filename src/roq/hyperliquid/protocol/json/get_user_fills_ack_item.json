@@ -1,0 +1,77 @@
+{
+  "name": "roq/hyperliquid/protocol/json/GetUserFillsAckItem",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "coin",
+      "type": "std/string_view"
+    },
+    {
+      "name": "px",
+      "type": "std/double"
+    },
+    {
+      "name": "sz",
+      "type": "std/double"
+    },
+    {
+      "name": "side",
+      "type": "roq/hyperliquid/protocol/json/Side"
+    },
+    {
+      "name": "timestamp",
+      "type": "std/milliseconds"
+    },
+    {
+      "name": "startPosition",
+      "type": "std/double"
+    },
+    {
+      "name": "dir",
+      "type": "roq/hyperliquid/protocol/json/Direction"
+    },
+    {
+      "name": "closedPnl",
+      "type": "std/double"
+    },
+    {
+      "name": "hash",
+      "type": "std/string_view"
+    },
+    {
+      "name": "oid",
+      "type": "std/int64"
+    },
+    {
+      "name": "crossed",
+      "type": "std/bool"
+    },
+    {
+      "name": "fee",
+      "type": "std/double"
+    },
+    {
+      "name": "tid",
+      "type": "std/int64"
+    },
+    {
+      "name": "liquidation",
+      "type": "roq/hyperliquid/protocol/json/GetUserFillsAckItemLiquidation"
+    },
+    {
+      "name": "feeToken",
+      "type": "std/string_view"
+    },
+    {
+      "name": "twapId"
+    },
+    {
+      "name": "cloid",
+      "type": "std/string_view"
+    },
+    {
+      "name": "time",
+      "type": "std/milliseconds"
+    }
+  ]
+}

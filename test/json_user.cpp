@@ -11,7 +11,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-using value_type = json::User;
+using value_type = protocol::json::User;
 
 TEST_CASE("funding", "[json_user]") {
   auto message = R"({)"
@@ -28,7 +28,7 @@ TEST_CASE("funding", "[json_user]") {
                  R"(})"
                  R"(})"sv;
   auto helper = [](value_type const &obj) {
-    CHECK(obj.channel == json::Channel::USER);
+    CHECK(obj.channel == protocol::json::Channel::USER);
     CHECK(obj.data.funding.time == 1770523200069ms);
     CHECK(obj.data.funding.coin == "BTC"sv);
     CHECK(obj.data.funding.usdc == 0.000021_a);
@@ -65,7 +65,7 @@ TEST_CASE("fills", "[json_user]") {
                  R"(})"
                  R"(})"sv;
   auto helper = [](value_type const &obj) {
-    CHECK(obj.channel == json::Channel::USER);
+    CHECK(obj.channel == protocol::json::Channel::USER);
     REQUIRE(std::size(obj.data.fills) == 1);
     /*
     CHECK(obj.data.funding.time == 1770523200069ms);

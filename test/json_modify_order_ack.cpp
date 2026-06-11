@@ -4,14 +4,14 @@
 
 #include "roq/core/json/buffer_stack.hpp"
 
-#include "roq/hyperliquid/json/modify_order_ack.hpp"
+#include "roq/hyperliquid/protocol/json/modify_order_ack.hpp"
 
 using namespace roq;
 using namespace roq::hyperliquid;
 
 using namespace std::literals;
 
-using value_type = json::ModifyOrderAck;
+using value_type = protocol::json::ModifyOrderAck;
 
 TEST_CASE("failure", "[json_modify_order_ack]") {
   auto message = R"({)"
@@ -27,8 +27,8 @@ TEST_CASE("failure", "[json_modify_order_ack]") {
                  R"(})"
                  R"(})";
   auto helper = [&](value_type &obj) {
-    CHECK(obj.status == json::Status::OK);
-    CHECK(obj.response.type == json::ResponseType::ORDER);
+    CHECK(obj.status == protocol::json::Status::OK);
+    CHECK(obj.response.type == protocol::json::ResponseType::ORDER);
     // REQUIRE(std::size(obj.response.data.statuses) == 1);
     // CHECK(obj.response.data.statuses[0] == "success"sv);
   };

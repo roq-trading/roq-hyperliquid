@@ -1,0 +1,40 @@
+{
+  "name": "roq/hyperliquid/protocol/json/Direction",
+  "type": "enum",
+  "values": [
+    {
+      "raw": "Open Long",
+      "name": "OpenLong"
+    },
+    {
+      "raw": "Close Long",
+      "name": "CloseLong"
+    },
+    {
+      "raw": "Open Short",
+      "name": "OpenShort"
+    },
+    {
+      "raw": "Close Short",
+      "name": "CloseShort"
+    },
+    {
+      "raw": "Spot Dust Conversion",
+      "name": "SpotDustConversion"
+    },
+    {
+      "name": "Buy"
+    },
+    {
+      "name": "Sell"
+    },
+    {
+      "raw": "Short > Long",
+      "name": "ShortLong"
+    },
+    {
+      "raw": "Long > Short",
+      "name": "LongShort"
+    }
+  ]
+}

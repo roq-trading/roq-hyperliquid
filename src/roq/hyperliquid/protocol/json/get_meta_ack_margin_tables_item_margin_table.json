@@ -1,0 +1,13 @@
+{
+  "name": "roq/hyperliquid/protocol/json/GetMetaAckMarginTablesItemMarginTable",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "description",
+      "type": "std/string_view"
+    },
+    {
+      "name": "marginTiers"
+    }
+  ]
+}

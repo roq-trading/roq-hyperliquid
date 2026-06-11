@@ -1,0 +1,30 @@
+{
+  "name": "roq/hyperliquid/protocol/json/GetClearingHouseStateAck",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "marginSummary",
+      "type": "roq/hyperliquid/protocol/json/GetClearingHouseStateAckMarginSummary"
+    },
+    {
+      "name": "crossMarginSummary",
+      "type": "roq/hyperliquid/protocol/json/GetClearingHouseStateAckCrossMarginSummary"
+    },
+    {
+      "name": "crossMaintenanceMarginUsed",
+      "type": "std/double"
+    },
+    {
+      "name": "withdrawable",
+      "type": "std/double"
+    },
+    {
+      "name": "assetPositions",
+      "comment": "array?"
+    },
+    {
+      "name": "time",
+      "type": "std/milliseconds"
+    }
+  ]
+}

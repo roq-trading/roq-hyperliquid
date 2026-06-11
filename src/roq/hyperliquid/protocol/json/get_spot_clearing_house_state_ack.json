@@ -1,0 +1,15 @@
+{
+  "name": "roq/hyperliquid/protocol/json/GetSpotClearingHouseStateAck",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "balances",
+      "type": "roq/hyperliquid/protocol/json/GetSpotClearingHouseStateAckBalancesItem",
+      "array": "std/span"
+    },
+    {
+      "name": "tokenToAvailableAfterMaintenance",
+      "comment": "array"
+    }
+  ]
+}

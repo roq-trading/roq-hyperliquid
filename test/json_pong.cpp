@@ -11,12 +11,12 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-using value_type = json::Pong;
+using value_type = protocol::json::Pong;
 
 TEST_CASE("simple", "[json_pong]") {
   auto message = R"({)"
                  R"("channel":"pong")"
                  R"(})"sv;
-  auto helper = [](value_type const &obj) { CHECK(obj.channel == json::Channel::PONG); };
+  auto helper = [](value_type const &obj) { CHECK(obj.channel == protocol::json::Channel::PONG); };
   ParserTester<value_type>::dispatch(helper, message, 8192, 1);
 }

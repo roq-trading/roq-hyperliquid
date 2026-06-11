@@ -1,0 +1,19 @@
+{
+  "name": "roq/hyperliquid/protocol/json/GetMetaAck",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "universe",
+      "type": "roq/hyperliquid/protocol/json/GetMetaAckUniverseItem",
+      "array": "std/span"
+    },
+    {
+      "name": "marginTables",
+      "comment": "TODO can't parse key-value array -- need something new"
+    },
+    {
+      "name": "collateralToken",
+      "comment": "TODO looks like nuber, but shouldn't it be string?"
+    }
+  ]
+}

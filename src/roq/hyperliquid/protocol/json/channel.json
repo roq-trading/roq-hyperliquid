@@ -1,0 +1,45 @@
+{
+  "name": "roq/hyperliquid/protocol/json/Channel",
+  "type": "enum",
+  "values": [
+    {
+      "name": "pong"
+    },
+    {
+      "name": "error"
+    },
+    {
+      "name": "post"
+    },
+    {
+      "name": "subscriptionResponse"
+    },
+    {
+      "name": "bbo"
+    },
+    {
+      "name": "l2Book"
+    },
+    {
+      "name": "trades"
+    },
+    {
+      "name": "activeAssetCtx"
+    },
+    {
+      "name": "user"
+    },
+    {
+      "name": "userFundings"
+    },
+    {
+      "name": "userFills"
+    },
+    {
+      "name": "orderUpdates"
+    },
+    {
+      "name": "notification"
+    }
+  ]
+}

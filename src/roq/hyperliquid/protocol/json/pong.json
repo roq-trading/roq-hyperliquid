@@ -1,0 +1,10 @@
+{
+  "name": "roq/hyperliquid/protocol/json/Pong",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "channel",
+      "type": "roq/hyperliquid/protocol/json/Channel"
+    }
+  ]
+}

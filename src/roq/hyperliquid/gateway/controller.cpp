@@ -12,7 +12,7 @@
 
 #include "roq/server/oms/exceptions.hpp"
 
-#include "roq/hyperliquid/json/utils.hpp"
+#include "roq/hyperliquid/protocol/json/utils.hpp"
 
 using namespace std::literals;
 

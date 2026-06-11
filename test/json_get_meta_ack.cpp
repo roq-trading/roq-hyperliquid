@@ -4,14 +4,14 @@
 
 #include "roq/core/json/buffer_stack.hpp"
 
-#include "roq/hyperliquid/json/get_meta_ack.hpp"
+#include "roq/hyperliquid/protocol/json/get_meta_ack.hpp"
 
 using namespace roq;
 using namespace roq::hyperliquid;
 
 using namespace std::literals;
 
-using value_type = json::GetMetaAck;
+using value_type = protocol::json::GetMetaAck;
 
 TEST_CASE("simple", "[json_get_meta_ack]") {
   auto message = R"({)"

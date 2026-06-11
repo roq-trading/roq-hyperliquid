@@ -16,11 +16,11 @@
 
 #include "roq/server/oms/exceptions.hpp"
 
-#include "roq/hyperliquid/json/cancel_order_ack_parser.hpp"
-#include "roq/hyperliquid/json/create_order_ack_parser.hpp"
+#include "roq/hyperliquid/protocol/json/cancel_order_ack_parser.hpp"
+#include "roq/hyperliquid/protocol/json/create_order_ack_parser.hpp"
 
-#include "roq/hyperliquid/json/map.hpp"
-#include "roq/hyperliquid/json/utils.hpp"
+#include "roq/hyperliquid/protocol/json/map.hpp"
+#include "roq/hyperliquid/protocol/json/utils.hpp"
 
 #include "roq/hyperliquid/tools/encoder.hpp"
 
@@ -324,7 +324,7 @@ void OrderEntry::get_spot_clearing_house_state_ack(Trace<web::rest::Response> co
       if (download_.skip(sequence, STATE)) {
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
-        json::GetSpotClearingHouseStateAck spot_clearing_house_state_ack{body, decode_buffer_};
+        protocol::json::GetSpotClearingHouseStateAck spot_clearing_house_state_ack{body, decode_buffer_};
         Trace event_2{event, spot_clearing_house_state_ack};
         (*this)(event_2);
         download_.check(STATE);
@@ -334,7 +334,7 @@ void OrderEntry::get_spot_clearing_house_state_ack(Trace<web::rest::Response> co
   });
 }
 
-void OrderEntry::operator()(Trace<json::GetSpotClearingHouseStateAck> const &event) {
+void OrderEntry::operator()(Trace<protocol::json::GetSpotClearingHouseStateAck> const &event) {
   auto &[trace_info, spot_clearing_house_state_ack] = event;
   log::info<4>("spot_clearing_house_state_ack={}"sv, spot_clearing_house_state_ack);
   // log::warn("DEBUG spot_clearing_house_state_ack={}"sv, spot_clearing_house_state_ack);
@@ -386,7 +386,7 @@ void OrderEntry::get_clearing_house_state_ack(Trace<web::rest::Response> const &
       if (download_.skip(sequence, STATE)) {
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
-        json::GetClearingHouseStateAck clearing_house_state_ack{body, decode_buffer_};
+        protocol::json::GetClearingHouseStateAck clearing_house_state_ack{body, decode_buffer_};
         Trace event_2{event, clearing_house_state_ack};
         (*this)(event_2, index);
         auto next_index = index + 1;
@@ -401,7 +401,7 @@ void OrderEntry::get_clearing_house_state_ack(Trace<web::rest::Response> const &
   });
 }
 
-void OrderEntry::operator()(Trace<json::GetClearingHouseStateAck> const &event, [[maybe_unused]] size_t index) {
+void OrderEntry::operator()(Trace<protocol::json::GetClearingHouseStateAck> const &event, [[maybe_unused]] size_t index) {
   auto &[trace_info, clearing_house_state_ack] = event;
   log::info<4>("clearing_house_state_ack={}"sv, clearing_house_state_ack);
   // log::warn("DEBUG clearing_house_state_ack={}"sv, clearing_house_state_ack);
@@ -453,7 +453,7 @@ void OrderEntry::get_open_orders_ack(Trace<web::rest::Response> const &event, ui
       if (download_.skip(sequence, STATE)) {
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
-        json::GetOpenOrdersAck open_orders_ack{body, decode_buffer_};
+        protocol::json::GetOpenOrdersAck open_orders_ack{body, decode_buffer_};
         Trace event_2{event, open_orders_ack};
         (*this)(event_2, index);
         auto next_index = index + 1;
@@ -468,14 +468,14 @@ void OrderEntry::get_open_orders_ack(Trace<web::rest::Response> const &event, ui
   });
 }
 
-void OrderEntry::operator()(Trace<json::GetOpenOrdersAck> const &event, [[maybe_unused]] size_t index) {
+void OrderEntry::operator()(Trace<protocol::json::GetOpenOrdersAck> const &event, [[maybe_unused]] size_t index) {
   auto &[trace_info, open_orders_ack] = event;
   log::info<4>("open_orders_ack={}"sv, open_orders_ack);
   for (auto &item : open_orders_ack.data) {
     // log::warn("DEBUG item={}"sv, item);
     auto exchange = get_exchange_from_coin(item.coin, shared_.settings);
     auto external_order_id = fmt::format("{}"sv, item.oid);
-    auto client_order_id = json::get_client_order_id(item.cloid);
+    auto client_order_id = protocol::json::get_client_order_id(item.cloid);
     auto traded_quantity = item.orig_sz - item.sz;
     auto order_update = server::oms::OrderUpdate{
         .account = account_.name,
@@ -565,7 +565,7 @@ void OrderEntry::get_user_fills_ack(Trace<web::rest::Response> const &event, uin
       if (download_.skip(sequence, STATE)) {
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
-        json::GetUserFillsAck user_fills_ack{body, decode_buffer_};
+        protocol::json::GetUserFillsAck user_fills_ack{body, decode_buffer_};
         Trace event_2{event, user_fills_ack};
         (*this)(event_2, index);
         auto next_index = index + 1;
@@ -580,7 +580,7 @@ void OrderEntry::get_user_fills_ack(Trace<web::rest::Response> const &event, uin
   });
 }
 
-void OrderEntry::operator()(Trace<json::GetUserFillsAck> const &event, [[maybe_unused]] size_t index) {
+void OrderEntry::operator()(Trace<protocol::json::GetUserFillsAck> const &event, [[maybe_unused]] size_t index) {
   auto &[trace_info, user_fills_ack] = event;
   log::info<4>("user_fills_ack={}"sv, user_fills_ack);
   for (auto &item : user_fills_ack.data) {
@@ -661,7 +661,7 @@ void OrderEntry::create_order_ack(Trace<web::rest::Response> const &event, uint8
         }
       };
       try {
-        if (!json::CreateOrderAckParser::dispatch(
+        if (!protocol::json::CreateOrderAckParser::dispatch(
                 body, decode_buffer_, trace_info, shared_.settings.experimental.allow_unknown_event_types, handle_error_2, handle_success_2)) {
           log_message();
         }
@@ -675,7 +675,7 @@ void OrderEntry::create_order_ack(Trace<web::rest::Response> const &event, uint8
 }
 
 void OrderEntry::operator()(
-    Trace<json::CreateOrderAck> const &, [[maybe_unused]] uint8_t user_id, [[maybe_unused]] uint64_t order_id, [[maybe_unused]] uint32_t version) {
+    Trace<protocol::json::CreateOrderAck> const &, [[maybe_unused]] uint8_t user_id, [[maybe_unused]] uint64_t order_id, [[maybe_unused]] uint32_t version) {
 }
 
 // modify-order
@@ -738,7 +738,7 @@ void OrderEntry::modify_order_ack(Trace<web::rest::Response> const &event, uint8
     };
     auto handle_success = [&](auto &body) {
       log::warn(R"(DEBUG body="{}")"sv, body);
-      json::ModifyOrderAck cancel_order_ack{body, decode_buffer_};
+      protocol::json::ModifyOrderAck cancel_order_ack{body, decode_buffer_};
       Trace event_2{event, cancel_order_ack};
       (*this)(event_2, user_id, order_id, version);
     };
@@ -747,7 +747,7 @@ void OrderEntry::modify_order_ack(Trace<web::rest::Response> const &event, uint8
 }
 
 void OrderEntry::operator()(
-    Trace<json::ModifyOrderAck> const &, [[maybe_unused]] uint8_t user_id, [[maybe_unused]] uint64_t order_id, [[maybe_unused]] uint32_t version) {
+    Trace<protocol::json::ModifyOrderAck> const &, [[maybe_unused]] uint8_t user_id, [[maybe_unused]] uint64_t order_id, [[maybe_unused]] uint32_t version) {
 }
 
 // cancel-order
@@ -827,7 +827,7 @@ void OrderEntry::cancel_order_ack(Trace<web::rest::Response> const &event, uint8
         }
       };
       try {
-        if (!json::CancelOrderAckParser::dispatch(
+        if (!protocol::json::CancelOrderAckParser::dispatch(
                 body, decode_buffer_, trace_info, shared_.settings.experimental.allow_unknown_event_types, handle_error_2, handle_success_2)) {
           log_message();
         }
@@ -841,7 +841,7 @@ void OrderEntry::cancel_order_ack(Trace<web::rest::Response> const &event, uint8
 }
 
 void OrderEntry::operator()(
-    Trace<json::CancelOrderAck> const &, [[maybe_unused]] uint8_t user_id, [[maybe_unused]] uint64_t order_id, [[maybe_unused]] uint32_t version) {
+    Trace<protocol::json::CancelOrderAck> const &, [[maybe_unused]] uint8_t user_id, [[maybe_unused]] uint64_t order_id, [[maybe_unused]] uint32_t version) {
 }
 
 // helpers

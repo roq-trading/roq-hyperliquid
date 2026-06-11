@@ -1,0 +1,24 @@
+{
+  "name": "roq/hyperliquid/protocol/json/OrderStatus",
+  "type": "enum",
+  "values": [
+    {
+      "name": "open"
+    },
+    {
+      "name": "filled"
+    },
+    {
+      "name": "canceled"
+    },
+    {
+      "name": "minTradeNtlRejected"
+    },
+    {
+      "name": "iocCancelRejected"
+    },
+    {
+      "name": "perpMarginRejected"
+    }
+  ]
+}

@@ -11,7 +11,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-using value_type = json::Notification;
+using value_type = protocol::json::Notification;
 
 TEST_CASE("resting_filled", "[json_notification]") {
   auto message = R"({)"
@@ -21,7 +21,7 @@ TEST_CASE("resting_filled", "[json_notification]") {
                  R"(})"
                  R"(})"sv;
   auto helper = [](value_type const &obj) {
-    CHECK(obj.channel == json::Channel::NOTIFICATION);
+    CHECK(obj.channel == protocol::json::Channel::NOTIFICATION);
     CHECK(obj.data.notification == "Resting order filled: Bought 0.0063 ETH at $1907.6"sv);
   };
   ParserTester<value_type>::dispatch(helper, message, 8192, 1);

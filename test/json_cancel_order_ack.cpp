@@ -4,15 +4,15 @@
 
 #include "roq/core/json/buffer_stack.hpp"
 
-#include "roq/hyperliquid/json/cancel_order_ack.hpp"
-#include "roq/hyperliquid/json/cancel_order_ack_parser.hpp"
+#include "roq/hyperliquid/protocol/json/cancel_order_ack.hpp"
+#include "roq/hyperliquid/protocol/json/cancel_order_ack_parser.hpp"
 
 using namespace roq;
 using namespace roq::hyperliquid;
 
 using namespace std::literals;
 
-using value_type = json::CancelOrderAck;
+using value_type = protocol::json::CancelOrderAck;
 
 /*
 status
@@ -37,7 +37,7 @@ auto helper = [](auto &message, auto error_handler, auto success_handler) {
   };
   core::json::BufferStack buffers{8192, 1};
   TraceInfo trace_info;
-  auto result = json::CancelOrderAckParser::dispatch(message, buffers, trace_info, false, error_handler_2, success_handler_2);
+  auto result = protocol::json::CancelOrderAckParser::dispatch(message, buffers, trace_info, false, error_handler_2, success_handler_2);
   CHECK(result == true);
   return found;
 };
@@ -60,8 +60,8 @@ TEST_CASE("already_canceled_or_filled", "[json_cancel_order_ack]") {
                  R"(})";
   auto error_handler = []([[maybe_unused]] auto const &text) { FAIL(); };
   auto success_handler = [](value_type const &obj) {
-    CHECK(obj.status == json::Status::OK);
-    CHECK(obj.response.type == json::ResponseType::CANCEL);
+    CHECK(obj.status == protocol::json::Status::OK);
+    CHECK(obj.response.type == protocol::json::ResponseType::CANCEL);
     REQUIRE(std::size(obj.response.data.statuses) == 1);
     CHECK(obj.response.data.statuses[0].error == "Order was never placed, already canceled, or filled. asset=0"sv);
   };

@@ -1,0 +1,22 @@
+{
+  "name": "roq/hyperliquid/protocol/json/GetClearingHouseStateAckCrossMarginSummary",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "accountValue",
+      "type": "std/double"
+    },
+    {
+      "name": "totalNtlPos",
+      "type": "std/double"
+    },
+    {
+      "name": "totalRawUsd",
+      "type": "std/double"
+    },
+    {
+      "name": "totalMarginUsed",
+      "type": "std/double"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "roq/hyperliquid/protocol/json/User",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "channel",
+      "type": "roq/hyperliquid/protocol/json/Channel"
+    },
+    {
+      "name": "data",
+      "type": "roq/hyperliquid/protocol/json/UserData"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "name": "roq/hyperliquid/protocol/json/Status",
+  "type": "enum",
+  "values": [
+    {
+      "name": "ok"
+    },
+    {
+      "name": "err"
+    }
+  ]
+}

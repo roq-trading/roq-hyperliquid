@@ -11,7 +11,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-using value_type = json::ActiveAssetCtx;
+using value_type = protocol::json::ActiveAssetCtx;
 
 TEST_CASE("simple", "[json_active_asset_ctx]") {
   auto message = R"({)"
@@ -33,7 +33,7 @@ TEST_CASE("simple", "[json_active_asset_ctx]") {
                  R"(})"
                  R"(})"sv;
   auto helper = [](value_type const &obj) {
-    CHECK(obj.channel == json::Channel::ACTIVE_ASSET_CTX);
+    CHECK(obj.channel == protocol::json::Channel::ACTIVE_ASSET_CTX);
     CHECK(obj.data.coin == "SOL"sv);
   };
   ParserTester<value_type>::dispatch(helper, message, 8192, 1);

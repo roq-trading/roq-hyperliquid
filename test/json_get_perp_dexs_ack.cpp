@@ -4,14 +4,14 @@
 
 #include "roq/core/json/buffer_stack.hpp"
 
-#include "roq/hyperliquid/json/get_perp_dexs_ack.hpp"
+#include "roq/hyperliquid/protocol/json/get_perp_dexs_ack.hpp"
 
 using namespace roq;
 using namespace roq::hyperliquid;
 
 using namespace std::literals;
 
-using value_type = json::GetPerpDexsAck;
+using value_type = protocol::json::GetPerpDexsAck;
 
 TEST_CASE("simple", "[json_get_perp_dexs_ack]") {
   auto message =

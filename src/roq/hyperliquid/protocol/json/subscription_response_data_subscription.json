@@ -1,0 +1,30 @@
+{
+  "name": "roq/hyperliquid/protocol/json/SubscriptionResponseDataSubscription",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "type",
+      "type": "std/string_view"
+    },
+    {
+      "name": "coin",
+      "type": "std/string_view"
+    },
+    {
+      "name": "nSigFigs",
+      "type": "std/uint32"
+    },
+    {
+      "name": "mantissa",
+      "type": "std/uint32"
+    },
+    {
+      "name": "user",
+      "type": "std/string_view"
+    },
+    {
+      "name": "aggregateByTime",
+      "type": "std/bool"
+    }
+  ]
+}

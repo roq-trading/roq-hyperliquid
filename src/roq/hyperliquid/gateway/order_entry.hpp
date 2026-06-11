@@ -25,14 +25,14 @@
 #include "roq/hyperliquid/gateway/account.hpp"
 #include "roq/hyperliquid/gateway/shared.hpp"
 
-#include "roq/hyperliquid/json/get_clearing_house_state_ack.hpp"
-#include "roq/hyperliquid/json/get_open_orders_ack.hpp"
-#include "roq/hyperliquid/json/get_spot_clearing_house_state_ack.hpp"
-#include "roq/hyperliquid/json/get_user_fills_ack.hpp"
+#include "roq/hyperliquid/protocol/json/get_clearing_house_state_ack.hpp"
+#include "roq/hyperliquid/protocol/json/get_open_orders_ack.hpp"
+#include "roq/hyperliquid/protocol/json/get_spot_clearing_house_state_ack.hpp"
+#include "roq/hyperliquid/protocol/json/get_user_fills_ack.hpp"
 
-#include "roq/hyperliquid/json/cancel_order_ack.hpp"
-#include "roq/hyperliquid/json/create_order_ack.hpp"
-#include "roq/hyperliquid/json/modify_order_ack.hpp"
+#include "roq/hyperliquid/protocol/json/cancel_order_ack.hpp"
+#include "roq/hyperliquid/protocol/json/create_order_ack.hpp"
+#include "roq/hyperliquid/protocol/json/modify_order_ack.hpp"
 
 namespace roq {
 namespace hyperliquid {
@@ -100,31 +100,31 @@ struct OrderEntry final : public web::rest::Client::Handler {
 
   void get_clearing_house_state(size_t index);
   void get_clearing_house_state_ack(Trace<web::rest::Response> const &, uint32_t sequence, size_t index);
-  void operator()(Trace<json::GetClearingHouseStateAck> const &, size_t index);
+  void operator()(Trace<protocol::json::GetClearingHouseStateAck> const &, size_t index);
 
   // spot-clearing-house-state
 
   void get_spot_clearing_house_state();
   void get_spot_clearing_house_state_ack(Trace<web::rest::Response> const &, uint32_t sequence);
-  void operator()(Trace<json::GetSpotClearingHouseStateAck> const &);
+  void operator()(Trace<protocol::json::GetSpotClearingHouseStateAck> const &);
 
   // open-orders
 
   void get_open_orders(size_t index);
   void get_open_orders_ack(Trace<web::rest::Response> const &, uint32_t sequence, size_t index);
-  void operator()(Trace<json::GetOpenOrdersAck> const &, size_t index);
+  void operator()(Trace<protocol::json::GetOpenOrdersAck> const &, size_t index);
 
   // user-fills
 
   void get_user_fills(size_t index);
   void get_user_fills_ack(Trace<web::rest::Response> const &, uint32_t sequence, size_t index);
-  void operator()(Trace<json::GetUserFillsAck> const &, size_t index);
+  void operator()(Trace<protocol::json::GetUserFillsAck> const &, size_t index);
 
   // create-order
 
   void create_order(Event<CreateOrder> const &, server::oms::Order const &, server::oms::RefData const &, std::string_view const &request_id);
   void create_order_ack(Trace<web::rest::Response> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
-  void operator()(Trace<json::CreateOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
+  void operator()(Trace<protocol::json::CreateOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
 
   // modify-order
 
@@ -135,7 +135,7 @@ struct OrderEntry final : public web::rest::Client::Handler {
       std::string_view const &request_id,
       std::string_view const &previous_request_id);
   void modify_order_ack(Trace<web::rest::Response> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
-  void operator()(Trace<json::ModifyOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
+  void operator()(Trace<protocol::json::ModifyOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
 
   // cancel-order
 
@@ -146,7 +146,7 @@ struct OrderEntry final : public web::rest::Client::Handler {
       std::string_view const &request_id,
       std::string_view const &previous_request_id);
   void cancel_order_ack(Trace<web::rest::Response> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
-  void operator()(Trace<json::CancelOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
+  void operator()(Trace<protocol::json::CancelOrderAck> const &, uint8_t user_id, uint64_t order_id, uint32_t version);
 
   // helpers
 

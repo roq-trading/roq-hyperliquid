@@ -1,0 +1,11 @@
+{
+  "name": "roq/hyperliquid/protocol/json/CancelOrderAckResponseData",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "statuses",
+      "type": "roq/hyperliquid/protocol/json/CancelOrderAckResponseDataStatusesItem",
+      "array": "std/span"
+    }
+  ]
+}

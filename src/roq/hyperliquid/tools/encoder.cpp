@@ -16,7 +16,7 @@
 
 #include "roq/server/oms/exceptions.hpp"
 
-#include "roq/hyperliquid/json/map.hpp"
+#include "roq/hyperliquid/protocol/json/map.hpp"
 
 #include "roq/hyperliquid/tools/conversions.hpp"
 
@@ -53,11 +53,11 @@ auto order_type_helper_2(auto &order) {
       };
       break;
     case LIMIT: {
-      auto tif = [&]() -> json::TimeInForce {
+      auto tif = [&]() -> protocol::json::TimeInForce {
         if (order.execution_instructions.has(ExecutionInstruction::PARTICIPATE_DO_NOT_INITIATE)) {
-          return json::TimeInForce::ALO;
+          return protocol::json::TimeInForce::ALO;
         }
-        return map(order.time_in_force).template get<json::TimeInForce>();
+        return map(order.time_in_force).template get<protocol::json::TimeInForce>();
       }();
       return nlohmann::ordered_json{
           {"limit",

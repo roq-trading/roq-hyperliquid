@@ -1,0 +1,10 @@
+{
+  "name": "roq/hyperliquid/protocol/json/CancelOrderAckResponseDataStatusesItem",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "error",
+      "type": "std/string_view"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "name": "roq/hyperliquid/protocol/json/Error",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "channel",
+      "type": "roq/hyperliquid/protocol/json/Channel"
+    },
+    {
+      "name": "data",
+      "type": "std/string_view"
+    }
+  ]
+}

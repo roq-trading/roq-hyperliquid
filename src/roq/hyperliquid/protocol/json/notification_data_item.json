@@ -1,0 +1,10 @@
+{
+  "name": "roq/hyperliquid/protocol/json/NotificationDataItem",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "notification",
+      "type": "std/string_view"
+    }
+  ]
+}

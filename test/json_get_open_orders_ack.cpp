@@ -4,7 +4,7 @@
 
 #include "roq/core/json/buffer_stack.hpp"
 
-#include "roq/hyperliquid/json/get_open_orders_ack.hpp"
+#include "roq/hyperliquid/protocol/json/get_open_orders_ack.hpp"
 
 using namespace roq;
 using namespace roq::hyperliquid;
@@ -13,7 +13,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-using value_type = json::GetOpenOrdersAck;
+using value_type = protocol::json::GetOpenOrdersAck;
 
 TEST_CASE("simple", "[json_get_open_orders_ack]") {
   auto message = R"([{)"
@@ -41,7 +41,7 @@ TEST_CASE("simple", "[json_get_open_orders_ack]") {
     //
     auto &o0 = obj.data[0];
     CHECK(o0.coin == "ETH"sv);
-    CHECK(o0.side == json::Side::BID);
+    CHECK(o0.side == protocol::json::Side::BID);
     CHECK(o0.limit_px == 1500.0_a);
     CHECK(o0.sz == 1.0_a);
     CHECK(o0.oid == 313932628709);
@@ -51,7 +51,7 @@ TEST_CASE("simple", "[json_get_open_orders_ack]") {
     //
     auto &o1 = obj.data[1];
     CHECK(o1.coin == "ETH"sv);
-    CHECK(o1.side == json::Side::ASK);
+    CHECK(o1.side == protocol::json::Side::ASK);
     CHECK(o1.limit_px == 2500.0_a);
     CHECK(o1.sz == 1.0_a);
     CHECK(o1.oid == 313932486380);

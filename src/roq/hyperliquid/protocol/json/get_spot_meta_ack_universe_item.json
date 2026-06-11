@@ -1,0 +1,23 @@
+{
+  "name": "roq/hyperliquid/protocol/json/GetSpotMetaAckUniverseItem",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "tokens",
+      "type": "std/int64",
+      "array": "std/span"
+    },
+    {
+      "name": "name",
+      "type": "std/string_view"
+    },
+    {
+      "name": "index",
+      "type": "std/uint32"
+    },
+    {
+      "name": "isCanonical",
+      "type": "std/bool"
+    }
+  ]
+}

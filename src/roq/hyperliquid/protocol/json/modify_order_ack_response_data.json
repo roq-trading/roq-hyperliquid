@@ -1,0 +1,9 @@
+{
+  "name": "roq/hyperliquid/protocol/json/ModifyOrderAckResponseData",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "statuses"
+    }
+  ]
+}

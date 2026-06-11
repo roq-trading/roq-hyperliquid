@@ -1,0 +1,19 @@
+{
+  "name": "roq/hyperliquid/protocol/json/UserFundingsData",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "isSnapshot",
+      "type": "std/bool"
+    },
+    {
+      "name": "user",
+      "type": "std/string_view"
+    },
+    {
+      "name": "fundings",
+      "type": "roq/hyperliquid/protocol/json/UserFundingsDataFundingsItem",
+      "array": "std/span"
+    }
+  ]
+}

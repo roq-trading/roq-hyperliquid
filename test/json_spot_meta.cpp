@@ -11,7 +11,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-using value_type = json::SpotMeta;
+using value_type = protocol::json::SpotMeta;
 
 TEST_CASE("simple", "[json_spot_meta]") {
   auto message = R"({)"
@@ -40,6 +40,6 @@ TEST_CASE("simple", "[json_spot_meta]") {
                  R"(})"
                  R"(})"
                  R"(})"sv;
-  auto helper = [](value_type const &obj) { CHECK(obj.channel == json::Channel::POST); };
+  auto helper = [](value_type const &obj) { CHECK(obj.channel == protocol::json::Channel::POST); };
   ParserTester<value_type>::dispatch(helper, message, 8192, 2);
 }

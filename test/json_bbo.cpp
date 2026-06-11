@@ -11,7 +11,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-using value_type = json::BBO;
+using value_type = protocol::json::BBO;
 
 TEST_CASE("simple", "[json_bbo]") {
   auto message = R"({)"
@@ -32,7 +32,7 @@ TEST_CASE("simple", "[json_bbo]") {
                  R"(})"
                  R"(})"sv;
   auto helper = [](value_type const &obj) {
-    CHECK(obj.channel == json::Channel::BBO);
+    CHECK(obj.channel == protocol::json::Channel::BBO);
     auto &bbo = obj.data.bbo;
     REQUIRE(std::size(bbo) == 2);
   };

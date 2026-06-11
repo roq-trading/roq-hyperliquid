@@ -1,0 +1,19 @@
+{
+  "name": "roq/hyperliquid/protocol/json/L2BookData",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "coin",
+      "type": "std/string_view"
+    },
+    {
+      "name": "time",
+      "type": "std/milliseconds"
+    },
+    {
+      "name": "levels",
+      "type": "roq/hyperliquid/protocol/json/L2BookDataLevelsItem",
+      "array": "std/span"
+    }
+  ]
+}

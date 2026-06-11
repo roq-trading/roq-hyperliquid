@@ -1,0 +1,29 @@
+{
+  "name": "roq/hyperliquid/protocol/json/UserFundingsDataFundingsItem",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "time",
+      "type": "std/milliseconds"
+    },
+    {
+      "name": "coin",
+      "type": "std/string_view"
+    },
+    {
+      "name": "usdc",
+      "type": "std/double"
+    },
+    {
+      "name": "szi",
+      "type": "std/double"
+    },
+    {
+      "name": "fundingRate",
+      "type": "std/double"
+    },
+    {
+      "name": "nSamples"
+    }
+  ]
+}

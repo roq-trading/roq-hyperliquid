@@ -11,7 +11,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-using value_type = json::UserFills;
+using value_type = protocol::json::UserFills;
 
 TEST_CASE("simple", "[json_user_fills]") {
   auto message = R"({)"
@@ -212,7 +212,7 @@ TEST_CASE("simple", "[json_user_fills]") {
                  R"(})"
                  R"(})"sv;
   auto helper = [](value_type const &obj) {
-    CHECK(obj.channel == json::Channel::USER_FILLS);
+    CHECK(obj.channel == protocol::json::Channel::USER_FILLS);
     CHECK(obj.data.is_snapshot == true);
     CHECK(obj.data.user == "0x61fb9e7583dc92cc76eb52f93d88addaa0f02265"sv);
     REQUIRE(std::size(obj.data.fills) == 11);

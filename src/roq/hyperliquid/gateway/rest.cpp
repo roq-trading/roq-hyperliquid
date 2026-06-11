@@ -13,8 +13,8 @@
 
 #include "roq/utils/metrics/factory.hpp"
 
-#include "roq/hyperliquid/json/map.hpp"
-#include "roq/hyperliquid/json/utils.hpp"
+#include "roq/hyperliquid/protocol/json/map.hpp"
+#include "roq/hyperliquid/protocol/json/utils.hpp"
 
 #include "roq/hyperliquid/tools/tick_size_steps.hpp"
 
@@ -263,7 +263,7 @@ void Rest::get_spot_meta_ack(Trace<web::rest::Response> const &event, uint32_t s
       if (download_.skip(sequence, STATE)) {
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
-        json::GetSpotMetaAck spot_meta_ack{body, decode_buffer_};
+        protocol::json::GetSpotMetaAck spot_meta_ack{body, decode_buffer_};
         Trace event_2{event, spot_meta_ack};
         (*this)(event_2);
         download_.check(STATE);
@@ -273,7 +273,7 @@ void Rest::get_spot_meta_ack(Trace<web::rest::Response> const &event, uint32_t s
   });
 }
 
-void Rest::operator()(Trace<json::GetSpotMetaAck> const &event) {
+void Rest::operator()(Trace<protocol::json::GetSpotMetaAck> const &event) {
   auto &[trace_info, spot_meta_ack] = event;
   log::info<4>("spot_meta_ack={}"sv, spot_meta_ack);
   for (size_t i = 0; i < std::size(spot_meta_ack.tokens); ++i) {
@@ -370,7 +370,7 @@ void Rest::get_perp_dexs_ack(Trace<web::rest::Response> const &event, uint32_t s
       if (download_.skip(sequence, STATE)) {
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
-        json::GetPerpDexsAck perp_dexs_ack{body, decode_buffer_};
+        protocol::json::GetPerpDexsAck perp_dexs_ack{body, decode_buffer_};
         Trace event_2{event, perp_dexs_ack};
         (*this)(event_2);
         download_.check(STATE);
@@ -380,7 +380,7 @@ void Rest::get_perp_dexs_ack(Trace<web::rest::Response> const &event, uint32_t s
   });
 }
 
-void Rest::operator()(Trace<json::GetPerpDexsAck> const &event) {
+void Rest::operator()(Trace<protocol::json::GetPerpDexsAck> const &event) {
   auto &[trace_info, perp_dexs_ack] = event;
   log::info<4>("perp_dexs_ack={}"sv, perp_dexs_ack);
   shared_.dex.reserve(std::size(perp_dexs_ack.data));
@@ -455,7 +455,7 @@ void Rest::get_meta_ack(Trace<web::rest::Response> const &event, uint32_t sequen
       if (download_.skip(sequence, STATE)) {
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
-        json::GetMetaAck meta_ack{body, decode_buffer_};
+        protocol::json::GetMetaAck meta_ack{body, decode_buffer_};
         Trace event_2{event, meta_ack};
         (*this)(event_2, index);
         auto next_index = index + 1;
@@ -471,7 +471,7 @@ void Rest::get_meta_ack(Trace<web::rest::Response> const &event, uint32_t sequen
 }
 
 // XXX TODO symbols update => trigger market data connection
-void Rest::operator()(Trace<json::GetMetaAck> const &event, size_t index) {
+void Rest::operator()(Trace<protocol::json::GetMetaAck> const &event, size_t index) {
   auto &[trace_info, meta_ack] = event;
   log::info<4>("meta_ack={}"sv, meta_ack);
   assert(index < std::size(shared_.dex));

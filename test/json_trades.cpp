@@ -11,7 +11,7 @@ using namespace std::literals;
 
 using namespace Catch::literals;
 
-using value_type = json::Trades;
+using value_type = protocol::json::Trades;
 
 TEST_CASE("simple", "[json_trades]") {
   auto message = R"({)"
@@ -32,7 +32,7 @@ TEST_CASE("simple", "[json_trades]") {
                  R"(])"
                  R"(})"sv;
   auto helper = [](value_type const &obj) {
-    CHECK(obj.channel == json::Channel::TRADES);
+    CHECK(obj.channel == protocol::json::Channel::TRADES);
     auto &data = obj.data;
     REQUIRE(std::size(data) == 1);
   };
