@@ -98,7 +98,7 @@ struct DropCopy final : public web::socket::Client::Handler, public protocol::js
 
   // helpers
 
-  void operator()(Trace<server::oms::OrderUpdate> const &, std::string_view const &client_order_id);
+  void operator()(Trace<server::oms::OrderUpdate> const &);
 
  private:
   Handler &handler_;
