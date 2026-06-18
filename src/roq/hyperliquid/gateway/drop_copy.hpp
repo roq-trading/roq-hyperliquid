@@ -96,10 +96,6 @@ struct DropCopy final : public web::socket::Client::Handler, public protocol::js
   void operator()(Trace<protocol::json::OrderUpdates> const &) override;
   void operator()(Trace<protocol::json::Notification> const &) override;
 
-  // helpers
-
-  void operator()(Trace<server::oms::OrderUpdate> const &);
-
  private:
   Handler &handler_;
   // config
