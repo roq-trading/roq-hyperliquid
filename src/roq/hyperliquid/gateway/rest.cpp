@@ -168,7 +168,7 @@ void Rest::operator()(ConnectionStatus connection_status, std::string_view const
       .proxy = (*connection_).get_proxy(),
   };
   log::info("stream_status={}"sv, stream_status);
-  create_trace_and_dispatch(handler_, trace_info, stream_status);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
 }
 
 // web::rest::Client::Handler
@@ -196,7 +196,7 @@ void Rest::operator()(Trace<web::rest::Client::Latency> const &event) {
       .account = {},
       .latency = latency.sample,
   };
-  create_trace_and_dispatch(handler_, trace_info, external_latency);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, external_latency);
   latency_.ping.update(latency.sample);
 }
 
@@ -325,7 +325,7 @@ void Rest::operator()(Trace<protocol::json::GetSpotMetaAck> const &event) {
         .sending_time_utc = {},
         .discard = discard,
     };
-    create_trace_and_dispatch(handler_, trace_info, reference_data, true);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, reference_data, true);
     if (discard) {
       log::info<1>(R"(Drop symbol="{}")"sv, item.name);
       continue;
@@ -481,7 +481,7 @@ void Rest::operator()(Trace<protocol::json::GetMetaAck> const &event, size_t ind
   size_t counter = 0;
   for (size_t i = 0; i < std::size(meta_ack.universe); ++i) {
     auto &item = meta_ack.universe[i];
-    auto discard = shared_.discard_symbol(item.name);
+    auto discard = shared_.dispatcher.discard_symbol(item.name);
     auto exchange = get_exchange_from_coin(item.name, shared_.settings);
     auto tick_size = std::pow(10.0, -static_cast<double>(item.sz_decimals));
     auto tick_size_steps = tools::TickSizeSteps::get(item.sz_decimals, false);
@@ -520,7 +520,7 @@ void Rest::operator()(Trace<protocol::json::GetMetaAck> const &event, size_t ind
         .sending_time_utc = {},
         .discard = discard,
     };
-    create_trace_and_dispatch(handler_, trace_info, reference_data, true);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, reference_data, true);
     if (discard) {
       log::info<1>(R"(Drop symbol="{}")"sv, item.name);
       continue;

@@ -188,7 +188,7 @@ void MarketData::operator()(web::socket::Client::Latency const &latency) {
       .account = {},
       .latency = latency.sample,
   };
-  create_trace_and_dispatch(handler_, trace_info, external_latency);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, external_latency);
   latency_.ping.update(latency.sample);
 }
 
@@ -219,7 +219,7 @@ void MarketData::operator()(ConnectionStatus connection_status, std::string_view
       .proxy = (*connection_).get_proxy(),
   };
   log::info("stream_status={}"sv, stream_status);
-  create_trace_and_dispatch(handler_, trace_info, stream_status);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
 }
 
 void MarketData::get_spot_meta() {
@@ -336,7 +336,7 @@ void MarketData::operator()(Trace<protocol::json::BBO> const &event) {
           .exchange_sequence = {},
           .sending_time_utc = {},
       };
-      create_trace_and_dispatch(handler_, trace_info, top_of_book, true);
+      create_trace_and_dispatch(shared_.dispatcher, trace_info, top_of_book, true);
     } else {
       log::warn("bbo={}"sv, bbo);
     }
@@ -387,7 +387,7 @@ void MarketData::operator()(Trace<protocol::json::L2Book> const &event) {
           .max_depth = {},
           .checksum = {},
       };
-      create_trace_and_dispatch(handler_, trace_info, market_by_price_update, true);
+      create_trace_and_dispatch(shared_.dispatcher, trace_info, market_by_price_update, true, shared_.final_bids, shared_.final_asks);
     }
   });
 }
@@ -414,7 +414,7 @@ void MarketData::operator()(Trace<protocol::json::Trades> const &event) {
           .exchange_sequence = {},
           .sending_time_utc = {},
       };
-      create_trace_and_dispatch(handler_, trace_info, trade_summary, true);
+      create_trace_and_dispatch(shared_.dispatcher, trace_info, trade_summary, true);
     };
     for (auto &item : trades.data) {
       if (item.time != time || item.coin != coin) {
@@ -471,7 +471,7 @@ void MarketData::operator()(Trace<protocol::json::ActiveAssetCtx> const &event) 
         .exchange_sequence = {},
         .sending_time_utc = {},
     };
-    create_trace_and_dispatch(handler_, trace_info, statistics_update, true);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, statistics_update, true);
   });
 }
 
