@@ -2,23 +2,13 @@
 
 #include "roq/hyperliquid/gateway/drop_copy.hpp"
 
-#include <algorithm>
-#include <utility>
-
 #include "roq/logging.hpp"
 
 #include "roq/mask.hpp"
 
-#include "roq/utils/safe_cast.hpp"
-#include "roq/utils/update.hpp"
-
 #include "roq/utils/exceptions/unhandled.hpp"
 
-#include "roq/utils/charconv/to_string.hpp"
-
 #include "roq/utils/metrics/factory.hpp"
-
-#include "roq/web/socket/client.hpp"
 
 #include "roq/hyperliquid/protocol/json/map.hpp"
 #include "roq/hyperliquid/protocol/json/utils.hpp"
