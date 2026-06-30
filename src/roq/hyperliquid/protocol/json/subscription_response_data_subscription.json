@@ -25,6 +25,10 @@
     {
       "name": "aggregateByTime",
       "type": "std/bool"
+    },
+    {
+      "name": "fast",
+      "type": "std/bool"
     }
   ]
 }
