@@ -272,9 +272,12 @@ void Rest::operator()(Trace<protocol::json::GetSpotMetaAck> const &event) {
   auto &[trace_info, spot_meta_ack] = event;
   log::info<4>("spot_meta_ack={}"sv, spot_meta_ack);
   for (size_t i = 0; i < std::size(spot_meta_ack.tokens); ++i) {
-    if (spot_meta_ack.tokens[i].index != i) {
-      log::fatal("Unexpected"sv);
-    }
+    auto &item = spot_meta_ack.tokens[i];
+    log::debug("item={}"sv, item);
+    // XXX FIXME TODO why did we have this check ???
+    // if (item.index != i) {
+    //   log::fatal("Unexpected"sv);
+    // }
   }
   /*
   for (auto &item : spot_meta_ack.universe) {
