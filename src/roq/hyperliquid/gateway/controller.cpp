@@ -127,7 +127,11 @@ void Controller::operator()(Event<Subscribe> const &event) {
 uint16_t Controller::operator()(
     Event<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &ref_data, std::string_view const &request_id) {
   assert(!std::empty(event.value.account));
-  return get_order_entry(event.value.account)(event, order, ref_data, request_id);
+  if (shared_.settings.ws_api) {
+    return get_web_socket(event.value.account)(event, order, ref_data, request_id);
+  } else {
+    return get_order_entry(event.value.account)(event, order, ref_data, request_id);
+  }
 }
 
 uint16_t Controller::operator()(
@@ -138,7 +142,11 @@ uint16_t Controller::operator()(
     std::string_view const &previous_request_id) {
   assert(!std::empty(event.value.account));
   assert(event.value.account == order.account);
-  return get_order_entry(event.value.account)(event, order, ref_data, request_id, previous_request_id);
+  if (shared_.settings.ws_api) {
+    return get_web_socket(event.value.account)(event, order, ref_data, request_id, previous_request_id);
+  } else {
+    return get_order_entry(event.value.account)(event, order, ref_data, request_id, previous_request_id);
+  }
 }
 
 uint16_t Controller::operator()(
@@ -149,12 +157,20 @@ uint16_t Controller::operator()(
     std::string_view const &previous_request_id) {
   assert(!std::empty(event.value.account));
   assert(event.value.account == order.account);
-  return get_order_entry(event.value.account)(event, order, ref_data, request_id, previous_request_id);
+  if (shared_.settings.ws_api) {
+    return get_web_socket(event.value.account)(event, order, ref_data, request_id, previous_request_id);
+  } else {
+    return get_order_entry(event.value.account)(event, order, ref_data, request_id, previous_request_id);
+  }
 }
 
 uint16_t Controller::operator()(Event<CancelAllOrders> const &event, std::string_view const &request_id) {
   assert(!std::empty(event.value.account));
-  return get_order_entry(event.value.account)(event, request_id);
+  if (shared_.settings.ws_api) {
+    return get_web_socket(event.value.account)(event, request_id);
+  } else {
+    return get_order_entry(event.value.account)(event, request_id);
+  }
 }
 
 uint16_t Controller::operator()(Event<MassQuote> const &) {
@@ -234,6 +250,14 @@ void Controller::dispatch_helper(auto &self, Args &&...args) {
 OrderEntry &Controller::get_order_entry(std::string_view const &account) {
   auto iter = order_entry_.find(account);
   if (iter == std::end(order_entry_)) [[unlikely]] {
+    throw RuntimeError{R"(Unknown account="{}")"sv, account};
+  }
+  return *(*iter).second;
+}
+
+WebSocket &Controller::get_web_socket(std::string_view const &account) {
+  auto iter = web_socket_.find(account);
+  if (iter == std::end(web_socket_)) [[unlikely]] {
     throw RuntimeError{R"(Unknown account="{}")"sv, account};
   }
   return *(*iter).second;

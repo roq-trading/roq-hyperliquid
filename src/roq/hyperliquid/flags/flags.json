@@ -18,6 +18,12 @@
       "name": "aggregator",
       "type": "std/bool",
       "description": "Treat Hyperliquid as an aggregator? The exchange field is then the name of the DEX"
+    },
+    {
+      "name": "ws_api",
+      "type": "std/bool",
+      "default": true,
+      "description": "Use WebSocket API?"
     }
   ]
 }

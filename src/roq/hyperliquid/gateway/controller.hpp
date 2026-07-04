@@ -23,12 +23,18 @@
 #include "roq/hyperliquid/gateway/market_data.hpp"
 #include "roq/hyperliquid/gateway/order_entry.hpp"
 #include "roq/hyperliquid/gateway/rest.hpp"
+#include "roq/hyperliquid/gateway/web_socket.hpp"
 
 namespace roq {
 namespace hyperliquid {
 namespace gateway {
 
-struct Controller final : public server::Handler, public Rest::Handler, public MarketData::Handler, public OrderEntry::Handler, public DropCopy::Handler {
+struct Controller final : public server::Handler,
+                          public Rest::Handler,
+                          public MarketData::Handler,
+                          public OrderEntry::Handler,
+                          public WebSocket::Handler,
+                          public DropCopy::Handler {
   ROQ_PUBLIC static std::unique_ptr<server::Handler> create(server::Dispatcher &, Settings const &, Config const &, io::Context &);
 
   ROQ_PUBLIC static uint8_t parse_api(Settings const &);
@@ -86,6 +92,7 @@ struct Controller final : public server::Handler, public Rest::Handler, public M
   static void dispatch_helper(auto &self, Args &&...);
 
   OrderEntry &get_order_entry(std::string_view const &account);
+  WebSocket &get_web_socket(std::string_view const &account);
 
  private:
   server::Dispatcher &dispatcher_;
@@ -101,6 +108,7 @@ struct Controller final : public server::Handler, public Rest::Handler, public M
   Rest rest_;
   std::vector<std::unique_ptr<MarketData>> market_data_;
   utils::unordered_map<std::string, std::unique_ptr<OrderEntry>> order_entry_;
+  utils::unordered_map<std::string, std::unique_ptr<WebSocket>> web_socket_;
   utils::unordered_map<std::string, std::unique_ptr<DropCopy>> drop_copy_;
 };
 

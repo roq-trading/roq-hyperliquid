@@ -9,7 +9,8 @@ set(SOURCES
     market_data.cpp
     order_entry.cpp
     rest.cpp
-    shared.cpp)
+    shared.cpp
+    web_socket.cpp)
 
 add_library(${TARGET_NAME} SHARED ${SOURCES})
 
