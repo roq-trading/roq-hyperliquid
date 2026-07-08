@@ -16,6 +16,8 @@
 
 #include "roq/server/oms/exceptions.hpp"
 
+#include "roq/hyperliquid/tools/encoder.hpp"
+
 #include "roq/hyperliquid/protocol/json/map.hpp"
 #include "roq/hyperliquid/protocol/json/utils.hpp"
 
@@ -93,8 +95,8 @@ auto get_exchange_from_coin(auto &coin, auto &settings) {
 
 // === IMPLEMENTATION ===
 
-WebSocket::WebSocket(Handler &handler, io::Context &context, uint16_t stream_id, Shared &shared, size_t index)
-    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, index_{index}, ping_frequency_{shared.settings.ws.ping_freq},
+WebSocket::WebSocket(Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared)
+    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, ping_frequency_{shared.settings.ws.ping_freq},
       connection_{create_connection(*this, shared.settings, context)}, decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       request_id_{stream_id_ * REQUEST_ID},
       counter_{
@@ -105,17 +107,12 @@ WebSocket::WebSocket(Handler &handler, io::Context &context, uint16_t stream_id,
           .pong = create_metrics(shared.settings, name_, "pong"sv),
           .error = create_metrics(shared.settings, name_, "error"sv),
           .subscription_response = create_metrics(shared.settings, name_, "subscription_response"sv),
-          .bbo = create_metrics(shared.settings, name_, "bbo"sv),
-          .l2book = create_metrics(shared.settings, name_, "l2book"sv),
-          .trades = create_metrics(shared.settings, name_, "trades"sv),
-          .active_asset_ctx = create_metrics(shared.settings, name_, "active_asset_ctx"sv),
-          .spot_meta = create_metrics(shared.settings, name_, "spot_meta"sv),
       },
       latency_{
           .ping = create_metrics(shared.settings, name_, "ping"sv),
           .heartbeat = create_metrics(shared.settings, name_, "heartbeat"sv),
       },
-      shared_{shared} {
+      account_{account}, shared_{shared} {
 }
 
 void WebSocket::operator()(Event<Start> const &) {
@@ -143,25 +140,30 @@ void WebSocket::operator()(metrics::Writer &writer) const {
       .write(profile_.pong, metrics::Type::PROFILE)
       .write(profile_.error, metrics::Type::PROFILE)
       .write(profile_.subscription_response, metrics::Type::PROFILE)
-      .write(profile_.bbo, metrics::Type::PROFILE)
-      .write(profile_.l2book, metrics::Type::PROFILE)
-      .write(profile_.trades, metrics::Type::PROFILE)
-      .write(profile_.active_asset_ctx, metrics::Type::PROFILE)
-      .write(profile_.spot_meta, metrics::Type::PROFILE)
       // latency
       .write(latency_.ping, metrics::Type::LATENCY)
       .write(latency_.heartbeat, metrics::Type::LATENCY);
 }
 
-void WebSocket::subscribe(size_t start_from) {
-  if (ready()) {
-    subscribe(shared_.symbols.get_slice(index_, start_from));
-  }
-}
-
 uint16_t WebSocket::operator()(
     Event<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &ref_data, std::string_view const &request_id) {
-  // create_order(event, order, ref_data, request_id);
+  auto &[message_info, create_order] = event;
+  auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
+  auto expires_after_utc = now_utc + shared_.settings.rest.recv_window;
+  auto [action, packed] = tools::Encoder::create_order(create_order, order, ref_data, request_id, now_utc, expires_after_utc);
+  auto request = account_.sign_l1_action(action, packed, now_utc, expires_after_utc);
+  auto message = fmt::format(
+      R"({{)"
+      R"("method":"post",)"
+      R"("id":{},)"
+      R"("request":{{)"
+      R"("type":"action",)"
+      R"("payload":{})"
+      R"(}})"
+      R"(}})"sv,
+      ++request_id_,
+      request);
+  (*connection_).send_text(message);
   return stream_id_;
 }
 
@@ -171,7 +173,23 @@ uint16_t WebSocket::operator()(
     server::oms::RefData const &ref_data,
     std::string_view const &request_id,
     std::string_view const &previous_request_id) {
-  // modify_order(event, order, ref_data, request_id, previous_request_id);
+  auto &[message_info, modify_order] = event;
+  auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
+  auto expires_after_utc = now_utc + shared_.settings.rest.recv_window;
+  auto [action, packed] = tools::Encoder::modify_order(modify_order, order, ref_data, request_id, previous_request_id, now_utc, expires_after_utc);
+  auto request = account_.sign_l1_action(action, packed, now_utc, expires_after_utc);
+  auto message = fmt::format(
+      R"({{)"
+      R"("method":"post",)"
+      R"("id":{},)"
+      R"("request":{{)"
+      R"("type":"action",)"
+      R"("payload":{})"
+      R"(}})"
+      R"(}})"sv,
+      ++request_id_,
+      request);
+  (*connection_).send_text(message);
   return stream_id_;
 }
 
@@ -181,7 +199,23 @@ uint16_t WebSocket::operator()(
     server::oms::RefData const &ref_data,
     std::string_view const &request_id,
     std::string_view const &previous_request_id) {
-  // cancel_order(event, order, ref_data, request_id, previous_request_id);
+  auto &[message_info, cancel_order] = event;
+  auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
+  auto expires_after_utc = now_utc + shared_.settings.rest.recv_window;
+  auto [action, packed] = tools::Encoder::cancel_order(cancel_order, order, ref_data, request_id, previous_request_id, now_utc, expires_after_utc);
+  auto request = account_.sign_l1_action(action, packed, now_utc, expires_after_utc);
+  auto message = fmt::format(
+      R"({{)"
+      R"("method":"post",)"
+      R"("id":{},)"
+      R"("request":{{)"
+      R"("type":"action",)"
+      R"("payload":{})"
+      R"(}})"
+      R"(}})"sv,
+      ++request_id_,
+      request);
+  (*connection_).send_text(message);
   return stream_id_;
 }
 
@@ -201,9 +235,6 @@ void WebSocket::operator()(web::socket::Client::Disconnected const &) {
 
 void WebSocket::operator()(web::socket::Client::Ready const &) {
   (*this)(ConnectionStatus::READY);
-  // note! we can request reference data through WS -- however, this is not great because we want to slice symbols
-  // get_spot_meta();
-  subscribe();
 }
 
 void WebSocket::operator()(web::socket::Client::Close const &) {
@@ -250,49 +281,6 @@ void WebSocket::operator()(ConnectionStatus connection_status, std::string_view 
   };
   log::info("stream_status={}"sv, stream_status);
   create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
-}
-
-void WebSocket::get_spot_meta() {
-  auto message = fmt::format(
-      R"({{)"
-      R"("method":"post",)"
-      R"("id":{},)"
-      R"("request":{{)"
-      R"("type":"info",)"
-      R"("payload":{{)"
-      R"("type":"spotMeta")"
-      R"(}})"
-      R"(}})"
-      R"(}})"sv,
-      ++request_id_);
-  (*connection_).send_text(message);
-}
-
-void WebSocket::subscribe(std::span<Symbol const> const &symbols) {
-  if (std::empty(symbols)) {
-    return;
-  }
-  subscribe("bbo", symbols);
-  subscribe("l2Book", symbols);
-  subscribe("trades", symbols);
-  subscribe("activeAssetCtx", symbols);
-}
-
-void WebSocket::subscribe(std::string_view const &channel, std::span<Symbol const> const &symbols) {
-  assert(!std::empty(symbols));
-  for (auto &item : symbols) {
-    auto message = fmt::format(
-        R"({{)"
-        R"("method":"subscribe",)"
-        R"("subscription":{{)"
-        R"("type":"{}",)"
-        R"("coin":"{}")"
-        R"(}})"
-        R"(}})"sv,
-        channel,
-        item);
-    (*connection_).send_text(message);
-  }
 }
 
 void WebSocket::send_ping(std::chrono::nanoseconds now) {
@@ -343,170 +331,24 @@ void WebSocket::operator()(Trace<protocol::json::SubscriptionResponse> const &ev
   });
 }
 
-void WebSocket::operator()(Trace<protocol::json::BBO> const &event) {
-  profile_.bbo([&]() {
-    auto &[trace_info, bbo] = event;
-    log::info<2>("bbo={}"sv, bbo);
-    (*connection_).touch(trace_info.source_receive_time);
-    if (std::size(bbo.data.bbo) == 2) {
-      auto exchange = get_exchange_from_coin(bbo.data.coin, shared_.settings);
-      auto top_of_book = TopOfBook{
-          .stream_id = stream_id_,
-          .exchange = exchange,
-          .symbol = bbo.data.coin,
-          .layer =
-              {
-                  .bid_price = bbo.data.bbo[0].px,
-                  .bid_quantity = bbo.data.bbo[0].sz,
-                  .ask_price = bbo.data.bbo[1].px,
-                  .ask_quantity = bbo.data.bbo[1].sz,
-              },
-          .update_type = UpdateType::INCREMENTAL,
-          .exchange_time_utc = bbo.data.time,
-          .exchange_sequence = {},
-          .sending_time_utc = {},
-      };
-      create_trace_and_dispatch(shared_.dispatcher, trace_info, top_of_book, true);
-    } else {
-      log::warn("bbo={}"sv, bbo);
-    }
-  });
+void WebSocket::operator()(Trace<protocol::json::BBO> const &) {
+  log::fatal("Unexpected"sv);
 }
 
-void WebSocket::operator()(Trace<protocol::json::L2Book> const &event) {
-  profile_.bbo([&]() {
-    auto &[trace_info, l2book] = event;
-    log::info<2>("l2book={}"sv, l2book);
-    (*connection_).touch(trace_info.source_receive_time);
-    auto helper = [&](auto &result, auto &item) {
-      auto mbp_update = MBPUpdate{
-          .price = item.px,
-          .quantity = item.sz,
-          .implied_quantity = NaN,
-          .number_of_orders = utils::safe_cast(item.n),
-          .update_action = {},
-          .price_level = {},
-      };
-      result.emplace_back(std::move(mbp_update));
-    };
-    if (std::size(l2book.data.levels) != 2) {
-      log::fatal("Unexpected: l2book={}"sv);
-    }
-    shared_.bids.clear();
-    for (auto &item : l2book.data.levels[0].data) {
-      helper(shared_.bids, item);
-    }
-    shared_.asks.clear();
-    for (auto &item : l2book.data.levels[1].data) {
-      helper(shared_.asks, item);
-    }
-    if (!(std::empty(shared_.bids) && std::empty(shared_.asks))) {
-      auto exchange = get_exchange_from_coin(l2book.data.coin, shared_.settings);
-      auto market_by_price_update = MarketByPriceUpdate{
-          .stream_id = stream_id_,
-          .exchange = exchange,
-          .symbol = l2book.data.coin,
-          .bids = shared_.bids,
-          .asks = shared_.asks,
-          .update_type = UpdateType::SNAPSHOT,  // note!
-          .exchange_time_utc = l2book.data.time,
-          .exchange_sequence = {},
-          .sending_time_utc = {},
-          .price_precision = {},
-          .quantity_precision = {},
-          .max_depth = {},
-          .checksum = {},
-      };
-      create_trace_and_dispatch(shared_.dispatcher, trace_info, market_by_price_update, true, shared_.final_bids, shared_.final_asks);
-    }
-  });
+void WebSocket::operator()(Trace<protocol::json::L2Book> const &) {
+  log::fatal("Unexpected"sv);
 }
 
-void WebSocket::operator()(Trace<protocol::json::Trades> const &event) {
-  profile_.trades([&]() {
-    auto &[trace_info, trades] = event;
-    log::info<2>("trades={}"sv, trades);
-    (*connection_).touch(trace_info.source_receive_time);
-    std::chrono::nanoseconds time = {};
-    std::string_view coin;
-    shared_.trades.clear();
-    auto dispatch = [&]() {
-      if (std::empty(shared_.trades)) {
-        return;
-      }
-      auto exchange = get_exchange_from_coin(coin, shared_.settings);
-      auto trade_summary = TradeSummary{
-          .stream_id = stream_id_,
-          .exchange = exchange,
-          .symbol = coin,
-          .trades = shared_.trades,
-          .exchange_time_utc = time,
-          .exchange_sequence = {},
-          .sending_time_utc = {},
-      };
-      create_trace_and_dispatch(shared_.dispatcher, trace_info, trade_summary, true);
-    };
-    for (auto &item : trades.data) {
-      if (item.time != time || item.coin != coin) {
-        dispatch();
-        time = item.time;
-        coin = item.coin;
-      }
-      auto trade = Trade{
-          .side = map(item.side),
-          .price = item.px,
-          .quantity = item.sz,
-          .trade_id = {},  // note! see below
-          .taker_order_id = {},
-          .maker_order_id = {},
-      };
-      utils::charconv::to_string(std::back_inserter(trade.trade_id), item.tid);
-      shared_.trades.emplace_back(std::move(trade));
-    }
-    dispatch();
-  });
+void WebSocket::operator()(Trace<protocol::json::Trades> const &) {
+  log::fatal("Unexpected"sv);
 }
 
-void WebSocket::operator()(Trace<protocol::json::ActiveAssetCtx> const &event) {
-  profile_.active_asset_ctx([&]() {
-    auto &[trace_info, active_asset_ctx] = event;
-    log::info<2>("active_asset_ctx={}"sv, active_asset_ctx);
-    (*connection_).touch(trace_info.source_receive_time);
-    std::array<Statistics, 4> statistics{{
-        {
-            .type = StatisticsType::OPEN_INTEREST,
-            .value = active_asset_ctx.data.ctx.open_interest,
-        },
-        {
-            .type = StatisticsType::TRADE_VOLUME,
-            .value = active_asset_ctx.data.ctx.day_ntl_vlm,  // XXX FIXME or day_base_vlm ???
-        },
-        {
-            .type = StatisticsType::SETTLEMENT_PRICE,  // XXX ???
-            .value = active_asset_ctx.data.ctx.mark_px,
-        },
-        {
-            .type = StatisticsType::FUNDING_RATE,
-            .value = active_asset_ctx.data.ctx.funding,
-        },
-    }};
-    auto exchange = get_exchange_from_coin(active_asset_ctx.data.coin, shared_.settings);
-    auto statistics_update = StatisticsUpdate{
-        .stream_id = stream_id_,
-        .exchange = exchange,
-        .symbol = active_asset_ctx.data.coin,
-        .statistics = statistics,
-        .update_type = UpdateType::INCREMENTAL,
-        .exchange_time_utc = {},
-        .exchange_sequence = {},
-        .sending_time_utc = {},
-    };
-    create_trace_and_dispatch(shared_.dispatcher, trace_info, statistics_update, true);
-  });
+void WebSocket::operator()(Trace<protocol::json::ActiveAssetCtx> const &) {
+  log::fatal("Unexpected"sv);
 }
 
 void WebSocket::operator()(Trace<protocol::json::SpotMeta> const &) {
-  profile_.spot_meta([&]() { log::warn("DEBUG"sv); });
+  log::fatal("Unexpected"sv);
 }
 
 void WebSocket::operator()(Trace<protocol::json::User> const &) {

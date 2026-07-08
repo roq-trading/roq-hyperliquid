@@ -91,8 +91,8 @@ struct Controller final : public server::Handler,
   template <typename... Args>
   static void dispatch_helper(auto &self, Args &&...);
 
-  OrderEntry &get_order_entry(std::string_view const &account);
   WebSocket &get_web_socket(std::string_view const &account);
+  OrderEntry &get_order_entry(std::string_view const &account);
 
  private:
   server::Dispatcher &dispatcher_;
@@ -107,8 +107,8 @@ struct Controller final : public server::Handler,
   // streams
   Rest rest_;
   std::vector<std::unique_ptr<MarketData>> market_data_;
-  utils::unordered_map<std::string, std::unique_ptr<OrderEntry>> order_entry_;
   utils::unordered_map<std::string, std::unique_ptr<WebSocket>> web_socket_;
+  utils::unordered_map<std::string, std::unique_ptr<OrderEntry>> order_entry_;
   utils::unordered_map<std::string, std::unique_ptr<DropCopy>> drop_copy_;
 };
 

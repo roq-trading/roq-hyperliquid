@@ -29,6 +29,18 @@ R create_accounts(auto &settings, auto &config) {
 }
 
 template <typename R>
+R create_web_socket(auto &gateway, auto &context, auto &stream_id, auto &accounts, auto &shared) {
+  using result_type = std::remove_cvref_t<R>;
+  result_type result;
+  for (auto &[_, item] : accounts) {
+    auto &account = *item;
+    auto obj = std::make_unique<WebSocket>(gateway, context, ++stream_id, account, shared);
+    result.try_emplace(static_cast<std::string_view>(account.name), std::move(obj));
+  }
+  return result;
+}
+
+template <typename R>
 R create_order_entry(auto &gateway, auto &context, auto &stream_id, auto &accounts, auto &shared) {
   using result_type = std::remove_cvref_t<R>;
   result_type result;
@@ -66,7 +78,9 @@ uint8_t Controller::parse_api(Settings const &) {
 Controller::Controller(server::Dispatcher &dispatcher, Settings const &settings, Config const &config, io::Context &context)
     : dispatcher_{dispatcher}, accounts_{create_accounts<decltype(accounts_)>(settings, config)}, context_{context}, shared_{dispatcher, settings},
       rest_{*this, context_, ++stream_id_, shared_} {
-  assert(std::empty(order_entry_));  // must be delayed until symbols
+  // must be delayed until we have symbols
+  assert(std::empty(web_socket_));
+  assert(std::empty(order_entry_));
 }
 
 // server::Handler
@@ -193,14 +207,25 @@ void Controller::operator()(Rest::SymbolsUpdate &symbols_update) {
   for (auto &item : market_data_) {
     (*item).subscribe(start_from);
   }
-  // delayed creation of order-entry due to need for assets
+  // delayed creation of order-entry due to need for symbols
   if (!std::empty(accounts_)) {
-    if (std::empty(order_entry_)) {
-      order_entry_ = create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, accounts_, shared_);
-      MessageInfo message_info;
-      Start start;
-      for (auto &[_, item] : order_entry_) {
-        create_event_and_dispatch(*item, message_info, start);
+    if (shared_.settings.ws_api) {
+      if (std::empty(web_socket_)) {
+        web_socket_ = create_web_socket<decltype(web_socket_)>(*this, context_, stream_id_, accounts_, shared_);
+        MessageInfo message_info;
+        Start start;
+        for (auto &[_, item] : web_socket_) {
+          create_event_and_dispatch(*item, message_info, start);
+        }
+      }
+    } else {
+      if (std::empty(order_entry_)) {
+        order_entry_ = create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, accounts_, shared_);
+        MessageInfo message_info;
+        Start start;
+        for (auto &[_, item] : order_entry_) {
+          create_event_and_dispatch(*item, message_info, start);
+        }
       }
     }
     if (std::empty(drop_copy_)) {
@@ -242,22 +267,25 @@ void Controller::dispatch_helper(auto &self, Args &&...args) {
   for (auto &[_, item] : self.order_entry_) {
     helper(*item);
   }
+  for (auto &[_, item] : self.web_socket_) {
+    helper(*item);
+  }
   for (auto &[_, item] : self.drop_copy_) {
     helper(*item);
   }
 }
 
-OrderEntry &Controller::get_order_entry(std::string_view const &account) {
-  auto iter = order_entry_.find(account);
-  if (iter == std::end(order_entry_)) [[unlikely]] {
+WebSocket &Controller::get_web_socket(std::string_view const &account) {
+  auto iter = web_socket_.find(account);
+  if (iter == std::end(web_socket_)) [[unlikely]] {
     throw RuntimeError{R"(Unknown account="{}")"sv, account};
   }
   return *(*iter).second;
 }
 
-WebSocket &Controller::get_web_socket(std::string_view const &account) {
-  auto iter = web_socket_.find(account);
-  if (iter == std::end(web_socket_)) [[unlikely]] {
+OrderEntry &Controller::get_order_entry(std::string_view const &account) {
+  auto iter = order_entry_.find(account);
+  if (iter == std::end(order_entry_)) [[unlikely]] {
     throw RuntimeError{R"(Unknown account="{}")"sv, account};
   }
   return *(*iter).second;

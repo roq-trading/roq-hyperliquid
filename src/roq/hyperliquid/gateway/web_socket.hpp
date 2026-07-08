@@ -16,6 +16,7 @@
 
 #include "roq/server.hpp"
 
+#include "roq/hyperliquid/gateway/account.hpp"
 #include "roq/hyperliquid/gateway/shared.hpp"
 
 #include "roq/hyperliquid/protocol/json/parser.hpp"
@@ -27,7 +28,7 @@ namespace gateway {
 struct WebSocket final : public web::socket::Client::Handler, public protocol::json::Parser::Handler {
   struct Handler {};
 
-  WebSocket(Handler &, io::Context &, uint16_t stream_id, Shared &, size_t index);
+  WebSocket(Handler &, io::Context &, uint16_t stream_id, Account &, Shared &);
 
   WebSocket(WebSocket const &) = delete;
 
@@ -74,11 +75,6 @@ struct WebSocket final : public web::socket::Client::Handler, public protocol::j
 
   void operator()(ConnectionStatus, std::string_view const &reason = {});
 
-  void get_spot_meta();
-
-  void subscribe(std::span<Symbol const> const &symbols);
-  void subscribe(std::string_view const &channel, std::span<Symbol const> const &symbols);
-
   void send_ping(std::chrono::nanoseconds now);
 
   void parse(std::string_view const &message);
@@ -107,7 +103,6 @@ struct WebSocket final : public web::socket::Client::Handler, public protocol::j
   // config
   uint16_t const stream_id_;
   std::string const name_;
-  size_t const index_;
   std::chrono::nanoseconds const ping_frequency_;
   // web socket
   std::unique_ptr<web::socket::Client> const connection_;
@@ -120,11 +115,13 @@ struct WebSocket final : public web::socket::Client::Handler, public protocol::j
     utils::metrics::Counter disconnect;
   } counter_;
   struct {
-    utils::metrics::Profile parse, pong, error, subscription_response, bbo, l2book, trades, active_asset_ctx, spot_meta;
+    utils::metrics::Profile parse, pong, error, subscription_response;
   } profile_;
   struct {
     utils::metrics::Latency ping, heartbeat;
   } latency_;
+  // account
+  Account &account_;
   // cache
   Shared &shared_;
   // state
