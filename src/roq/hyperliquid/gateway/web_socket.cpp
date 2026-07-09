@@ -33,11 +33,8 @@ namespace {
 auto const NAME = "ex"sv;
 
 auto const SUPPORTS = Mask{
-    SupportType::MARKET_STATUS,
-    SupportType::TOP_OF_BOOK,
-    SupportType::MARKET_BY_PRICE,
-    SupportType::TRADE_SUMMARY,
-    SupportType::STATISTICS,
+    SupportType::ORDER_ACK,
+    SupportType::ORDER,
 };
 
 uint64_t const REQUEST_ID = 1'000'000;
