@@ -65,6 +65,8 @@ constexpr Helper<hyperliquid::protocol::json::OrderStatus>::operator std::option
       return roq::OrderStatus::REJECTED;
     case PERP_MARGIN_REJECTED:
       return roq::OrderStatus::REJECTED;
+    case BAD_ALO_PX_REJECTED:
+      return roq::OrderStatus::REJECTED;
   }
   return {};
 }
@@ -76,6 +78,7 @@ static_assert(Helper{hyperliquid::protocol::json::OrderStatus{hyperliquid::proto
 static_assert(Helper{hyperliquid::protocol::json::OrderStatus{hyperliquid::protocol::json::OrderStatus::MIN_TRADE_NTL_REJECTED}} == roq::OrderStatus::REJECTED);
 static_assert(Helper{hyperliquid::protocol::json::OrderStatus{hyperliquid::protocol::json::OrderStatus::IOC_CANCEL_REJECTED}} == roq::OrderStatus::REJECTED);
 static_assert(Helper{hyperliquid::protocol::json::OrderStatus{hyperliquid::protocol::json::OrderStatus::PERP_MARGIN_REJECTED}} == roq::OrderStatus::REJECTED);
+static_assert(Helper{hyperliquid::protocol::json::OrderStatus{hyperliquid::protocol::json::OrderStatus::BAD_ALO_PX_REJECTED}} == roq::OrderStatus::REJECTED);
 
 template <>
 template <>

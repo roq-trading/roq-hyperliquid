@@ -19,6 +19,9 @@
     },
     {
       "name": "perpMarginRejected"
+    },
+    {
+      "name": "badAloPxRejected"
     }
   ]
 }
