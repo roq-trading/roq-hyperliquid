@@ -1,0 +1,10 @@
+{
+  "name": "roq/hyperliquid/protocol/json/ActionCancelDataResponsePayloadResponseData",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "statuses",
+      "type": "std/string_view"
+    }
+  ]
+}

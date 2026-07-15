@@ -24,6 +24,9 @@
 #include "roq/hyperliquid/protocol/json/user.hpp"
 #include "roq/hyperliquid/protocol/json/user_fills.hpp"
 #include "roq/hyperliquid/protocol/json/user_fundings.hpp"
+//
+#include "roq/hyperliquid/protocol/json/action_cancel.hpp"
+#include "roq/hyperliquid/protocol/json/action_order.hpp"
 
 namespace roq {
 namespace hyperliquid {
@@ -48,6 +51,9 @@ struct Parser final {
     virtual void operator()(Trace<protocol::json::UserFills> const &) = 0;
     virtual void operator()(Trace<protocol::json::OrderUpdates> const &) = 0;
     virtual void operator()(Trace<protocol::json::Notification> const &) = 0;
+    //
+    virtual void operator()(Trace<protocol::json::ActionOrder> const &) = 0;
+    virtual void operator()(Trace<protocol::json::ActionCancel> const &) = 0;
   };
 
   static bool dispatch(Handler &, std::string_view const &message, core::json::BufferStack &, TraceInfo const &, bool allow_unknown_event_types);

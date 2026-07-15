@@ -3,6 +3,8 @@ include(RoqAutogen)
 set(TARGET_NAME ${PROJECT_NAME}-test)
 
 set(SOURCES
+    json_action_cancel.cpp
+    json_action_order.cpp
     json_active_asset_ctx.cpp
     json_bbo.cpp
     json_cancel_order_ack.cpp

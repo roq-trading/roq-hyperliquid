@@ -1,0 +1,11 @@
+{
+  "name": "roq/hyperliquid/protocol/json/ActionOrderDataResponsePayloadResponseData",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "statuses",
+      "type": "roq/hyperliquid/protocol/json/ActionOrderDataResponsePayloadResponseDataStatus",
+      "array": "std/span"
+    }
+  ]
+}

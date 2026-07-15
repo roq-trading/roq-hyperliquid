@@ -1,0 +1,14 @@
+{
+  "name": "roq/hyperliquid/protocol/json/ActionCancelDataResponsePayload",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "status",
+      "type": "roq/hyperliquid/protocol/json/Status"
+    },
+    {
+      "name": "response",
+      "type": "roq/hyperliquid/protocol/json/ActionCancelDataResponsePayloadResponse"
+    }
+  ]
+}

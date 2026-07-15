@@ -1,0 +1,14 @@
+{
+  "name": "roq/hyperliquid/protocol/json/ActionOrderDataResponsePayloadResponseDataStatus",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "error",
+      "type": "std/string_view"
+    },
+    {
+      "name": "resting",
+      "type": "roq/hyperliquid/protocol/json/ActionOrderDataResponsePayloadResponseDataStatusResting"
+    }
+  ]
+}

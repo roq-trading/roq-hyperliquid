@@ -39,6 +39,37 @@ bool dispatch_helper(auto &handler, auto &message, auto &buffer_stack, auto &tra
 bool Parser::dispatch(
     Handler &handler, std::string_view const &message, core::json::BufferStack &buffer_stack, TraceInfo const &trace_info, bool allow_unknown_event_types) {
   auto result = false;
+  auto helper_post_response_payload_response = [&](auto &key, auto &value) {
+    auto key_2 = utils::hash::FNV::compute(key);
+    switch (key_2) {
+      case utils::hash::FNV::compute(KEY_TYPE): {
+        ResponseType type{value};
+        switch (type) {
+          using enum ResponseType::type_t;
+          case UNDEFINED_INTERNAL:
+            break;
+          case UNKNOWN_INTERNAL:
+            if (allow_unknown_event_types) {
+              return false;
+            }
+            break;
+          case INFO:
+          case ACTION:
+          case ERROR:
+            break;
+          case ORDER:
+            result = dispatch_helper<ActionOrder>(handler, message, buffer_stack, trace_info);
+            return true;
+          case CANCEL:
+            result = dispatch_helper<ActionCancel>(handler, message, buffer_stack, trace_info);
+            return true;
+        }
+        break;
+      }
+    }
+    return result;
+  };
+
   auto helper_post_response_payload = [&](auto &key, auto &value) {
     auto key_2 = utils::hash::FNV::compute(key);
     switch (key_2) {
@@ -56,8 +87,14 @@ bool Parser::dispatch(
           case SPOT_META:
             result = dispatch_helper<SpotMeta>(handler, message, buffer_stack, trace_info);
             return true;
+          case ACTION:
+            break;
         }
         break;
+      }
+      case utils::hash::FNV::compute(KEY_RESPONSE): {
+        std::get<core::json::Object>(value).dispatch(helper_post_response_payload_response);
+        return true;
       }
     }
     return result;

@@ -104,6 +104,10 @@ WebSocket::WebSocket(Handler &handler, io::Context &context, uint16_t stream_id,
           .pong = create_metrics(shared.settings, name_, "pong"sv),
           .error = create_metrics(shared.settings, name_, "error"sv),
           .subscription_response = create_metrics(shared.settings, name_, "subscription_response"sv),
+          .user = create_metrics(shared.settings, name_, "user"sv),
+          .user_fundings = create_metrics(shared.settings, name_, "user_fundings"sv),
+          .user_fills = create_metrics(shared.settings, name_, "user_fills"sv),
+          .order_updates = create_metrics(shared.settings, name_, "order_updates"sv),
       },
       latency_{
           .ping = create_metrics(shared.settings, name_, "ping"sv),
@@ -137,6 +141,10 @@ void WebSocket::operator()(metrics::Writer &writer) const {
       .write(profile_.pong, metrics::Type::PROFILE)
       .write(profile_.error, metrics::Type::PROFILE)
       .write(profile_.subscription_response, metrics::Type::PROFILE)
+      .write(profile_.user, metrics::Type::PROFILE)
+      .write(profile_.user_fundings, metrics::Type::PROFILE)
+      .write(profile_.user_fills, metrics::Type::PROFILE)
+      .write(profile_.order_updates, metrics::Type::PROFILE)
       // latency
       .write(latency_.ping, metrics::Type::LATENCY)
       .write(latency_.heartbeat, metrics::Type::LATENCY);
@@ -160,6 +168,7 @@ uint16_t WebSocket::operator()(
       R"(}})"sv,
       ++request_id_,
       request);
+  log::warn(R"(DEBUG message="{}")"sv, message);
   (*connection_).send_text(message);
   return stream_id_;
 }
@@ -186,6 +195,7 @@ uint16_t WebSocket::operator()(
       R"(}})"sv,
       ++request_id_,
       request);
+  log::warn(R"(DEBUG message="{}")"sv, message);
   (*connection_).send_text(message);
   return stream_id_;
 }
@@ -212,6 +222,7 @@ uint16_t WebSocket::operator()(
       R"(}})"sv,
       ++request_id_,
       request);
+  log::warn(R"(DEBUG message="{}")"sv, message);
   (*connection_).send_text(message);
   return stream_id_;
 }
@@ -232,6 +243,7 @@ void WebSocket::operator()(web::socket::Client::Disconnected const &) {
 
 void WebSocket::operator()(web::socket::Client::Ready const &) {
   (*this)(ConnectionStatus::READY);
+  subscribe();
 }
 
 void WebSocket::operator()(web::socket::Client::Close const &) {
@@ -280,6 +292,30 @@ void WebSocket::operator()(ConnectionStatus connection_status, std::string_view 
   create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
 }
 
+void WebSocket::subscribe() {
+  subscribe("notification"sv);
+  subscribe("orderUpdates"sv);
+  subscribe("userEvents"sv);
+  subscribe("userFills"sv);
+  subscribe("userFundings"sv);
+  // subscribe("userNonFundingLedgerUpdates"sv);
+}
+
+void WebSocket::subscribe(std::string_view const &type) {
+  auto message = fmt::format(
+      R"({{)"
+      R"("method":"subscribe",)"
+      R"("subscription":{{)"
+      R"("type":"{}",)"
+      R"("user":"{}")"
+      R"(}})"
+      R"(}})"sv,
+      type,
+      account_.get_key());
+  log::warn("DEBUG {}"sv, message);
+  (*connection_).send_text(message);
+}
+
 void WebSocket::send_ping(std::chrono::nanoseconds now) {
   assert(ping_frequency_.count() > 0);
   next_ping_ = now + ping_frequency_ / 2;
@@ -289,6 +325,7 @@ void WebSocket::send_ping(std::chrono::nanoseconds now) {
 
 void WebSocket::parse(std::string_view const &message) {
   profile_.parse([&]() {
+    log::warn("DEBUG {}"sv, message);
     auto log_message = [&]() { log::warn(R"(*** PLEASE REPORT *** message="{}")"sv, message); };
     try {
       TraceInfo trace_info;
@@ -348,24 +385,107 @@ void WebSocket::operator()(Trace<protocol::json::SpotMeta> const &) {
   log::fatal("Unexpected"sv);
 }
 
-void WebSocket::operator()(Trace<protocol::json::User> const &) {
-  log::fatal("Unexpected"sv);
+void WebSocket::operator()(Trace<protocol::json::User> const &event) {
+  profile_.user([&]() {
+    auto &[trace_info, user] = event;
+    log::info<2>("user={}"sv, user);
+    // XXX FIXME TODO funding
+    // XXX FIXME TODO fills
+  });
 }
 
-void WebSocket::operator()(Trace<protocol::json::UserFundings> const &) {
-  log::fatal("Unexpected"sv);
+void WebSocket::operator()(Trace<protocol::json::UserFundings> const &event) {
+  profile_.user_fundings([&]() {
+    auto &[trace_info, user_fundings] = event;
+    log::info<2>("user_fundings={}"sv, user_fundings);
+  });
 }
 
-void WebSocket::operator()(Trace<protocol::json::UserFills> const &) {
-  log::fatal("Unexpected"sv);
+void WebSocket::operator()(Trace<protocol::json::UserFills> const &event) {
+  profile_.user_fills([&]() {
+    auto &[trace_info, user_fills] = event;
+    log::info<2>("user_fills={}"sv, user_fills);
+  });
 }
 
-void WebSocket::operator()(Trace<protocol::json::OrderUpdates> const &) {
-  log::fatal("Unexpected"sv);
+void WebSocket::operator()(Trace<protocol::json::OrderUpdates> const &event) {
+  profile_.order_updates([&]() {
+    auto &[trace_info, order_updates] = event;
+    log::info<2>("order_updates={}"sv, order_updates);
+    for (auto &item : order_updates.data) {
+      // log::warn("DEBUG item={}"sv, item);
+      auto exchange = get_exchange_from_coin(item.order.coin, shared_.settings);
+      auto external_order_id = fmt::format("{}"sv, item.order.oid);
+      auto client_order_id = protocol::json::get_client_order_id(item.order.cloid);
+      auto order_status = map(item.status).get<OrderStatus>();
+      auto error = [&]() -> Error {
+        if (order_status == OrderStatus::REJECTED) {
+          return Error::UNKNOWN;
+        }
+        return {};
+      }();
+      auto text = [&]() -> std::string_view {
+        if (order_status == OrderStatus::REJECTED) {
+          return item.status.as_raw_text();
+        }
+        return {};
+      }();
+      auto traded_quantity = item.order.orig_sz - item.order.sz;
+      auto order_update = server::oms::OrderUpdate{
+          .account = account_.name,
+          .exchange = exchange,
+          .symbol = item.order.coin,
+          .side = map(item.order.side),
+          .position_effect = {},
+          .margin_mode = {},
+          .max_show_quantity = NaN,
+          .order_type = OrderType::LIMIT,     // note!
+          .time_in_force = TimeInForce::GTC,  // note! we need this to always be GTC due to modify order using it
+          .execution_instructions = {},
+          .create_time_utc = item.order.timestamp,
+          .update_time_utc = item.status_timestamp,
+          .external_account = {},
+          .external_order_id = external_order_id,
+          .client_order_id = client_order_id,
+          .order_status = order_status,
+          .error = error,
+          .text = text,
+          .quantity = item.order.orig_sz,
+          .price = item.order.limit_px,
+          .stop_price = NaN,
+          .leverage = NaN,
+          .remaining_quantity = item.order.sz,
+          .traded_quantity = traded_quantity,
+          .average_traded_price = NaN,
+          .last_traded_quantity = {},
+          .last_traded_price = {},
+          .last_liquidity = {},
+          .routing_id = {},
+          .max_request_version = {},
+          .max_response_version = {},
+          .max_accepted_version = {},
+          .update_type = UpdateType::INCREMENTAL,
+          .sending_time_utc = {},
+      };
+      log::warn("DEBUG order_update={}"sv, order_update);
+      create_trace_and_dispatch(shared_.dispatcher, trace_info, order_update, stream_id_);
+    }
+  });
 }
 
-void WebSocket::operator()(Trace<protocol::json::Notification> const &) {
-  log::fatal("Unexpected"sv);
+void WebSocket::operator()(Trace<protocol::json::Notification> const &event) {
+  auto &[trace_info, notification] = event;
+  log::warn("notification={}"sv, notification);
+}
+
+void WebSocket::operator()(Trace<protocol::json::ActionOrder> const &event) {
+  auto &[trace_info, action_order] = event;
+  log::warn("action={}"sv, action_order);
+}
+
+void WebSocket::operator()(Trace<protocol::json::ActionCancel> const &event) {
+  auto &[trace_info, action_cancel] = event;
+  log::warn("action={}"sv, action_cancel);
 }
 
 }  // namespace gateway

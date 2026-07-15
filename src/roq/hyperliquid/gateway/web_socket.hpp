@@ -38,8 +38,6 @@ struct WebSocket final : public web::socket::Client::Handler, public protocol::j
 
   void operator()(metrics::Writer &) const;
 
-  void subscribe(size_t start_from = 0);
-
   uint16_t operator()(Event<CreateOrder> const &, server::oms::Order const &, server::oms::RefData const &, std::string_view const &request_id);
   uint16_t operator()(
       Event<ModifyOrder> const &,
@@ -75,6 +73,9 @@ struct WebSocket final : public web::socket::Client::Handler, public protocol::j
 
   void operator()(ConnectionStatus, std::string_view const &reason = {});
 
+  void subscribe();
+  void subscribe(std::string_view const &type);
+
   void send_ping(std::chrono::nanoseconds now);
 
   void parse(std::string_view const &message);
@@ -97,6 +98,9 @@ struct WebSocket final : public web::socket::Client::Handler, public protocol::j
   void operator()(Trace<protocol::json::UserFills> const &) override;
   void operator()(Trace<protocol::json::OrderUpdates> const &) override;
   void operator()(Trace<protocol::json::Notification> const &) override;
+  //
+  void operator()(Trace<protocol::json::ActionOrder> const &) override;
+  void operator()(Trace<protocol::json::ActionCancel> const &) override;
 
  private:
   [[maybe_unused]] Handler &handler_;
@@ -115,7 +119,7 @@ struct WebSocket final : public web::socket::Client::Handler, public protocol::j
     utils::metrics::Counter disconnect;
   } counter_;
   struct {
-    utils::metrics::Profile parse, pong, error, subscription_response;
+    utils::metrics::Profile parse, pong, error, subscription_response, user, user_fundings, user_fills, order_updates;
   } profile_;
   struct {
     utils::metrics::Latency ping, heartbeat;

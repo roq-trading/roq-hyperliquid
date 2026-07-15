@@ -1,0 +1,14 @@
+{
+  "name": "roq/hyperliquid/protocol/json/ActionOrderData",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "id",
+      "type": "std/int64"
+    },
+    {
+      "name": "response",
+      "type": "roq/hyperliquid/protocol/json/ActionOrderDataResponse"
+    }
+  ]
+}

@@ -489,7 +489,16 @@ void MarketData::operator()(Trace<protocol::json::OrderUpdates> const &) {
   log::fatal("Unexpected"sv);
 }
 
-void MarketData::operator()(Trace<protocol::json::Notification> const &) {
+void MarketData::operator()(Trace<protocol::json::Notification> const &event) {
+  auto &[trace_info, notification] = event;
+  log::warn("notification={}"sv, notification);
+}
+
+void MarketData::operator()(Trace<protocol::json::ActionOrder> const &) {
+  log::fatal("Unexpected"sv);
+}
+
+void MarketData::operator()(Trace<protocol::json::ActionCancel> const &) {
   log::fatal("Unexpected"sv);
 }
 

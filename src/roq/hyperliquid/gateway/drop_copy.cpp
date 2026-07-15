@@ -233,7 +233,7 @@ void DropCopy::send_ping(std::chrono::nanoseconds now) {
 
 void DropCopy::parse(std::string_view const &message) {
   profile_.parse([&]() {
-    // log::warn("DEBUG {}"sv, message);
+    log::warn("DEBUG {}"sv, message);
     auto log_message = [&]() { log::warn(R"(*** PLEASE REPORT *** message="{}")"sv, message); };
     try {
       TraceInfo trace_info;
@@ -384,8 +384,16 @@ void DropCopy::operator()(Trace<protocol::json::OrderUpdates> const &event) {
 void DropCopy::operator()(Trace<protocol::json::Notification> const &event) {
   profile_.notification([&]() {
     auto &[trace_info, notification] = event;
-    log::info<2>("notification={}"sv, notification);
+    log::warn("notification={}"sv, notification);
   });
+}
+
+void DropCopy::operator()(Trace<protocol::json::ActionOrder> const &) {
+  log::fatal("Unexpected"sv);
+}
+
+void DropCopy::operator()(Trace<protocol::json::ActionCancel> const &) {
+  log::fatal("Unexpected"sv);
 }
 
 }  // namespace gateway
