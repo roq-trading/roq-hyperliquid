@@ -293,12 +293,14 @@ void WebSocket::operator()(ConnectionStatus connection_status, std::string_view 
 }
 
 void WebSocket::subscribe() {
+  /*
   subscribe("notification"sv);
   subscribe("orderUpdates"sv);
   subscribe("userEvents"sv);
   subscribe("userFills"sv);
   subscribe("userFundings"sv);
   // subscribe("userNonFundingLedgerUpdates"sv);
+  */
 }
 
 void WebSocket::subscribe(std::string_view const &type) {
