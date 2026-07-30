@@ -91,3 +91,50 @@ TEST_CASE("create_success", "[json_action_order]") {
   };
   ParserTester<value_type>::dispatch(helper, message, 8192, 2);
 }
+
+TEST_CASE("create_success_new", "[json_action_order]") {
+  auto message = R"({)"
+                 R"("channel":"post",)"
+                 R"("data":{)"
+                 R"("id":3000004,)"
+                 R"("response":{)"
+                 R"("type":"action",)"
+                 R"("payload":{)"
+                 R"("status":"ok",)"
+                 R"("response":{)"
+                 R"("type":"order",)"
+                 R"("data":{)"
+                 R"("statuses":[{)"
+                 R"("filled":{)"
+                 R"("totalSz":"0.5",)"
+                 R"("avgPx":"73.688",)"
+                 R"("oid":505880037215,)"
+                 R"("cloid":"0x00030073b35128f0000001000000000c")"
+                 R"(})"
+                 R"(})"
+                 R"(])"
+                 R"(})"
+                 R"(})"
+                 R"(})"
+                 R"(})"
+                 R"(})"
+                 R"(})"sv;
+  auto helper = [](value_type const &obj) {
+    CHECK(obj.channel == protocol::json::Channel::POST);
+    CHECK(obj.data.id == 3000004);
+    CHECK(obj.data.response.type == protocol::json::ResponseType::ACTION);
+    CHECK(obj.data.response.payload.status == protocol::json::Status::OK);
+    CHECK(obj.data.response.payload.response.type == protocol::json::ResponseType::ORDER);
+    //
+    REQUIRE(std::size(obj.data.response.payload.response.data.statuses) == 1);
+    auto &s0 = obj.data.response.payload.response.data.statuses[0];
+    CHECK(std::empty(s0.error));
+    CHECK(s0.resting.oid == 0);
+    CHECK(std::empty(s0.resting.cloid));
+    CHECK(s0.filled.total_sz == 0.5_a);
+    CHECK(s0.filled.avg_px == 73.688_a);
+    CHECK(s0.filled.oid == 505880037215);
+    CHECK(s0.filled.cloid == "0x00030073b35128f0000001000000000c"sv);
+  };
+  ParserTester<value_type>::dispatch(helper, message, 8192, 2);
+}

@@ -18,6 +18,7 @@ set(AUTOGEN_SCHEMAS
     action_order_data_response_payload_response.json
     action_order_data_response_payload_response_data.json
     action_order_data_response_payload_response_data_status.json
+    action_order_data_response_payload_response_data_status_filled.json
     action_order_data_response_payload_response_data_status_resting.json
     active_asset_ctx.json
     active_asset_ctx_data.json
