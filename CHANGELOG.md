@@ -4,6 +4,10 @@ All notable changes will be documented in this file.
 
 ## Head
 
+### Fixed
+
+* WS order place/cancel didn't handle failed requests (#618)
+
 ## 1.1.6 &ndash; 2026-07-08
 
 ### Removed

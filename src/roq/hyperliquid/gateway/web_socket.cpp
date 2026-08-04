@@ -88,6 +88,19 @@ auto get_exchange_from_coin(auto &coin, auto &settings) {
     return settings.exchange;
   }
 }
+
+auto encode_request_id(uint8_t user_id, uint64_t order_id) {
+  assert(user_id != SOURCE_NONE);
+  assert(user_id != SOURCE_SELF);
+  assert(order_id <= ORDER_ID_MAX);
+  return static_cast<uint64_t>(user_id) | (order_id << 8);
+}
+
+auto decode_request_id(uint64_t request_id) {
+  auto user_id = static_cast<uint8_t>(request_id);
+  auto order_id = request_id >> 8;
+  return std::pair{user_id, order_id};
+}
 }  // namespace
 
 // === IMPLEMENTATION ===
@@ -157,6 +170,7 @@ uint16_t WebSocket::operator()(
   auto expires_after_utc = now_utc + shared_.settings.rest.recv_window;
   auto [action, packed] = tools::Encoder::create_order(create_order, order, ref_data, request_id, now_utc, expires_after_utc);
   auto request = account_.sign_l1_action(action, packed, now_utc, expires_after_utc);
+  auto id = encode_request_id(order.user_id, order.order_id);
   auto message = fmt::format(
       R"({{)"
       R"("method":"post",)"
@@ -166,7 +180,7 @@ uint16_t WebSocket::operator()(
       R"("payload":{})"
       R"(}})"
       R"(}})"sv,
-      ++request_id_,
+      id,
       request);
   log::warn(R"(DEBUG message="{}")"sv, message);
   (*connection_).send_text(message);
@@ -184,6 +198,7 @@ uint16_t WebSocket::operator()(
   auto expires_after_utc = now_utc + shared_.settings.rest.recv_window;
   auto [action, packed] = tools::Encoder::modify_order(modify_order, order, ref_data, request_id, previous_request_id, now_utc, expires_after_utc);
   auto request = account_.sign_l1_action(action, packed, now_utc, expires_after_utc);
+  auto id = encode_request_id(order.user_id, order.order_id);
   auto message = fmt::format(
       R"({{)"
       R"("method":"post",)"
@@ -193,7 +208,7 @@ uint16_t WebSocket::operator()(
       R"("payload":{})"
       R"(}})"
       R"(}})"sv,
-      ++request_id_,
+      id,
       request);
   log::warn(R"(DEBUG message="{}")"sv, message);
   (*connection_).send_text(message);
@@ -211,6 +226,7 @@ uint16_t WebSocket::operator()(
   auto expires_after_utc = now_utc + shared_.settings.rest.recv_window;
   auto [action, packed] = tools::Encoder::cancel_order(cancel_order, order, ref_data, request_id, previous_request_id, now_utc, expires_after_utc);
   auto request = account_.sign_l1_action(action, packed, now_utc, expires_after_utc);
+  auto id = encode_request_id(order.user_id, order.order_id);
   auto message = fmt::format(
       R"({{)"
       R"("method":"post",)"
@@ -220,7 +236,7 @@ uint16_t WebSocket::operator()(
       R"("payload":{})"
       R"(}})"
       R"(}})"sv,
-      ++request_id_,
+      id,
       request);
   log::warn(R"(DEBUG message="{}")"sv, message);
   (*connection_).send_text(message);
@@ -483,11 +499,79 @@ void WebSocket::operator()(Trace<protocol::json::Notification> const &event) {
 void WebSocket::operator()(Trace<protocol::json::ActionOrder> const &event) {
   auto &[trace_info, action_order] = event;
   log::warn("action={}"sv, action_order);
+  // check success / failure
+  std::string_view message;
+  for (auto &item : action_order.data.response.payload.response.data.statuses) {
+    if (!std::empty(item.filled.cloid)) {  // we don't need to do anything if exchange assigned a cloid
+      return;                              // note!
+    }
+    if (!std::empty(item.error) && std::empty(message)) {
+      message = item.error;
+    }
+  }
+  if (std::empty(message)) {
+    return;
+  }
+  auto [user_id, order_id] = decode_request_id(action_order.data.id);
+  auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
+    log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
+    auto response = server::oms::Response{
+        .request_type = RequestType::CREATE_ORDER,
+        .origin = origin,
+        .request_status = status,
+        .error = error,
+        .text = text,
+        .version = 1,
+        .request_id = {},
+        .external_order_id = {},
+        .client_order_id = {},
+        .quantity = NaN,
+        .price = NaN,
+    };
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, response, stream_id_, user_id, order_id);
+  };
+  auto helper = [&]([[maybe_unused]] auto &order) { handle_error(Origin::EXCHANGE, RequestStatus::REJECTED, Error::UNKNOWN, message); };
+  if (shared_.dispatcher.find_order(user_id, order_id, helper)) {
+  } else {
+    log::warn("Unexpected: user_id={}, order_id={}"sv, user_id, order_id);
+  }
 }
 
 void WebSocket::operator()(Trace<protocol::json::ActionCancel> const &event) {
   auto &[trace_info, action_cancel] = event;
   log::warn("action={}"sv, action_cancel);
+  // check success / failure
+  std::string_view statuses = action_cancel.data.response.payload.response.data.statuses;
+  // note! we can't parse the response because they use different types for success and failure
+  log::warn(R"(DEBUG statuses="{}")"sv, statuses);
+  if (std::empty(statuses) || statuses == R"(["success"])") {
+    return;
+  }
+  // XXX FIXME TODO parse statuses => message
+  auto message = statuses;
+  auto [user_id, order_id] = decode_request_id(action_cancel.data.id);
+  auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
+    log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
+    auto response = server::oms::Response{
+        .request_type = RequestType::CANCEL_ORDER,
+        .origin = origin,
+        .request_status = status,
+        .error = error,
+        .text = text,
+        .version = {},  // note! using heuristics
+        .request_id = {},
+        .external_order_id = {},
+        .client_order_id = {},
+        .quantity = NaN,
+        .price = NaN,
+    };
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, response, stream_id_, user_id, order_id);
+  };
+  auto helper = [&]([[maybe_unused]] auto &order) { handle_error(Origin::EXCHANGE, RequestStatus::REJECTED, Error::UNKNOWN, message); };
+  if (shared_.dispatcher.find_order(user_id, order_id, helper)) {
+  } else {
+    log::warn("Unexpected: user_id={}, order_id={}"sv, user_id, order_id);
+  }
 }
 
 }  // namespace gateway
