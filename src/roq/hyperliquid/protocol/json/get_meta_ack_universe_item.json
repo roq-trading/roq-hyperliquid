@@ -37,6 +37,14 @@
     {
       "name": "lastGrowthModeChangeTime",
       "type": "std/string_view"
+    },
+    {
+      "name": "deployerFeeScale",
+      "type": "std/double"
+    },
+    {
+      "name": "lastFeeScaleChangeTime",
+      "type": "std/milliseconds"
     }
   ]
 }
