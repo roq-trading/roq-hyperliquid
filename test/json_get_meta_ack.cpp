@@ -1187,7 +1187,7 @@ TEST_CASE("simple", "[json_get_meta_ack]") {
     REQUIRE(std::size(u) == 201);
     CHECK(u[0].sz_decimals == 2);
   };
-  core::json::BufferStack buffers{16384, 1};
+  core::json::BufferStack buffers{32768, 1};
   value_type obj{message, buffers};
   helper(obj);
 }
