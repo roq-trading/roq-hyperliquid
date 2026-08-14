@@ -44,7 +44,7 @@
     },
     {
       "name": "lastFeeScaleChangeTime",
-      "type": "std/milliseconds"
+      "type": "std/string_view"
     }
   ]
 }
