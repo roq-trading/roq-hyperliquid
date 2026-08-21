@@ -64,6 +64,9 @@
     },
     {
       "name": "twapId"
+    },
+    {
+      "name": "liquidation"
     }
   ]
 }
