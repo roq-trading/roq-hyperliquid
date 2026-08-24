@@ -6,6 +6,7 @@ All notable changes will be documented in this file.
 
 ### Fixed
 
+* Different order action parser needed for generic error (#624)
 * Failed to parse meta data (#622)
 
 ## 1.1.7 &ndash; 2026-08-08

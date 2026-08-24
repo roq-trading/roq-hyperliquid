@@ -99,6 +99,7 @@ struct WebSocket final : public web::socket::Client::Handler, public protocol::j
   void operator()(Trace<protocol::json::OrderUpdates> const &) override;
   void operator()(Trace<protocol::json::Notification> const &) override;
   //
+  void operator()(Trace<protocol::json::ActionError> const &) override;
   void operator()(Trace<protocol::json::ActionOrder> const &) override;
   void operator()(Trace<protocol::json::ActionCancel> const &) override;
 

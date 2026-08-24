@@ -11,6 +11,10 @@ set(AUTOGEN_SCHEMAS
     action_cancel_data_response_payload.json
     action_cancel_data_response_payload_response.json
     action_cancel_data_response_payload_response_data.json
+    action_error.json
+    action_error_data.json
+    action_error_data_response.json
+    action_error_data_response_payload.json
     action_order.json
     action_order_data.json
     action_order_data_response.json

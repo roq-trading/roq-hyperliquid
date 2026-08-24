@@ -21,6 +21,7 @@ constexpr auto const KEY_DATA = "data"sv;
 constexpr auto const KEY_RESPONSE = "response"sv;
 constexpr auto const KEY_PAYLOAD = "payload"sv;
 constexpr auto const KEY_TYPE = "type"sv;
+constexpr auto const KEY_STATUS = "status"sv;
 }  // namespace
 
 // === HELPERS ===
@@ -69,7 +70,7 @@ bool Parser::dispatch(
     }
     return result;
   };
-
+  Status status;  // note! must carry between callbacks
   auto helper_post_response_payload = [&](auto &key, auto &value) {
     auto key_2 = utils::hash::FNV::compute(key);
     switch (key_2) {
@@ -88,13 +89,31 @@ bool Parser::dispatch(
             result = dispatch_helper<SpotMeta>(handler, message, buffer_stack, trace_info);
             return true;
           case ACTION:
+            // ???
             break;
         }
         break;
       }
+      case utils::hash::FNV::compute(KEY_STATUS):
+        new (&status) Status{value};
+        break;
       case utils::hash::FNV::compute(KEY_RESPONSE): {
-        std::get<core::json::Object>(value).dispatch(helper_post_response_payload_response);
-        return true;
+        switch (status) {
+          using enum Status::type_t;
+          case UNDEFINED_INTERNAL:
+            break;
+          case UNKNOWN_INTERNAL:
+            if (allow_unknown_event_types) {
+              return false;
+            }
+            break;
+          case OK:
+            std::get<core::json::Object>(value).dispatch(helper_post_response_payload_response);
+            return true;
+          case ERR:
+            result = dispatch_helper<ActionError>(handler, message, buffer_stack, trace_info);
+            return true;
+        }
       }
     }
     return result;
@@ -103,6 +122,7 @@ bool Parser::dispatch(
     auto key_2 = utils::hash::FNV::compute(key);
     switch (key_2) {
       case utils::hash::FNV::compute(KEY_PAYLOAD): {
+        // note! we expect to receive status before response
         std::get<core::json::Object>(value).dispatch(helper_post_response_payload);
         break;
       }

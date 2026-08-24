@@ -46,6 +46,7 @@ struct ParserTester final : public protocol::json::Parser::Handler {
   void operator()(Trace<protocol::json::OrderUpdates> const &event) override { dispatch_helper(event); }
   void operator()(Trace<protocol::json::Notification> const &event) override { dispatch_helper(event); }
   //
+  void operator()(Trace<protocol::json::ActionError> const &event) override { dispatch_helper(event); }
   void operator()(Trace<protocol::json::ActionOrder> const &event) override { dispatch_helper(event); }
   void operator()(Trace<protocol::json::ActionCancel> const &event) override { dispatch_helper(event); }
 

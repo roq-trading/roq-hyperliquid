@@ -388,6 +388,10 @@ void DropCopy::operator()(Trace<protocol::json::Notification> const &event) {
   });
 }
 
+void DropCopy::operator()(Trace<protocol::json::ActionError> const &) {
+  log::fatal("Unexpected"sv);
+}
+
 void DropCopy::operator()(Trace<protocol::json::ActionOrder> const &) {
   log::fatal("Unexpected"sv);
 }

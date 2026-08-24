@@ -6,6 +6,10 @@ action_cancel_data_response.hpp
 action_cancel_data_response_payload.hpp
 action_cancel_data_response_payload_response.hpp
 action_cancel_data_response_payload_response_data.hpp
+action_error.hpp
+action_error_data.hpp
+action_error_data_response.hpp
+action_error_data_response_payload.hpp
 action_order.hpp
 action_order_data.hpp
 action_order_data_response.hpp
@@ -100,6 +104,10 @@ action_cancel_data_response.cpp
 action_cancel_data_response_payload.cpp
 action_cancel_data_response_payload_response.cpp
 action_cancel_data_response_payload_response_data.cpp
+action_error.cpp
+action_error_data.cpp
+action_error_data_response.cpp
+action_error_data_response_payload.cpp
 action_order.cpp
 action_order_data.cpp
 action_order_data_response.cpp

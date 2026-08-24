@@ -26,6 +26,7 @@
 #include "roq/hyperliquid/protocol/json/user_fundings.hpp"
 //
 #include "roq/hyperliquid/protocol/json/action_cancel.hpp"
+#include "roq/hyperliquid/protocol/json/action_error.hpp"
 #include "roq/hyperliquid/protocol/json/action_order.hpp"
 
 namespace roq {
@@ -52,6 +53,7 @@ struct Parser final {
     virtual void operator()(Trace<protocol::json::OrderUpdates> const &) = 0;
     virtual void operator()(Trace<protocol::json::Notification> const &) = 0;
     //
+    virtual void operator()(Trace<protocol::json::ActionError> const &) = 0;
     virtual void operator()(Trace<protocol::json::ActionOrder> const &) = 0;
     virtual void operator()(Trace<protocol::json::ActionCancel> const &) = 0;
   };
