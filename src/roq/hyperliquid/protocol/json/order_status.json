@@ -22,6 +22,9 @@
     },
     {
       "name": "badAloPxRejected"
+    },
+    {
+      "name": "reduceOnlyCanceled"
     }
   ]
 }
