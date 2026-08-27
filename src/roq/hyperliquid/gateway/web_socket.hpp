@@ -113,8 +113,6 @@ struct WebSocket final : public web::socket::Client::Handler, public protocol::j
   std::unique_ptr<web::socket::Client> const connection_;
   // buffers
   core::json::BufferStack decode_buffer_;
-  // session
-  uint64_t request_id_ = {};
   // metrics
   struct {
     utils::metrics::Counter disconnect;

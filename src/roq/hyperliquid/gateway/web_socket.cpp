@@ -37,8 +37,6 @@ auto const SUPPORTS = Mask{
     SupportType::ORDER,
 };
 
-uint64_t const REQUEST_ID = 1'000'000;
-
 size_t const MAX_DECODE_BUFFER_DEPTH = 2;
 }  // namespace
 
@@ -109,7 +107,6 @@ auto decode_request_id(uint64_t request_id) {
 WebSocket::WebSocket(Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, ping_frequency_{shared.settings.ws.ping_freq},
       connection_{create_connection(*this, shared.settings, context)}, decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
-      request_id_{stream_id_ * REQUEST_ID},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
