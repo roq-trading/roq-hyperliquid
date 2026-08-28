@@ -46,13 +46,6 @@ R create_2(auto handle) {
   R result{handle, noop_deleter};
   return result;
 }
-
-template <typename R>
-R duplicate(auto handle) {
-  R result{handle, noop_deleter};
-  return result;
-}
-
 }  // namespace
 
 // === IMPLEMENTATION ===
