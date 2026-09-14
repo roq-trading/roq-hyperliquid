@@ -43,6 +43,9 @@
     },
     {
       "name": "assetToFundingInterestRate"
+    },
+    {
+      "name": "assetToFundingClamp"
     }
   ]
 }
