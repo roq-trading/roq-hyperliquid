@@ -350,6 +350,7 @@ void DropCopy::operator()(Trace<protocol::json::OrderUpdates> const &event) {
           .order_type = OrderType::LIMIT,     // note!
           .time_in_force = TimeInForce::GTC,  // note! we need this to always be GTC due to modify order using it
           .execution_instructions = {},
+          .execution_destination = {},
           .create_time_utc = item.order.timestamp,
           .update_time_utc = item.status_timestamp,
           .external_account = {},

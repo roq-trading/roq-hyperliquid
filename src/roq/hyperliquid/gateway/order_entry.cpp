@@ -482,6 +482,7 @@ void OrderEntry::operator()(Trace<protocol::json::GetOpenOrdersAck> const &event
         .order_type = OrderType::LIMIT,     // note!
         .time_in_force = TimeInForce::GTC,  // note! we need this to always be GTC due to modify order using it
         .execution_instructions = {},
+        .execution_destination = {},
         .create_time_utc = {},
         .update_time_utc = {},
         .external_account = {},
