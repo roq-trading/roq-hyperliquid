@@ -125,8 +125,8 @@ void Rest::operator()(Event<Stop> const &) {
 }
 
 void Rest::operator()(Event<Timer> const &event) {
-  auto now = event.value.now;
-  (*connection_).refresh(now);
+  auto &[message_info, timer] = event;
+  (*connection_).refresh(timer.now);
 }
 
 void Rest::operator()(metrics::Writer &writer) const {
@@ -559,7 +559,7 @@ void Rest::process_response(web::rest::Response const &response, auto error_hand
         switch (status) {
           using enum web::http::Status;
           case TOO_MANY_REQUESTS: {  // 429
-            (*connection_).suspend(shared_.settings.misc.suspend_after_429);
+            (*connection_).suspend_for(shared_.settings.misc.suspend_after_429);
             auto message = fmt::format("{}"sv, status);
             error_handler(Origin::EXCHANGE, RequestStatus::REJECTED, Error::REQUEST_RATE_LIMIT_REACHED, message);
             break;
