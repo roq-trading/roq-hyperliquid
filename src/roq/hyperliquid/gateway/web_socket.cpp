@@ -47,7 +47,7 @@ auto create_name(auto stream_id) {
   return fmt::format("{}:{}"sv, stream_id, NAME);
 }
 
-auto create_connection(auto &handler, auto &settings, auto &context) {
+auto create_connection(auto &handler, auto &settings, auto &context, auto &shared) {
   auto config = web::socket::Client::Config{
       // connection
       .interface = {},
@@ -68,7 +68,7 @@ auto create_connection(auto &handler, auto &settings, auto &context) {
       .decode_buffer_size = settings.misc.decode_buffer_size,
       .encode_buffer_size = settings.misc.encode_buffer_size,
   };
-  return web::socket::Client::create(handler, context, config, []() { return std::string(); });
+  return web::socket::Client::create(handler, context, config, shared.rate_limit, []() { return std::string(); });
 }
 
 struct create_metrics final : public utils::metrics::Factory {
@@ -106,7 +106,7 @@ auto decode_request_id(uint64_t request_id) {
 
 WebSocket::WebSocket(Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, ping_frequency_{shared.settings.ws.ping_freq},
-      connection_{create_connection(*this, shared.settings, context)}, decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
+      connection_{create_connection(*this, shared.settings, context, shared)}, decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },

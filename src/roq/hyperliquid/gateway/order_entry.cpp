@@ -43,7 +43,7 @@ auto create_name(auto stream_id) {
   return fmt::format("{}:{}"sv, stream_id, NAME);
 }
 
-auto create_connection(auto &handler, auto &settings, auto &context) {
+auto create_connection(auto &handler, auto &settings, auto &context, auto &shared) {
   auto uri = settings.rest.uri;
   auto config = web::rest::Client::Config{
       // connection
@@ -70,7 +70,7 @@ auto create_connection(auto &handler, auto &settings, auto &context) {
       .decode_buffer_size = settings.misc.decode_buffer_size,
       .encode_buffer_size = settings.misc.encode_buffer_size,
   };
-  return web::rest::Client::create(handler, context, config);
+  return web::rest::Client::create(handler, context, config, shared.rate_limit);
 }
 
 struct create_metrics final : public utils::metrics::Factory {
@@ -97,7 +97,7 @@ auto get_exchange_from_coin(auto &coin, auto &settings) {
 // === IMPLEMENTATION ===
 
 OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared)
-    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, connection_{create_connection(*this, shared.settings, context)},
+    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, connection_{create_connection(*this, shared.settings, context, shared)},
       decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
@@ -215,7 +215,7 @@ void OrderEntry::operator()(ConnectionStatus connection_status, std::string_view
 
 // web::rest::Client::Handler
 
-void OrderEntry::operator()(Trace<web::rest::Client::Connected> const &) {
+void OrderEntry::operator()(Trace<web::rest::Connected> const &) {
   if (download_.downloading()) {
     download_.bump();
   } else {
@@ -223,7 +223,7 @@ void OrderEntry::operator()(Trace<web::rest::Client::Connected> const &) {
   }
 }
 
-void OrderEntry::operator()(Trace<web::rest::Client::Disconnected> const &) {
+void OrderEntry::operator()(Trace<web::rest::Disconnected> const &) {
   ++counter_.disconnect;
   (*this)(ConnectionStatus::DISCONNECTED);
   if (!download_.downloading()) {
@@ -231,7 +231,7 @@ void OrderEntry::operator()(Trace<web::rest::Client::Disconnected> const &) {
   }
 }
 
-void OrderEntry::operator()(Trace<web::rest::Client::Latency> const &event) {
+void OrderEntry::operator()(Trace<web::rest::Latency> const &event) {
   auto &[trace_info, latency] = event;
   auto external_latency = ExternalLatency{
       .stream_id = stream_id_,

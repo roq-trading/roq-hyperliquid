@@ -15,6 +15,8 @@
 #include "roq/hyperliquid/gateway/api.hpp"
 #include "roq/hyperliquid/gateway/settings.hpp"
 
+#include "roq/hyperliquid/tools/rate_limit.hpp"
+
 namespace roq {
 namespace hyperliquid {
 namespace gateway {
@@ -28,6 +30,8 @@ struct Shared final {
 
   Settings const &settings;
   API const api;
+
+  tools::RateLimit rate_limit;
 
   core::limit::RateLimiter rate_limiter;
 
