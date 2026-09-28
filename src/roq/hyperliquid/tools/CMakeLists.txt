@@ -11,7 +11,7 @@ set(SOURCES
     key.cpp
     pkey.cpp
     point.cpp
-    rate_limit.cpp
+    throttle.cpp
     tick_size_steps.cpp
     wallet.cpp)
 
