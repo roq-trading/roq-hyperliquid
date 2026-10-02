@@ -418,6 +418,8 @@ void MarketData::operator()(Trace<protocol::json::Trades> const &event) {
         coin = item.coin;
       }
       auto trade = Trade{
+          .trade_conditions = {},
+          .trade_type = {},
           .side = map(item.side),
           .price = item.px,
           .quantity = item.sz,
