@@ -16,6 +16,8 @@
 
 #include "roq/server.hpp"
 
+#include "roq/server/stream.hpp"
+
 #include "roq/hyperliquid/gateway/account.hpp"
 #include "roq/hyperliquid/gateway/shared.hpp"
 
@@ -25,18 +27,27 @@ namespace roq {
 namespace hyperliquid {
 namespace gateway {
 
-struct DropCopy final : public web::socket::Client::Handler, public protocol::json::Parser::Handler {
+struct DropCopy final : public Base<DropCopy>, public server::Stream, public web::socket::Client::Handler, public protocol::json::Parser::Handler {
   struct Handler {};
 
   DropCopy(Handler &, io::Context &, uint16_t stream_id, Account &, Shared &);
 
-  DropCopy(DropCopy const &) = delete;
+  // protected:
+  friend base_type;
 
-  void operator()(Event<Start> const &);
-  void operator()(Event<Stop> const &);
-  void operator()(Event<Timer> const &);
+  // server::Stream
 
-  void operator()(metrics::Writer &) const;
+  uint16_t stream_id() const override { return stream_id_; }
+
+  bool ready() const override { return connection_status_ == ConnectionStatus::READY; }
+
+  void operator()(Event<Start> const &) override;
+  void operator()(Event<Stop> const &) override;
+  void operator()(Event<Timer> const &) override;
+
+  void operator()(metrics::Writer &) const override;
+
+  void operator()(Trace<ConnectionStatus> const &, std::string_view const &reason = {}) override;
 
  protected:
   // web::socket::Client::Handler
@@ -48,21 +59,6 @@ struct DropCopy final : public web::socket::Client::Handler, public protocol::js
   void operator()(Trace<web::socket::Latency> const &) override;
   void operator()(Trace<web::socket::Text> const &) override;
   void operator()(Trace<web::socket::Binary> const &) override;
-
-  // helpers
-
-  uint16_t stream_id() const { return stream_id_; }
-
-  bool ready() const { return connection_status_ == ConnectionStatus::READY; }
-
-  void operator()(ConnectionStatus, std::string_view const &reason = {});
-
-  void subscribe();
-  void subscribe(std::string_view const &type);
-
-  void send_ping(std::chrono::nanoseconds now);
-
-  void parse(std::string_view const &message);
 
   // protocol::json::Parser::Handler
 
@@ -86,6 +82,15 @@ struct DropCopy final : public web::socket::Client::Handler, public protocol::js
   void operator()(Trace<protocol::json::ActionError> const &) override;
   void operator()(Trace<protocol::json::ActionOrder> const &) override;
   void operator()(Trace<protocol::json::ActionCancel> const &) override;
+
+  // helpers
+
+  void subscribe();
+  void subscribe(std::string_view const &type);
+
+  void send_ping(std::chrono::nanoseconds now);
+
+  void parse(std::string_view const &message);
 
  private:
   [[maybe_unused]] Handler &handler_;

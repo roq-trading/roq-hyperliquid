@@ -121,9 +121,11 @@ OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_i
       latency_{
           .ping = create_metrics(shared.settings, name_, "ping"sv),
       },
-      account_{account}, shared_{shared}, download_{shared.settings.rest.request_timeout, [this](auto state) { return download(state); }},
+      account_{account}, shared_{shared}, download_{shared.settings.rest.request_timeout, [this](auto &event) { return download(event); }},
       rate_limiter{create_rate_limiter(shared.settings)} {
 }
+
+// server::Stream
 
 void OrderEntry::operator()(Event<Start> const &) {
   (*connection_).start();
@@ -161,6 +163,30 @@ void OrderEntry::operator()(metrics::Writer &writer) const {
       .write(latency_.ping, metrics::Type::LATENCY);
 }
 
+void OrderEntry::operator()(Trace<ConnectionStatus> const &event, std::string_view const &reason) {
+  auto &[trace_info, connection_status] = event;
+  connection_status_ = connection_status;
+  auto stream_status = StreamStatus{
+      .stream_id = stream_id_,
+      .account = {},
+      .supports = SUPPORTS,
+      .transport = Transport::TCP,
+      .protocol = Protocol::HTTP,
+      .encoding = {Encoding::JSON},
+      .priority = Priority::PRIMARY,
+      .connection_status = connection_status_,
+      .reason = reason,
+      .interface = (*connection_).get_interface(),
+      .authority = (*connection_).get_current_authority(),
+      .path = (*connection_).get_current_path(),
+      .proxy = (*connection_).get_proxy(),
+  };
+  log::info("stream_status={}"sv, stream_status);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
+}
+
+// server::OrderActionStream
+
 uint16_t OrderEntry::operator()(
     Event<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &ref_data, std::string_view const &request_id) {
   create_order(event, order, ref_data, request_id);
@@ -191,41 +217,21 @@ uint16_t OrderEntry::operator()(Event<CancelAllOrders> const &, [[maybe_unused]]
   throw server::oms::NotSupported{"not supported"sv};
 }
 
-void OrderEntry::operator()(ConnectionStatus connection_status, std::string_view const &reason) {
-  connection_status_ = connection_status;
-  TraceInfo trace_info;
-  auto stream_status = StreamStatus{
-      .stream_id = stream_id_,
-      .account = {},
-      .supports = SUPPORTS,
-      .transport = Transport::TCP,
-      .protocol = Protocol::HTTP,
-      .encoding = {Encoding::JSON},
-      .priority = Priority::PRIMARY,
-      .connection_status = connection_status_,
-      .reason = reason,
-      .interface = (*connection_).get_interface(),
-      .authority = (*connection_).get_current_authority(),
-      .path = (*connection_).get_current_path(),
-      .proxy = (*connection_).get_proxy(),
-  };
-  log::info("stream_status={}"sv, stream_status);
-  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
-}
-
 // web::rest::Client::Handler
 
-void OrderEntry::operator()(Trace<web::rest::Connected> const &) {
+void OrderEntry::operator()(Trace<web::rest::Connected> const &event) {
+  auto &[trace_info, connected] = event;
   if (download_.downloading()) {
-    download_.bump();
+    download_.bump(trace_info);
   } else {
-    download_.begin();
+    download_.begin(trace_info);
   }
 }
 
-void OrderEntry::operator()(Trace<web::rest::Disconnected> const &) {
+void OrderEntry::operator()(Trace<web::rest::Disconnected> const &event) {
+  auto &[trace_info, disconnected] = event;
   ++counter_.disconnect;
-  (*this)(ConnectionStatus::DISCONNECTED);
+  create_trace_and_dispatch_2(trace_info, ConnectionStatus::DISCONNECTED);
   if (!download_.downloading()) {
     download_.reset();
   }
@@ -242,34 +248,37 @@ void OrderEntry::operator()(Trace<web::rest::Latency> const &event) {
   latency_.ping.update(latency.sample);
 }
 
-uint32_t OrderEntry::download(State state) {
+// core::Download
+
+int32_t OrderEntry::download(Trace<State> const &event) {
+  auto &[trace_info, state] = event;
   switch (state) {
     using enum State;
     case UNDEFINED:
       assert(false);
       break;
     case SPOT_CLEARING_HOUSE_STATE:
-      (*this)(ConnectionStatus::DOWNLOADING, "spot-clearing-house-state"sv);
+      create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "spot-clearing-house-state"sv);
       get_spot_clearing_house_state();
       return 1;
     case CLEARING_HOUSE_STATE:
-      (*this)(ConnectionStatus::DOWNLOADING, "clearing-house-state"sv);
+      create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "clearing-house-state"sv);
       get_clearing_house_state(0);
       return 1;
     case OPEN_ORDERS:
-      (*this)(ConnectionStatus::DOWNLOADING, "open-orders"sv);
+      create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "open-orders"sv);
       get_open_orders(0);
       return 1;
     case USER_FILLS:
       if (shared_.settings.download.trades_lookback.count()) {
-        (*this)(ConnectionStatus::DOWNLOADING, "user-fills"sv);
+        create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "user-fills"sv);
         get_user_fills(0);
         return 1;
       } else {
         return 0;
       }
     case DONE:
-      (*this)(ConnectionStatus::READY);
+      create_trace_and_dispatch_2(trace_info, ConnectionStatus::READY);
       return 0;
   }
   assert(false);
@@ -309,6 +318,7 @@ void OrderEntry::get_spot_clearing_house_state() {
 void OrderEntry::get_spot_clearing_house_state_ack(Trace<web::rest::Response> const &event, uint32_t sequence) {
   auto const STATE = State::SPOT_CLEARING_HOUSE_STATE;
   profile_.spot_clearing_house_state_ack([&]() {
+    auto &[trace_info, response] = event;
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
       download_.retry(STATE);
@@ -319,9 +329,8 @@ void OrderEntry::get_spot_clearing_house_state_ack(Trace<web::rest::Response> co
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
         protocol::json::GetSpotClearingHouseStateAck spot_clearing_house_state_ack{body, decode_buffer_};
-        Trace event_2{event, spot_clearing_house_state_ack};
-        (*this)(event_2);
-        download_.check(STATE);
+        create_trace_and_dispatch_2(trace_info, spot_clearing_house_state_ack);
+        download_.check(trace_info, STATE);
       }
     };
     process_response(event, handle_error, handle_success);
@@ -371,6 +380,7 @@ void OrderEntry::get_clearing_house_state(size_t index) {
 void OrderEntry::get_clearing_house_state_ack(Trace<web::rest::Response> const &event, uint32_t sequence, size_t index) {
   auto const STATE = State::CLEARING_HOUSE_STATE;
   profile_.clearing_house_state_ack([&]() {
+    auto &[trace_info, response] = event;
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
       download_.retry(STATE);
@@ -381,11 +391,10 @@ void OrderEntry::get_clearing_house_state_ack(Trace<web::rest::Response> const &
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
         protocol::json::GetClearingHouseStateAck clearing_house_state_ack{body, decode_buffer_};
-        Trace event_2{event, clearing_house_state_ack};
-        (*this)(event_2, index);
+        create_trace_and_dispatch_2(trace_info, clearing_house_state_ack, index);
         auto next_index = index + 1;
         if (next_index >= std::size(shared_.dex)) {
-          download_.check(STATE);
+          download_.check(trace_info, STATE);
         } else {
           get_clearing_house_state(next_index);
         }
@@ -438,6 +447,7 @@ void OrderEntry::get_open_orders(size_t index) {
 void OrderEntry::get_open_orders_ack(Trace<web::rest::Response> const &event, uint32_t sequence, size_t index) {
   auto const STATE = State::OPEN_ORDERS;
   profile_.open_orders_ack([&]() {
+    auto &[trace_info, response] = event;
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
       download_.retry(STATE);
@@ -448,11 +458,10 @@ void OrderEntry::get_open_orders_ack(Trace<web::rest::Response> const &event, ui
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
         protocol::json::GetOpenOrdersAck open_orders_ack{body, decode_buffer_};
-        Trace event_2{event, open_orders_ack};
-        (*this)(event_2, index);
+        create_trace_and_dispatch_2(trace_info, open_orders_ack, index);
         auto next_index = index + 1;
         if (next_index >= std::size(shared_.dex)) {
-          download_.check(STATE);
+          download_.check(trace_info, STATE);
         } else {
           get_open_orders(next_index);
         }
@@ -550,6 +559,7 @@ void OrderEntry::get_user_fills(size_t index) {
 void OrderEntry::get_user_fills_ack(Trace<web::rest::Response> const &event, uint32_t sequence, size_t index) {
   auto const STATE = State::USER_FILLS;
   profile_.user_fills_ack([&]() {
+    auto &[trace_info, response] = event;
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
       download_.retry(STATE);
@@ -560,11 +570,10 @@ void OrderEntry::get_user_fills_ack(Trace<web::rest::Response> const &event, uin
         log::info("Download state={} has already been processed"sv, STATE);
       } else {
         protocol::json::GetUserFillsAck user_fills_ack{body, decode_buffer_};
-        Trace event_2{event, user_fills_ack};
-        (*this)(event_2, index);
+        create_trace_and_dispatch_2(trace_info, user_fills_ack, index);
         auto next_index = index + 1;
         if (next_index >= std::size(shared_.dex)) {
-          download_.check(STATE);
+          download_.check(trace_info, STATE);
         } else {
           get_user_fills(next_index);
         }
