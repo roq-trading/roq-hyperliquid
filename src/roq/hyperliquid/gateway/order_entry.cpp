@@ -306,12 +306,10 @@ void OrderEntry::get_spot_clearing_house_state() {
         .quality_of_service = {},
     };
     // log::warn("DEBUG request={}"sv, request);
-    auto callback = [this, sequence = download_.sequence()]([[maybe_unused]] auto &request_id, auto &response) {
-      TraceInfo trace_info;
-      Trace event{trace_info, response};
+    auto callback = [this, sequence = download_.sequence()](auto &event, [[maybe_unused]] auto &request_id) {
       get_spot_clearing_house_state_ack(event, sequence);
     };
-    (*connection_)("spot-clearing-house-state"sv, request, callback);
+    (*connection_)(request, callback, "spot-clearing-house-state"sv);
   });
 }
 
@@ -368,12 +366,10 @@ void OrderEntry::get_clearing_house_state(size_t index) {
         .quality_of_service = {},
     };
     // log::warn("DEBUG request={}"sv, request);
-    auto callback = [this, sequence = download_.sequence(), index = index]([[maybe_unused]] auto &request_id, auto &response) {
-      TraceInfo trace_info;
-      Trace event{trace_info, response};
+    auto callback = [this, sequence = download_.sequence(), index = index](auto &event, [[maybe_unused]] auto &request_id) {
       get_clearing_house_state_ack(event, sequence, index);
     };
-    (*connection_)("clearing-house-state"sv, request, callback);
+    (*connection_)(request, callback, "clearing-house-state"sv);
   });
 }
 
@@ -435,12 +431,10 @@ void OrderEntry::get_open_orders(size_t index) {
         .quality_of_service = {},
     };
     // log::warn("DEBUG request={}"sv, request);
-    auto callback = [this, sequence = download_.sequence(), index = index]([[maybe_unused]] auto &request_id, auto &response) {
-      TraceInfo trace_info;
-      Trace event{trace_info, response};
+    auto callback = [this, sequence = download_.sequence(), index = index](auto &event, [[maybe_unused]] auto &request_id) {
       get_open_orders_ack(event, sequence, index);
     };
-    (*connection_)("open-orders"sv, request, callback);
+    (*connection_)(request, callback, "open-orders"sv);
   });
 }
 
@@ -547,12 +541,10 @@ void OrderEntry::get_user_fills(size_t index) {
         .quality_of_service = {},
     };
     // log::warn("DEBUG request={}"sv, request);
-    auto callback = [this, sequence = download_.sequence(), index = index]([[maybe_unused]] auto &request_id, auto &response) {
-      TraceInfo trace_info;
-      Trace event{trace_info, response};
+    auto callback = [this, sequence = download_.sequence(), index = index](auto &event, [[maybe_unused]] auto &request_id) {
       get_user_fills_ack(event, sequence, index);
     };
-    (*connection_)("user-fills"sv, request, callback);
+    (*connection_)(request, callback, "user-fills"sv);
   });
 }
 
@@ -609,14 +601,12 @@ void OrderEntry::create_order(
           .body = body,
           .quality_of_service = {},
       };
-      auto callback = [this, user_id = message_info.source, order_id = create_order.order_id]([[maybe_unused]] auto &request_id, auto &response) {
+      auto callback = [this, user_id = message_info.source, order_id = create_order.order_id](auto &event, [[maybe_unused]] auto &request_id) {
         auto version = 1;
-        TraceInfo trace_info;
-        Trace event{trace_info, response};
         create_order_ack(event, user_id, order_id, version);
       };
       // log::warn(R"(DEBUG request="{}")"sv, request);
-      (*connection_)(request_id, request, callback);
+      (*connection_)(request, callback, request_id);
     };
     auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
     auto expires_after_utc = now_utc + shared_.settings.rest.recv_window;
@@ -704,13 +694,9 @@ void OrderEntry::modify_order(
           .quality_of_service = {},
       };
       auto callback = [this, user_id = message_info.source, order_id = modify_order.order_id, version = modify_order.version](
-                          [[maybe_unused]] auto &request_id, auto &response) {
-        TraceInfo trace_info;
-        Trace event{trace_info, response};
-        modify_order_ack(event, user_id, order_id, version);
-      };
+                          auto &event, [[maybe_unused]] auto &request_id) { modify_order_ack(event, user_id, order_id, version); };
       log::warn(R"(DEBUG request="{}")"sv, request);
-      (*connection_)(request_id, request, callback);
+      (*connection_)(request, callback, request_id);
     };
     auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
     auto expires_after_utc = now_utc + shared_.settings.rest.recv_window;
@@ -777,13 +763,9 @@ void OrderEntry::cancel_order(
           .quality_of_service = {},
       };
       auto callback = [this, user_id = message_info.source, order_id = cancel_order.order_id, version = cancel_order.version](
-                          [[maybe_unused]] auto &request_id, auto &response) {
-        TraceInfo trace_info;
-        Trace event{trace_info, response};
-        cancel_order_ack(event, user_id, order_id, version);
-      };
+                          auto &event, [[maybe_unused]] auto &request_id) { cancel_order_ack(event, user_id, order_id, version); };
       // log::warn(R"(DEBUG request="{}")"sv, request);
-      (*connection_)(request_id, request, callback);
+      (*connection_)(request, callback, request_id);
     };
     auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
     auto expires_after_utc = now_utc + shared_.settings.rest.recv_window;

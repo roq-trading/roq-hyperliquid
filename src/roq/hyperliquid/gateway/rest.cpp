@@ -242,12 +242,8 @@ void Rest::get_spot_meta() {
         .body = body,
         .quality_of_service = {},
     };
-    auto callback = [this, sequence = download_.sequence()]([[maybe_unused]] auto &request_id, auto &response) {
-      TraceInfo trade_info;
-      Trace event{trade_info, response};
-      get_spot_meta_ack(event, sequence);
-    };
-    (*connection_)("spot-meta"sv, request, callback);
+    auto callback = [this, sequence = download_.sequence()](auto &event, [[maybe_unused]] auto &request_id) { get_spot_meta_ack(event, sequence); };
+    (*connection_)(request, callback, "spot-meta"sv);
   });
 }
 
@@ -353,12 +349,8 @@ void Rest::get_perp_dexs() {
         .body = body,
         .quality_of_service = {},
     };
-    auto callback = [this, sequence = download_.sequence()]([[maybe_unused]] auto &request_id, auto &response) {
-      TraceInfo trace_info;
-      Trace event{trace_info, response};
-      get_perp_dexs_ack(event, sequence);
-    };
-    (*connection_)("perp-dexs"sv, request, callback);
+    auto callback = [this, sequence = download_.sequence()](auto &event, [[maybe_unused]] auto &request_id) { get_perp_dexs_ack(event, sequence); };
+    (*connection_)(request, callback, "perp-dexs"sv);
   });
 }
 
@@ -438,12 +430,10 @@ void Rest::get_meta(size_t index) {
         .body = body,
         .quality_of_service = {},
     };
-    auto callback = [this, sequence = download_.sequence(), index = index]([[maybe_unused]] auto &request_id, auto &response) {
-      TraceInfo trace_info;
-      Trace event{trace_info, response};
+    auto callback = [this, sequence = download_.sequence(), index = index](auto &event, [[maybe_unused]] auto &request_id) {
       get_meta_ack(event, sequence, index);
     };
-    (*connection_)("meta"sv, request, callback);
+    (*connection_)(request, callback, "meta"sv);
   });
 }
 
