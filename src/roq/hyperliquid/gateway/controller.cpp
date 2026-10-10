@@ -85,35 +85,19 @@ Controller::Controller(server::Dispatcher &dispatcher, Settings const &settings,
 
 // server::Handler
 
-void Controller::operator()(Event<Start> const &event) {
+void Controller::operator()(Trace<Start> const &event) {
   log::info("Starting..."sv);
   assert(std::empty(market_data_));
   dispatch(event);
 }
 
-void Controller::operator()(Event<Stop> const &event) {
+void Controller::operator()(Trace<Stop> const &event) {
   log::info("Stopping..."sv);
   dispatch(event);
 }
 
-void Controller::operator()(Event<Timer> const &event) {
+void Controller::operator()(Trace<Timer> const &event) {
   dispatch(event);
-}
-
-void Controller::operator()(Event<Control> const &event) {
-  auto &[message_info, control] = event;
-  switch (control.action) {
-    using enum Action;
-    case UNDEFINED:
-      assert(false);
-      break;
-    case ENABLE:
-      dispatcher_(State::ENABLED);
-      break;
-    case DISABLE:
-      dispatcher_(State::DISABLED);
-      break;
-  }
 }
 
 void Controller::operator()(Event<Connected> const &) {
@@ -136,6 +120,22 @@ void Controller::operator()(Event<Subscribe> const &event) {
       .symbols = symbols,
   };
   (*this)(symbols_update);
+}
+
+void Controller::operator()(Event<Control> const &event) {
+  auto &[message_info, control] = event;
+  switch (control.action) {
+    using enum Action;
+    case UNDEFINED:
+      assert(false);
+      break;
+    case ENABLE:
+      dispatcher_(State::ENABLED);
+      break;
+    case DISABLE:
+      dispatcher_(State::DISABLED);
+      break;
+  }
 }
 
 uint16_t Controller::operator()(
@@ -212,28 +212,28 @@ void Controller::operator()(Rest::SymbolsUpdate &symbols_update) {
     if (shared_.settings.ws_api) {
       if (std::empty(web_socket_)) {
         web_socket_ = create_web_socket<decltype(web_socket_)>(*this, context_, stream_id_, accounts_, shared_);
-        MessageInfo message_info;
+        TraceInfo trace_info;  // XXX FIXME TODO
         Start start;
         for (auto &[_, item] : web_socket_) {
-          create_event_and_dispatch(*item, message_info, start);
+          create_trace_and_dispatch(*item, trace_info, start);
         }
       }
     } else {
       if (std::empty(order_entry_)) {
         order_entry_ = create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, accounts_, shared_);
-        MessageInfo message_info;
+        TraceInfo trace_info;  // XXX FIXME TODO
         Start start;
         for (auto &[_, item] : order_entry_) {
-          create_event_and_dispatch(*item, message_info, start);
+          create_trace_and_dispatch(*item, trace_info, start);
         }
       }
     }
     if (std::empty(drop_copy_)) {
       drop_copy_ = create_drop_copy<decltype(drop_copy_)>(*this, context_, stream_id_, accounts_, shared_);
-      MessageInfo message_info;
+      TraceInfo trace_info;  // XXX FIXME TODO
       Start start;
       for (auto &[_, item] : drop_copy_) {
-        create_event_and_dispatch(*item, message_info, start);
+        create_trace_and_dispatch(*item, trace_info, start);
       }
     }
   }
@@ -245,9 +245,9 @@ void Controller::ensure_symbol_slices(size_t size) {
   while (std::size(market_data_) < size) {
     log::info("Create market-data (user-stream)"sv);
     auto market_data = std::make_unique<MarketData>(*this, context_, ++stream_id_, shared_, std::size(market_data_));
-    MessageInfo message_info;
+    TraceInfo trace_info;  // XXX FIXME TODO
     Start start;
-    create_event_and_dispatch(*market_data, message_info, start);
+    create_trace_and_dispatch(*market_data, trace_info, start);
     market_data_.emplace_back(std::move(market_data));
   }
 }
