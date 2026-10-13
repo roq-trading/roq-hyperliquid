@@ -608,7 +608,7 @@ void OrderEntry::create_order(
       // log::warn(R"(DEBUG request="{}")"sv, request);
       (*connection_)(request, callback, request_id);
     };
-    auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
+    auto now_utc = std::chrono::duration_cast<std::chrono::milliseconds>(message_info.receive_time_utc);
     auto expires_after_utc = now_utc + shared_.settings.rest.recv_window;
     auto [action, packed] = tools::Encoder::create_order(create_order, order, ref_data, request_id, now_utc, expires_after_utc);
     auto request = account_.sign_l1_action(action, packed, now_utc, expires_after_utc);
@@ -698,7 +698,7 @@ void OrderEntry::modify_order(
       log::warn(R"(DEBUG request="{}")"sv, request);
       (*connection_)(request, callback, request_id);
     };
-    auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
+    auto now_utc = std::chrono::duration_cast<std::chrono::milliseconds>(message_info.receive_time_utc);
     auto expires_after_utc = now_utc + shared_.settings.rest.recv_window;
     auto [action, packed] = tools::Encoder::modify_order(modify_order, order, ref_data, request_id, previous_request_id, now_utc, expires_after_utc);
     auto request = account_.sign_l1_action(action, packed, now_utc, expires_after_utc);
@@ -767,7 +767,7 @@ void OrderEntry::cancel_order(
       // log::warn(R"(DEBUG request="{}")"sv, request);
       (*connection_)(request, callback, request_id);
     };
-    auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
+    auto now_utc = std::chrono::duration_cast<std::chrono::milliseconds>(message_info.receive_time_utc);
     auto expires_after_utc = now_utc + shared_.settings.rest.recv_window;
     auto [action, packed] = tools::Encoder::cancel_order(cancel_order, order, ref_data, request_id, previous_request_id, now_utc, expires_after_utc);
     auto request = account_.sign_l1_action(action, packed, now_utc, expires_after_utc);

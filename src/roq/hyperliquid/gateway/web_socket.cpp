@@ -190,7 +190,7 @@ void WebSocket::operator()(Trace<ConnectionStatus> const &event, std::string_vie
 uint16_t WebSocket::operator()(
     Event<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &ref_data, std::string_view const &request_id) {
   auto &[message_info, create_order] = event;
-  auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
+  auto now_utc = std::chrono::duration_cast<std::chrono::milliseconds>(message_info.receive_time_utc);
   auto expires_after_utc = now_utc + shared_.settings.rest.recv_window;
   auto [action, packed] = tools::Encoder::create_order(create_order, order, ref_data, request_id, now_utc, expires_after_utc);
   auto request = account_.sign_l1_action(action, packed, now_utc, expires_after_utc);
@@ -218,7 +218,7 @@ uint16_t WebSocket::operator()(
     std::string_view const &request_id,
     std::string_view const &previous_request_id) {
   auto &[message_info, modify_order] = event;
-  auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
+  auto now_utc = std::chrono::duration_cast<std::chrono::milliseconds>(message_info.receive_time_utc);
   auto expires_after_utc = now_utc + shared_.settings.rest.recv_window;
   auto [action, packed] = tools::Encoder::modify_order(modify_order, order, ref_data, request_id, previous_request_id, now_utc, expires_after_utc);
   auto request = account_.sign_l1_action(action, packed, now_utc, expires_after_utc);
@@ -246,7 +246,7 @@ uint16_t WebSocket::operator()(
     std::string_view const &request_id,
     std::string_view const &previous_request_id) {
   auto &[message_info, cancel_order] = event;
-  auto now_utc = clock::get_realtime<std::chrono::milliseconds>();
+  auto now_utc = std::chrono::duration_cast<std::chrono::milliseconds>(message_info.receive_time_utc);
   auto expires_after_utc = now_utc + shared_.settings.rest.recv_window;
   auto [action, packed] = tools::Encoder::cancel_order(cancel_order, order, ref_data, request_id, previous_request_id, now_utc, expires_after_utc);
   auto request = account_.sign_l1_action(action, packed, now_utc, expires_after_utc);
