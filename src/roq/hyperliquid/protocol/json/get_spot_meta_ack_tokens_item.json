@@ -36,6 +36,10 @@
     {
       "name": "deployerTradingFeeShare",
       "type": "std/double"
+    },
+    {
+      "name": "deployerLabel",
+      "type": "std/string_view"
     }
   ]
 }
