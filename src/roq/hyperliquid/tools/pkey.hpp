@@ -6,9 +6,9 @@
 
 #include <memory>
 
-#include "roq/hyperliquid/tools/bignum.hpp"
-#include "roq/hyperliquid/tools/group.hpp"
-#include "roq/hyperliquid/tools/point.hpp"
+#include "roq/utils/etherum/bignum.hpp"
+#include "roq/utils/etherum/group.hpp"
+#include "roq/utils/etherum/point.hpp"
 
 namespace roq {
 namespace hyperliquid {
@@ -23,9 +23,9 @@ struct PKey final {
   operator value_type *() { return handle_.get(); }
   operator value_type const *() const { return handle_.get(); }
 
-  Group get_group() const;
-  BigNum get_private_key() const;
-  Point get_public_key() const;
+  utils::etherum::Group get_group() const;
+  utils::etherum::BigNum get_private_key() const;
+  utils::etherum::Point get_public_key() const;
 
   static PKey create_from_private_key(std::string_view const &);
 

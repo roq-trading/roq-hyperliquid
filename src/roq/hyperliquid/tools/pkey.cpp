@@ -47,20 +47,20 @@ PKey::PKey(value_type *value) : handle_{create_1<decltype(handle_)>(value)} {
 PKey::PKey(value_type const *value) : handle_{create_2<decltype(handle_)>(const_cast<value_type *>(value))} {
 }
 
-Group PKey::get_group() const {
+utils::etherum::Group PKey::get_group() const {
   throw RuntimeError{"NOT IMPLEMENTED"sv};
 }
 
-BigNum PKey::get_private_key() const {
-  BigNum result;
-  auto tmp = static_cast<BigNum::value_type *>(result);
+utils::etherum::BigNum PKey::get_private_key() const {
+  utils::etherum::BigNum result;
+  auto tmp = static_cast<utils::etherum::BigNum::value_type *>(result);
   if (EVP_PKEY_get_bn_param(handle_.get(), OSSL_PKEY_PARAM_PRIV_KEY, &tmp) == 0) {
     throw RuntimeError{"EVP_PKEY_get_bn_param"sv};
   }
   return result;
 }
 
-Point PKey::get_public_key() const {
+utils::etherum::Point PKey::get_public_key() const {
   throw RuntimeError{"NOT IMPLEMENTED"sv};
   // EVP_PKEY_get_raw_public_key ???
 }

@@ -9,7 +9,7 @@
 
 #include "roq/utils/hash/keccak256.hpp"
 
-#include "roq/hyperliquid/tools/wallet.hpp"
+#include "roq/utils/etherum/wallet.hpp"
 
 namespace roq {
 namespace hyperliquid {
@@ -32,7 +32,7 @@ struct Crypto final {
 
   std::string const key_;
   bool const mainnet_;
-  Wallet wallet_;
+  utils::etherum::Wallet wallet_;
   Digest digest_;
   Hash hash_;
 };

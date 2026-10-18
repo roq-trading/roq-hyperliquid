@@ -6,7 +6,7 @@
 
 #include "roq/utils/codec/hex.hpp"
 
-#include "roq/hyperliquid/tools/eip712.hpp"
+#include "roq/utils/etherum/eip712.hpp"
 
 using namespace std::literals;
 
@@ -68,7 +68,7 @@ std::string Crypto::sign_l1_action(
       {"types", types},
       {"message", phantom_agent},
   };
-  auto hash = EIP712::encodeTypedData(hash_, payload);
+  auto hash = utils::etherum::EIP712::encodeTypedData(hash_, payload);
   auto signature = wallet_.sign_ecdsa(hash);
   auto result = fmt::format(
       R"({{)"

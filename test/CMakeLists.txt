@@ -30,9 +30,7 @@ set(SOURCES
     json_user_fills.cpp
     json_user_fundings.cpp
     tools_conversions.cpp
-    tools_key.cpp
     tools_pkey.cpp
-    tools_wallet.cpp
     main.cpp)
 
 roq_gitignore(OUTPUT .gitignore SOURCES ${TARGET_NAME})
