@@ -19,7 +19,7 @@ namespace tools {
 // === CONSTANTS ===
 
 namespace {
-auto const DOMAIN = utils::eth::Domain{
+auto const EIP712_DOMAIN = utils::eth::Domain{
     .name = "Exchange"sv,
     .version = "1"sv,
     .chain_id = 1337,
@@ -76,7 +76,7 @@ std::string Crypto::sign_l1_action(
       .type = "Agent"sv,
       .data = data,
   };
-  auto signable_message = utils::eth::Messages::encode_typed_data(hash_, DOMAIN, message);
+  auto signable_message = utils::eth::Messages::encode_typed_data(hash_, EIP712_DOMAIN, message);
   auto signed_message = account_.sign_message(hash_, signable_message);
   return fmt::format(
       R"({{)"
