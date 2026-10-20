@@ -134,21 +134,21 @@ auto pack_helper(auto &action, auto now_utc, auto expires_after_utc) {
 
 std::pair<std::string, std::vector<std::byte>> Encoder::create_order(
     CreateOrder const &create_order,
-    server::oms::Order const &order,
+    server::oms::Order const &,
     server::oms::RefData const &ref_data,
     std::string_view const &request_id,
     std::chrono::milliseconds now_utc,
     std::chrono::milliseconds expires_after_utc) {
-  auto is_buy = is_buy_helper(order.side);
+  auto is_buy = is_buy_helper(create_order.side);
   auto reduce_only = create_order.execution_instructions.has(ExecutionInstruction::DO_NOT_INCREASE);
   auto cloid = fmt::format("0x{:0>32}"sv, request_id);
-  auto order_type = order_type_helper_2(order);
+  auto order_type = order_type_helper_2(create_order);
   auto sz_decimals = utils::decimal_digits(ref_data.quantity.precision);
   auto is_spot = ref_data.external_security_id >= 10000;
   auto price = Conversions::floatToWire(Conversions::roundPrice(create_order.price, sz_decimals, is_spot));
   auto size = Conversions::floatToWire(Conversions::roundSize(create_order.quantity, sz_decimals));
   auto action = [&]() {
-    auto order_type = order_type_helper_2(order);
+    // auto order_type = order_type_helper_2(order);
     auto order_2 = nlohmann::ordered_json{
         {"a", ref_data.external_security_id},
         {"b", is_buy},

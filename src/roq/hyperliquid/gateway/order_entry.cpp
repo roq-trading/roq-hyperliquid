@@ -612,6 +612,7 @@ void OrderEntry::create_order(
     auto expires_after_utc = now_utc + shared_.settings.rest.recv_window;
     auto [action, packed] = tools::Encoder::create_order(create_order, order, ref_data, request_id, now_utc, expires_after_utc);
     auto request = account_.sign_l1_action(action, packed, now_utc, expires_after_utc);
+    log::warn("DEBUG request={}"sv, request);
     send_request(request);
   });
 }
