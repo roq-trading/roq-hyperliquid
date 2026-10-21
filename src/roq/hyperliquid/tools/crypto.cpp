@@ -83,17 +83,17 @@ std::string Crypto::sign_l1_action(
       R"("action":{},)"
       R"("nonce":{},)"
       R"("signature":{{)"
-      R"("v":{},)"
       R"("r":"0x{}",)"
-      R"("s":"0x{}")"
+      R"("s":"0x{}",)"
+      R"("v":{})"
       R"(}},)"
       R"("expiresAfter":{})"
       R"(}})"sv,
       action,
       nonce_.count(),
-      signed_message.v(),
       utils::codec::HexPrinter{signed_message.r()},
       utils::codec::HexPrinter{signed_message.s()},
+      signed_message.v(),
       expires_after_utc.count());
 }
 
