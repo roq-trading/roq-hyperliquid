@@ -84,9 +84,9 @@ TEST_CASE("simple", "[json_create_order]") {
                  R"(},)"
                  R"("nonce":123,)"
                  R"("signature":{)"
-                 R"("v":28,)"
                  R"("r":"0xb7181dd1b09de894dfe23f4ab736252f8941c6c292dd670342598cd310b93535",)"
-                 R"("s":"0x61e3f2c4a54afdaf77983b957b618c88e3a6b8ba78e08ea31d2db0d67038ef84")"
+                 R"("s":"0x61e3f2c4a54afdaf77983b957b618c88e3a6b8ba78e08ea31d2db0d67038ef84",)"
+                 R"("v":28)"
                  R"(},)"
                  R"("expiresAfter":234)"
                  R"(})"sv);
