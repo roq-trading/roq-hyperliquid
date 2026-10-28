@@ -84,7 +84,7 @@ auto get_exchange_from_coin(auto &coin, auto &settings) {
 
 // === IMPLEMENTATION ===
 
-DropCopy::DropCopy(Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared)
+DropCopy::DropCopy(Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared, Request &request)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, ping_frequency_{shared.settings.ws.ping_freq},
       connection_{create_connection(*this, shared.settings, context, shared)}, decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
@@ -105,7 +105,7 @@ DropCopy::DropCopy(Handler &handler, io::Context &context, uint16_t stream_id, A
           .ping = create_metrics(shared.settings, name_, "ping"sv),
           .heartbeat = create_metrics(shared.settings, name_, "heartbeat"sv),
       },
-      account_{account}, shared_{shared} {
+      account_{account}, shared_{shared}, request_{request}, download_{shared.settings.rest.request_timeout, [this](auto &event) { return download(event); }} {
 }
 
 // server::Stream
@@ -120,9 +120,13 @@ void DropCopy::operator()(Trace<Stop> const &) {
 
 void DropCopy::operator()(Trace<Timer> const &event) {
   auto &[trace_info, timer] = event;
-  (*connection_).refresh(timer.now);
-  if (ready() && next_ping_ < timer.now) {
-    send_ping(timer.now);
+  if ((*connection_).refresh(timer.now)) {
+    if (ready()) {
+      if (next_ping_ < timer.now) {
+        send_ping(timer.now);
+      }
+    }
+    check_request_queue(trace_info);
   }
 }
 
@@ -176,12 +180,13 @@ void DropCopy::operator()(Trace<web::socket::Disconnected> const &event) {
   auto &[trace_info, disconnected] = event;
   ++counter_.disconnect;
   create_trace_and_dispatch_2(trace_info, ConnectionStatus::DISCONNECTED);
+  download_.reset();
 }
 
 void DropCopy::operator()(Trace<web::socket::Ready> const &event) {
   auto &[trace_info, ready] = event;
   create_trace_and_dispatch_2(trace_info, ConnectionStatus::READY);
-  subscribe();
+  download_.begin(trace_info);
 }
 
 void DropCopy::operator()(Trace<web::socket::Close> const &event) {
@@ -209,6 +214,58 @@ void DropCopy::operator()(Trace<web::socket::Binary> const &) {
   log::fatal("Unexpected"sv);
 }
 
+// core::Download
+
+int32_t DropCopy::download(Trace<State> const &event) {
+  auto &[trace_info, state] = event;
+  switch (state) {
+    using enum State;
+    case UNDEFINED:
+      assert(false);
+      break;
+    case SUBSCRIBE_NOTIFICATION:
+      subscribe("notification"sv);
+      return 1;
+    case SUBSCRIBE_USER_FUNDINGS:
+      subscribe("userFundings"sv);
+      return 1;
+    case GET_SPOT_CLEARING_HOUSE_STATE:
+      create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "spot-clearing-house-state"sv);
+      request_.spot_clearing_house_state.request(trace_info);
+      return 1;
+    case GET_CLEARING_HOUSE_STATE:
+      create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "clearing-house-state"sv);
+      request_.clearing_house_state.request(trace_info);
+      return 1;
+    case SUBSCRIBE_ORDER_UPDATES:
+      subscribe("orderUpdates"sv);
+      return 1;
+    case GET_OPEN_ORDERS:
+      create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "open-orders"sv);
+      request_.orders.request(trace_info);
+      return 1;
+    case SUBSCRIBE_USER_FILLS:
+      subscribe("userFills"sv);
+      return 1;
+    case GET_USER_FILLS:
+      if (shared_.settings.download.trades_lookback.count()) {
+        create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "user-fills"sv);
+        request_.trades.request(trace_info);
+        return 1;
+      } else {
+        return 0;
+      }
+    case SUBSCRIBE_USER_EVENTS:
+      subscribe("userEvents"sv);
+      return 1;
+    case DONE:
+      create_trace_and_dispatch_2(trace_info, ConnectionStatus::READY);
+      return 0;
+  }
+  assert(false);
+  return 0;
+}
+
 // protocol::json::Parser::Handler
 
 void DropCopy::operator()(Trace<protocol::json::Pong> const &event) {
@@ -232,6 +289,31 @@ void DropCopy::operator()(Trace<protocol::json::SubscriptionResponse> const &eve
     auto &[trace_info, subscription_response] = event;
     log::info<2>("subscription_response={}"sv, subscription_response);
     (*connection_).touch(trace_info.source_receive_time);
+    switch (subscription_response.data.subscription.type) {
+      using enum protocol::json::SubscriptionType::type_t;
+      case UNDEFINED_INTERNAL:
+      case UNKNOWN_INTERNAL:
+      case BBO:
+      case L2_BOOK:
+      case TRADES:
+      case ACTIVE_ASSET_CTX:
+        break;
+      case NOTIFICATION:
+        download_.check(trace_info, State::SUBSCRIBE_NOTIFICATION);
+        break;
+      case USER_FUNDINGS:
+        download_.check(trace_info, State::SUBSCRIBE_USER_FUNDINGS);
+        break;
+      case ORDER_UPDATES:
+        download_.check(trace_info, State::SUBSCRIBE_ORDER_UPDATES);
+        break;
+      case USER_FILLS:
+        download_.check(trace_info, State::SUBSCRIBE_USER_FILLS);
+        break;
+      case USER_EVENTS:
+        download_.check(trace_info, State::SUBSCRIBE_USER_EVENTS);
+        break;
+    }
   });
 }
 
@@ -365,15 +447,6 @@ void DropCopy::operator()(Trace<protocol::json::ActionCancel> const &) {
 
 // helpers
 
-void DropCopy::subscribe() {
-  subscribe("notification"sv);
-  subscribe("orderUpdates"sv);
-  subscribe("userEvents"sv);
-  subscribe("userFills"sv);
-  subscribe("userFundings"sv);
-  // subscribe("userNonFundingLedgerUpdates"sv);
-}
-
 void DropCopy::subscribe(std::string_view const &type) {
   auto message = fmt::format(
       R"({{)"
@@ -396,9 +469,50 @@ void DropCopy::send_ping(std::chrono::nanoseconds now) {
   (*connection_).send_text(message);
 }
 
+void DropCopy::check_request_queue(TraceInfo const &trace_info) {
+  auto state = download_.state();
+  switch (state) {
+    using enum State;
+    case UNDEFINED:
+      break;
+    case SUBSCRIBE_NOTIFICATION:
+      break;
+    case SUBSCRIBE_USER_FUNDINGS:
+      break;
+    case GET_SPOT_CLEARING_HOUSE_STATE:
+      if (request_.spot_clearing_house_state.has_response()) {
+        download_.check(trace_info, state);
+      }
+      break;
+    case GET_CLEARING_HOUSE_STATE:
+      if (request_.clearing_house_state.has_response()) {
+        download_.check(trace_info, state);
+      }
+      break;
+    case SUBSCRIBE_ORDER_UPDATES:
+      break;
+    case GET_OPEN_ORDERS:
+      if (request_.orders.has_response()) {
+        download_.check(trace_info, state);
+      }
+      break;
+    case SUBSCRIBE_USER_FILLS:
+      break;
+    case GET_USER_FILLS:
+      if (request_.trades.has_response()) {
+        download_.check(trace_info, state);
+      }
+      break;
+    case SUBSCRIBE_USER_EVENTS:
+      break;
+    case DONE:
+      break;
+  }
+}
+
 void DropCopy::parse(TraceInfo const &trace_info, std::string_view const &message) {
   profile_.parse([&]() {
-    log::warn("DEBUG {}"sv, message);
+    // log::warn("DEBUG {}"sv, message);
     auto log_message = [&]() { log::warn(R"(*** PLEASE REPORT *** message="{}")"sv, message); };
     try {
       if (!protocol::json::Parser::dispatch(*this, message, decode_buffer_, trace_info, shared_.settings.experimental.allow_unknown_event_types)) {

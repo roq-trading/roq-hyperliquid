@@ -90,6 +90,7 @@ set(AUTOGEN_SCHEMAS
     subscription_response.json
     subscription_response_data.json
     subscription_response_data_subscription.json
+    subscription_type.json
     time_in_force.json
     trades.json
     trades_data_item.json

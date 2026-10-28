@@ -85,6 +85,7 @@ status.hpp
 subscription_response.hpp
 subscription_response_data.hpp
 subscription_response_data_subscription.hpp
+subscription_type.hpp
 time_in_force.hpp
 trades.hpp
 trades_data_item.hpp
@@ -183,6 +184,7 @@ status.cpp
 subscription_response.cpp
 subscription_response_data.cpp
 subscription_response_data_subscription.cpp
+subscription_type.cpp
 time_in_force.cpp
 trades.cpp
 trades_data_item.cpp

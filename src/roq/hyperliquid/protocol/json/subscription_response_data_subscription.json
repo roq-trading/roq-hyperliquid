@@ -4,7 +4,7 @@
   "values": [
     {
       "name": "type",
-      "type": "std/string_view"
+      "type": "roq/hyperliquid/protocol/json/SubscriptionType"
     },
     {
       "name": "coin",

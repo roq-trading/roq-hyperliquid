@@ -96,7 +96,7 @@ auto get_exchange_from_coin(auto &coin, auto &settings) {
 
 // === IMPLEMENTATION ===
 
-OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared)
+OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared, Request &request)
     : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, connection_{create_connection(*this, shared.settings, context, shared)},
       decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
@@ -121,8 +121,7 @@ OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_i
       latency_{
           .ping = create_metrics(shared.settings, name_, "ping"sv),
       },
-      account_{account}, shared_{shared}, download_{shared.settings.rest.request_timeout, [this](auto &event) { return download(event); }},
-      rate_limiter{create_rate_limiter(shared.settings)} {
+      account_{account}, shared_{shared}, request_{request}, rate_limiter{create_rate_limiter(shared.settings)} {
 }
 
 // server::Stream
@@ -137,7 +136,15 @@ void OrderEntry::operator()(Trace<Stop> const &) {
 
 void OrderEntry::operator()(Trace<Timer> const &event) {
   auto &[trace_info, timer] = event;
-  (*connection_).refresh(timer.now);
+  if ((*connection_).refresh(timer.now)) {
+    if (ready()) {
+      try {
+        check_request_queue(trace_info);
+      } catch (NotConnected &) {
+        // note! ok
+      }
+    }
+  }
 }
 
 void OrderEntry::operator()(metrics::Writer &writer) const {
@@ -221,20 +228,13 @@ uint16_t OrderEntry::operator()(Event<CancelAllOrders> const &, [[maybe_unused]]
 
 void OrderEntry::operator()(Trace<web::rest::Connected> const &event) {
   auto &[trace_info, connected] = event;
-  if (download_.downloading()) {
-    download_.bump(trace_info);
-  } else {
-    download_.begin(trace_info);
-  }
+  create_trace_and_dispatch_2(trace_info, ConnectionStatus::READY);
 }
 
 void OrderEntry::operator()(Trace<web::rest::Disconnected> const &event) {
   auto &[trace_info, disconnected] = event;
   ++counter_.disconnect;
   create_trace_and_dispatch_2(trace_info, ConnectionStatus::DISCONNECTED);
-  if (!download_.downloading()) {
-    download_.reset();
-  }
 }
 
 void OrderEntry::operator()(Trace<web::rest::Latency> const &event) {
@@ -248,46 +248,9 @@ void OrderEntry::operator()(Trace<web::rest::Latency> const &event) {
   latency_.ping.update(latency.sample);
 }
 
-// core::Download
-
-int32_t OrderEntry::download(Trace<State> const &event) {
-  auto &[trace_info, state] = event;
-  switch (state) {
-    using enum State;
-    case UNDEFINED:
-      assert(false);
-      break;
-    case SPOT_CLEARING_HOUSE_STATE:
-      create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "spot-clearing-house-state"sv);
-      get_spot_clearing_house_state();
-      return 1;
-    case CLEARING_HOUSE_STATE:
-      create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "clearing-house-state"sv);
-      get_clearing_house_state(0);
-      return 1;
-    case OPEN_ORDERS:
-      create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "open-orders"sv);
-      get_open_orders(0);
-      return 1;
-    case USER_FILLS:
-      if (shared_.settings.download.trades_lookback.count()) {
-        create_trace_and_dispatch_2(trace_info, ConnectionStatus::DOWNLOADING, "user-fills"sv);
-        get_user_fills(0);
-        return 1;
-      } else {
-        return 0;
-      }
-    case DONE:
-      create_trace_and_dispatch_2(trace_info, ConnectionStatus::READY);
-      return 0;
-  }
-  assert(false);
-  return 0;
-}
-
 // spot-clearing-house-state
 
-void OrderEntry::get_spot_clearing_house_state() {
+void OrderEntry::get_spot_clearing_house_state(TraceInfo const &) {
   profile_.spot_clearing_house_state([&]() {
     auto body = fmt::format(
         R"({{)"
@@ -306,32 +269,24 @@ void OrderEntry::get_spot_clearing_house_state() {
         .quality_of_service = {},
     };
     // log::warn("DEBUG request={}"sv, request);
-    auto callback = [this, sequence = download_.sequence()](auto &event, [[maybe_unused]] auto &request_id) {
-      get_spot_clearing_house_state_ack(event, sequence);
-    };
+    auto callback = [this](auto &event, [[maybe_unused]] auto &request_id) { get_spot_clearing_house_state_ack(event); };
     (*connection_)(request, callback, "spot-clearing-house-state"sv);
   });
 }
 
-void OrderEntry::get_spot_clearing_house_state_ack(Trace<web::rest::Response> const &event, uint32_t sequence) {
-  auto const STATE = State::SPOT_CLEARING_HOUSE_STATE;
+void OrderEntry::get_spot_clearing_house_state_ack(Trace<web::rest::Response> const &event) {
   profile_.spot_clearing_house_state_ack([&]() {
     auto &[trace_info, response] = event;
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
-      download_.retry(STATE);
     };
     auto handle_success = [&](auto &body) {
       // log::warn("DEBUG {}"sv, body);
-      if (download_.skip(sequence, STATE)) {
-        log::info("Download state={} has already been processed"sv, STATE);
-      } else {
-        protocol::json::GetSpotClearingHouseStateAck spot_clearing_house_state_ack{body, decode_buffer_};
-        create_trace_and_dispatch_2(trace_info, spot_clearing_house_state_ack);
-        download_.check(trace_info, STATE);
-      }
+      protocol::json::GetSpotClearingHouseStateAck spot_clearing_house_state_ack{body, decode_buffer_};
+      create_trace_and_dispatch_2(trace_info, spot_clearing_house_state_ack);
     };
     process_response(event, handle_error, handle_success);
+    request_.spot_clearing_house_state.commit(trace_info);
   });
 }
 
@@ -343,7 +298,7 @@ void OrderEntry::operator()(Trace<protocol::json::GetSpotClearingHouseStateAck> 
 
 // clearing-house-state
 
-void OrderEntry::get_clearing_house_state(size_t index) {
+void OrderEntry::get_clearing_house_state(TraceInfo const &, size_t index) {
   profile_.clearing_house_state([&]() {
     assert(index < std::size(shared_.dex));
     auto &dex = shared_.dex[index];
@@ -366,37 +321,32 @@ void OrderEntry::get_clearing_house_state(size_t index) {
         .quality_of_service = {},
     };
     // log::warn("DEBUG request={}"sv, request);
-    auto callback = [this, sequence = download_.sequence(), index = index](auto &event, [[maybe_unused]] auto &request_id) {
-      get_clearing_house_state_ack(event, sequence, index);
-    };
+    auto callback = [this, index = index](auto &event, [[maybe_unused]] auto &request_id) { get_clearing_house_state_ack(event, index); };
     (*connection_)(request, callback, "clearing-house-state"sv);
   });
 }
 
-void OrderEntry::get_clearing_house_state_ack(Trace<web::rest::Response> const &event, uint32_t sequence, size_t index) {
-  auto const STATE = State::CLEARING_HOUSE_STATE;
+void OrderEntry::get_clearing_house_state_ack(Trace<web::rest::Response> const &event, size_t index) {
   profile_.clearing_house_state_ack([&]() {
     auto &[trace_info, response] = event;
+    auto finished = true;
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
-      download_.retry(STATE);
     };
     auto handle_success = [&](auto &body) {
       // log::warn("DEBUG {}"sv, body);
-      if (download_.skip(sequence, STATE)) {
-        log::info("Download state={} has already been processed"sv, STATE);
-      } else {
-        protocol::json::GetClearingHouseStateAck clearing_house_state_ack{body, decode_buffer_};
-        create_trace_and_dispatch_2(trace_info, clearing_house_state_ack, index);
-        auto next_index = index + 1;
-        if (next_index >= std::size(shared_.dex)) {
-          download_.check(trace_info, STATE);
-        } else {
-          get_clearing_house_state(next_index);
-        }
+      protocol::json::GetClearingHouseStateAck clearing_house_state_ack{body, decode_buffer_};
+      create_trace_and_dispatch_2(trace_info, clearing_house_state_ack, index);
+      auto next_index = index + 1;
+      if (next_index < std::size(shared_.dex)) {
+        finished = false;
+        get_clearing_house_state(trace_info, next_index);
       }
     };
     process_response(event, handle_error, handle_success);
+    if (finished) {
+      request_.clearing_house_state.commit(trace_info);
+    }
   });
 }
 
@@ -408,7 +358,7 @@ void OrderEntry::operator()(Trace<protocol::json::GetClearingHouseStateAck> cons
 
 // open-orders
 
-void OrderEntry::get_open_orders(size_t index) {
+void OrderEntry::get_open_orders(TraceInfo const &, size_t index) {
   profile_.open_orders([&]() {
     assert(index < std::size(shared_.dex));
     auto &dex = shared_.dex[index];
@@ -431,37 +381,32 @@ void OrderEntry::get_open_orders(size_t index) {
         .quality_of_service = {},
     };
     // log::warn("DEBUG request={}"sv, request);
-    auto callback = [this, sequence = download_.sequence(), index = index](auto &event, [[maybe_unused]] auto &request_id) {
-      get_open_orders_ack(event, sequence, index);
-    };
+    auto callback = [this, index = index](auto &event, [[maybe_unused]] auto &request_id) { get_open_orders_ack(event, index); };
     (*connection_)(request, callback, "open-orders"sv);
   });
 }
 
-void OrderEntry::get_open_orders_ack(Trace<web::rest::Response> const &event, uint32_t sequence, size_t index) {
-  auto const STATE = State::OPEN_ORDERS;
+void OrderEntry::get_open_orders_ack(Trace<web::rest::Response> const &event, size_t index) {
   profile_.open_orders_ack([&]() {
     auto &[trace_info, response] = event;
+    auto finished = true;
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
-      download_.retry(STATE);
     };
     auto handle_success = [&](auto &body) {
       // log::warn("DEBUG {}"sv, body);
-      if (download_.skip(sequence, STATE)) {
-        log::info("Download state={} has already been processed"sv, STATE);
-      } else {
-        protocol::json::GetOpenOrdersAck open_orders_ack{body, decode_buffer_};
-        create_trace_and_dispatch_2(trace_info, open_orders_ack, index);
-        auto next_index = index + 1;
-        if (next_index >= std::size(shared_.dex)) {
-          download_.check(trace_info, STATE);
-        } else {
-          get_open_orders(next_index);
-        }
+      protocol::json::GetOpenOrdersAck open_orders_ack{body, decode_buffer_};
+      create_trace_and_dispatch_2(trace_info, open_orders_ack, index);
+      auto next_index = index + 1;
+      if (next_index < std::size(shared_.dex)) {
+        finished = false;  // note! continue
+        get_open_orders(trace_info, next_index);
       }
     };
     process_response(event, handle_error, handle_success);
+    if (finished) {
+      request_.orders.commit(trace_info);
+    }
   });
 }
 
@@ -518,7 +463,7 @@ void OrderEntry::operator()(Trace<protocol::json::GetOpenOrdersAck> const &event
 
 // user-fills
 
-void OrderEntry::get_user_fills(size_t index) {
+void OrderEntry::get_user_fills(TraceInfo const &, size_t index) {
   profile_.user_fills([&]() {
     assert(index < std::size(shared_.dex));
     auto &dex = shared_.dex[index];
@@ -541,37 +486,32 @@ void OrderEntry::get_user_fills(size_t index) {
         .quality_of_service = {},
     };
     // log::warn("DEBUG request={}"sv, request);
-    auto callback = [this, sequence = download_.sequence(), index = index](auto &event, [[maybe_unused]] auto &request_id) {
-      get_user_fills_ack(event, sequence, index);
-    };
+    auto callback = [this, index = index](auto &event, [[maybe_unused]] auto &request_id) { get_user_fills_ack(event, index); };
     (*connection_)(request, callback, "user-fills"sv);
   });
 }
 
-void OrderEntry::get_user_fills_ack(Trace<web::rest::Response> const &event, uint32_t sequence, size_t index) {
-  auto const STATE = State::USER_FILLS;
+void OrderEntry::get_user_fills_ack(Trace<web::rest::Response> const &event, size_t index) {
   profile_.user_fills_ack([&]() {
     auto &[trace_info, response] = event;
+    auto finished = true;
     auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
       log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
-      download_.retry(STATE);
     };
     auto handle_success = [&](auto &body) {
       // log::warn("DEBUG {}"sv, body);
-      if (download_.skip(sequence, STATE)) {
-        log::info("Download state={} has already been processed"sv, STATE);
-      } else {
-        protocol::json::GetUserFillsAck user_fills_ack{body, decode_buffer_};
-        create_trace_and_dispatch_2(trace_info, user_fills_ack, index);
-        auto next_index = index + 1;
-        if (next_index >= std::size(shared_.dex)) {
-          download_.check(trace_info, STATE);
-        } else {
-          get_user_fills(next_index);
-        }
+      protocol::json::GetUserFillsAck user_fills_ack{body, decode_buffer_};
+      create_trace_and_dispatch_2(trace_info, user_fills_ack, index);
+      auto next_index = index + 1;
+      if (next_index < std::size(shared_.dex)) {
+        finished = false;  // note! continue
+        get_user_fills(trace_info, next_index);
       }
     };
     process_response(event, handle_error, handle_success);
+    if (finished) {
+      request_.trades.commit(trace_info);
+    }
   });
 }
 
@@ -832,6 +772,13 @@ void OrderEntry::operator()(
 }
 
 // helpers
+
+void OrderEntry::check_request_queue(TraceInfo const &trace_info) {
+  request_.spot_clearing_house_state.check_pending(trace_info, [this](auto &trace_info) { get_spot_clearing_house_state(trace_info); });
+  request_.clearing_house_state.check_pending(trace_info, [this](auto &trace_info) { get_clearing_house_state(trace_info); });
+  request_.orders.check_pending(trace_info, [this](auto &trace_info) { get_open_orders(trace_info); });
+  request_.trades.check_pending(trace_info, [this](auto &trace_info) { get_user_fills(trace_info); });
+}
 
 void OrderEntry::process_response(Trace<web::rest::Response> const &event, auto error_handler, auto success_handler) {
   auto &[trace_info, response] = event;

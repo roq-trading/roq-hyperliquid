@@ -12,8 +12,6 @@
 
 #include "roq/web/rest/client.hpp"
 
-#include "roq/core/download_2.hpp"
-
 #include "roq/core/json/buffer_stack.hpp"
 
 #include "roq/core/limit/rate_limiter.hpp"
@@ -21,6 +19,7 @@
 #include "roq/server/stream.hpp"
 
 #include "roq/hyperliquid/gateway/account.hpp"
+#include "roq/hyperliquid/gateway/request.hpp"
 #include "roq/hyperliquid/gateway/shared.hpp"
 
 #include "roq/hyperliquid/protocol/json/get_clearing_house_state_ack.hpp"
@@ -43,7 +42,7 @@ struct OrderEntry final : public Base<OrderEntry>, public server::OrderActionStr
 
   struct Handler {};
 
-  OrderEntry(Handler &, io::Context &context, uint16_t stream_id, Account &, Shared &);
+  OrderEntry(Handler &, io::Context &context, uint16_t stream_id, Account &, Shared &, Request &);
 
   // protected:
   friend base_type;
@@ -87,41 +86,28 @@ struct OrderEntry final : public Base<OrderEntry>, public server::OrderActionStr
   void operator()(Trace<web::rest::Disconnected> const &) override;
   void operator()(Trace<web::rest::Latency> const &) override;
 
-  // core::Download
+  // spot-clearing-house-state
 
-  enum class State {
-    UNDEFINED = 0,
-    SPOT_CLEARING_HOUSE_STATE,
-    CLEARING_HOUSE_STATE,
-    OPEN_ORDERS,
-    USER_FILLS,
-    DONE,
-  };
-
-  int32_t download(Trace<State> const &);
+  void get_spot_clearing_house_state(TraceInfo const &);
+  void get_spot_clearing_house_state_ack(Trace<web::rest::Response> const &);
+  void operator()(Trace<protocol::json::GetSpotClearingHouseStateAck> const &);
 
   // clearing-house-state
 
-  void get_clearing_house_state(size_t index);
-  void get_clearing_house_state_ack(Trace<web::rest::Response> const &, uint32_t sequence, size_t index);
+  void get_clearing_house_state(TraceInfo const &, size_t index = 0);
+  void get_clearing_house_state_ack(Trace<web::rest::Response> const &, size_t index);
   void operator()(Trace<protocol::json::GetClearingHouseStateAck> const &, size_t index);
-
-  // spot-clearing-house-state
-
-  void get_spot_clearing_house_state();
-  void get_spot_clearing_house_state_ack(Trace<web::rest::Response> const &, uint32_t sequence);
-  void operator()(Trace<protocol::json::GetSpotClearingHouseStateAck> const &);
 
   // open-orders
 
-  void get_open_orders(size_t index);
-  void get_open_orders_ack(Trace<web::rest::Response> const &, uint32_t sequence, size_t index);
+  void get_open_orders(TraceInfo const &, size_t index = 0);
+  void get_open_orders_ack(Trace<web::rest::Response> const &, size_t index);
   void operator()(Trace<protocol::json::GetOpenOrdersAck> const &, size_t index);
 
   // user-fills
 
-  void get_user_fills(size_t index);
-  void get_user_fills_ack(Trace<web::rest::Response> const &, uint32_t sequence, size_t index);
+  void get_user_fills(TraceInfo const &, size_t index = 0);
+  void get_user_fills_ack(Trace<web::rest::Response> const &, size_t index);
   void operator()(Trace<protocol::json::GetUserFillsAck> const &, size_t index);
 
   // create-order
@@ -154,6 +140,8 @@ struct OrderEntry final : public Base<OrderEntry>, public server::OrderActionStr
 
   // helpers
 
+  void check_request_queue(TraceInfo const &);
+
   void process_response(Trace<web::rest::Response> const &, auto error_handler, auto success_handler);
 
  private:
@@ -180,9 +168,9 @@ struct OrderEntry final : public Base<OrderEntry>, public server::OrderActionStr
   Account &account_;
   // cache
   Shared &shared_;
+  Request &request_;
   // state
   ConnectionStatus connection_status_ = {};
-  core::Download2<State> download_;
   // ...
   core::limit::RateLimiter rate_limiter;
 };
