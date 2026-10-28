@@ -1,0 +1,33 @@
+{
+  "name": "roq/hyperliquid/protocol/json/SubscriptionType",
+  "type": "enum",
+  "values": [
+    {
+      "name": "bbo"
+    },
+    {
+      "name": "l2Book"
+    },
+    {
+      "name": "trades"
+    },
+    {
+      "name": "activeAssetCtx"
+    },
+    {
+      "name": "notification"
+    },
+    {
+      "name": "userFundings"
+    },
+    {
+      "name": "orderUpdates"
+    },
+    {
+      "name": "userFills"
+    },
+    {
+      "name": "userEvents"
+    }
+  ]
+}
