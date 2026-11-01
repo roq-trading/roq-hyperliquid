@@ -15,6 +15,7 @@ set(SOURCES
     json_get_clearing_house_state_ack.cpp
     json_get_meta_ack.cpp
     json_get_open_orders_ack.cpp
+    json_get_order_status_ack.cpp
     json_get_perp_dexs_ack.cpp
     json_get_spot_clearing_house_state_ack.cpp
     json_get_spot_meta_ack.cpp

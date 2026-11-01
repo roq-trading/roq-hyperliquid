@@ -53,6 +53,9 @@ set(AUTOGEN_SCHEMAS
     get_meta_ack_universe_item.json
     get_open_orders_ack.json
     get_open_orders_ack_item.json
+    get_order_status_ack.json
+    get_order_status_ack_order.json
+    get_order_status_ack_order_order.json
     get_perp_dexs_ack.json
     get_perp_dexs_ack_item.json
     get_spot_clearing_house_state_ack.json
@@ -74,6 +77,7 @@ set(AUTOGEN_SCHEMAS
     notification.json
     notification_data_item.json
     order_status.json
+    order_type.json
     order_updates.json
     order_updates_data_item.json
     order_updates_data_item_order.json

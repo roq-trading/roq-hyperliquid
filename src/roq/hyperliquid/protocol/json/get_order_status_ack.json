@@ -1,0 +1,14 @@
+{
+  "name": "roq/hyperliquid/protocol/json/GetOrderStatusAck",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "status",
+      "type": "std/string_view"
+    },
+    {
+      "name": "order",
+      "type": "roq/hyperliquid/protocol/json/GetOrderStatusAckOrder"
+    }
+  ]
+}

@@ -13,6 +13,32 @@ using Helper = detail::MapHelper<Args...>;
 
 // hyperliquid::json => roq
 
+// hyperliquid::protocol::json::OrderType ==> roq::OrderType
+
+template <>
+template <>
+constexpr Helper<hyperliquid::protocol::json::OrderType>::operator std::optional<roq::OrderType>() const {
+  switch (std::get<0>(args_)) {
+    using enum hyperliquid::protocol::json::OrderType::type_t;
+    case UNDEFINED_INTERNAL:
+      return roq::OrderType::UNDEFINED;
+    case UNKNOWN_INTERNAL:
+      return roq::OrderType::UNDEFINED;
+    case LIMIT:
+      return roq::OrderType::LIMIT;
+  }
+  return {};
+}
+
+static_assert(Helper{hyperliquid::protocol::json::OrderType{hyperliquid::protocol::json::OrderType::UNDEFINED_INTERNAL}} == roq::OrderType::UNDEFINED);
+static_assert(Helper{hyperliquid::protocol::json::OrderType{hyperliquid::protocol::json::OrderType::LIMIT}} == roq::OrderType::LIMIT);
+
+template <>
+template <>
+std::optional<roq::OrderType> Map<hyperliquid::protocol::json::OrderType>::helper() const {
+  return Helper{args_};
+}
+
 // hyperliquid::protocol::json::Side ==> roq::Side
 
 template <>

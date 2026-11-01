@@ -24,6 +24,7 @@
 
 #include "roq/hyperliquid/protocol/json/get_clearing_house_state_ack.hpp"
 #include "roq/hyperliquid/protocol/json/get_open_orders_ack.hpp"
+#include "roq/hyperliquid/protocol/json/get_order_status_ack.hpp"
 #include "roq/hyperliquid/protocol/json/get_spot_clearing_house_state_ack.hpp"
 #include "roq/hyperliquid/protocol/json/get_user_fills_ack.hpp"
 
@@ -104,6 +105,12 @@ struct OrderEntry final : public Base<OrderEntry>, public server::OrderActionStr
   void get_open_orders_ack(Trace<web::rest::Response> const &, size_t index);
   void operator()(Trace<protocol::json::GetOpenOrdersAck> const &, size_t index);
 
+  // order-status
+
+  void get_order_status(TraceInfo const &, std::string_view const &client_order_id, std::string_view const &external_order_id);
+  void get_order_status_ack(Trace<web::rest::Response> const &);
+  void operator()(Trace<protocol::json::GetOrderStatusAck> const &);
+
   // user-fills
 
   void get_user_fills(TraceInfo const &, size_t index = 0);
@@ -159,7 +166,8 @@ struct OrderEntry final : public Base<OrderEntry>, public server::OrderActionStr
   } counter_;
   struct {
     utils::metrics::Profile spot_clearing_house_state, spot_clearing_house_state_ack, clearing_house_state, clearing_house_state_ack, open_orders,
-        open_orders_ack, user_fills, user_fills_ack, create_order, create_order_ack, modify_order, modify_order_ack, cancel_order, cancel_order_ack;
+        open_orders_ack, order_status, order_status_ack, user_fills, user_fills_ack, create_order, create_order_ack, modify_order, modify_order_ack,
+        cancel_order, cancel_order_ack;
   } profile_;
   struct {
     utils::metrics::Latency ping;
@@ -173,6 +181,10 @@ struct OrderEntry final : public Base<OrderEntry>, public server::OrderActionStr
   ConnectionStatus connection_status_ = {};
   // ...
   core::limit::RateLimiter rate_limiter;
+  //
+  size_t download_lost_orders_counter_ = {};
+  //
+  std::string encode_buffer_;
 };
 
 }  // namespace gateway

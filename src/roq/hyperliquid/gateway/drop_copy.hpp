@@ -73,6 +73,7 @@ struct DropCopy final : public Base<DropCopy>, public server::Stream, public web
     GET_CLEARING_HOUSE_STATE,
     SUBSCRIBE_ORDER_UPDATES,
     GET_OPEN_ORDERS,
+    GET_LOST_ORDERS,
     SUBSCRIBE_USER_FILLS,
     GET_USER_FILLS,
     SUBSCRIBE_USER_EVENTS,
@@ -112,6 +113,9 @@ struct DropCopy final : public Base<DropCopy>, public server::Stream, public web
 
   void check_request_queue(TraceInfo const &);
 
+  bool check_stale_orders();
+  void check_stale_orders(TraceInfo const &);
+
   void parse(TraceInfo const &, std::string_view const &message);
 
  private:
@@ -144,6 +148,8 @@ struct DropCopy final : public Base<DropCopy>, public server::Stream, public web
   core::Download2<State> download_;
   // ping
   std::chrono::nanoseconds next_ping_ = {};
+  //
+  std::chrono::nanoseconds next_check_stale_orders_ = {};
 };
 
 }  // namespace gateway

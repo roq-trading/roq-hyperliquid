@@ -30,7 +30,7 @@ namespace {
 auto const NAME = "rest"sv;
 
 auto const SUPPORTS = Mask{
-    SupportType::ORDER,
+    SupportType::TRADE,
 };
 
 size_t const MAX_DECODE_BUFFER_DEPTH = 1;
@@ -109,6 +109,8 @@ OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_i
           .clearing_house_state_ack = create_metrics(shared.settings, name_, "clearing_house_state_ack"sv),
           .open_orders = create_metrics(shared.settings, name_, "open_orders"sv),
           .open_orders_ack = create_metrics(shared.settings, name_, "open_orders_ack"sv),
+          .order_status = create_metrics(shared.settings, name_, "order_status"sv),
+          .order_status_ack = create_metrics(shared.settings, name_, "order_status_ack"sv),
           .user_fills = create_metrics(shared.settings, name_, "user_fills"sv),
           .user_fills_ack = create_metrics(shared.settings, name_, "user_fills_ack"sv),
           .create_order = create_metrics(shared.settings, name_, "create_order"sv),
@@ -158,6 +160,8 @@ void OrderEntry::operator()(metrics::Writer &writer) const {
       .write(profile_.clearing_house_state_ack, metrics::Type::PROFILE)
       .write(profile_.open_orders, metrics::Type::PROFILE)
       .write(profile_.open_orders_ack, metrics::Type::PROFILE)
+      .write(profile_.order_status, metrics::Type::PROFILE)
+      .write(profile_.order_status_ack, metrics::Type::PROFILE)
       .write(profile_.user_fills, metrics::Type::PROFILE)
       .write(profile_.user_fills_ack, metrics::Type::PROFILE)
       .write(profile_.create_order, metrics::Type::PROFILE)
@@ -405,7 +409,7 @@ void OrderEntry::get_open_orders_ack(Trace<web::rest::Response> const &event, si
     };
     process_response(event, handle_error, handle_success);
     if (finished) {
-      request_.orders.commit(trace_info);
+      request_.open_orders.commit(trace_info);
     }
   });
 }
@@ -459,6 +463,115 @@ void OrderEntry::operator()(Trace<protocol::json::GetOpenOrdersAck> const &event
     // log::warn("DEBUG order_update={}"sv, order_update);
     create_trace_and_dispatch(shared_.dispatcher, trace_info, order_update, stream_id_);
   }
+}
+
+// order
+
+void OrderEntry::get_order_status(TraceInfo const &, std::string_view const &client_order_id, std::string_view const &external_order_id) {
+  profile_.order_status([&]() {
+    encode_buffer_.clear();
+    fmt::format_to(
+        std::back_inserter(encode_buffer_),
+        R"({{)"
+        R"("type":"orderStatus",)"
+        R"("user":"{}",)"sv,
+        account_.get_key());
+    if (std::empty(external_order_id)) {
+      fmt::format_to(std::back_inserter(encode_buffer_), R"("oid":"0x{}")"sv, client_order_id);
+    } else {
+      fmt::format_to(std::back_inserter(encode_buffer_), R"("oid":{})"sv, external_order_id);
+    }
+    fmt::format_to(std::back_inserter(encode_buffer_), R"(}})"sv);
+    auto body = encode_buffer_;
+    auto request = web::rest::Request{
+        .method = web::http::Method::POST,
+        .path = shared_.api.market_data.get_info,
+        .query = {},
+        .accept = web::http::Accept::APPLICATION_JSON,
+        .content_type = web::http::ContentType::APPLICATION_JSON,
+        .headers = {},
+        .body = body,
+        .quality_of_service = {},
+    };
+    log::warn("DEBUG request={}"sv, request);
+    auto callback = [this](auto &event, [[maybe_unused]] auto &request_id) { get_order_status_ack(event); };
+    (*connection_)(request, callback, "open-orders"sv);
+  });
+}
+
+void OrderEntry::get_order_status_ack(Trace<web::rest::Response> const &event) {
+  profile_.order_status_ack([&]() {
+    auto &[trace_info, response] = event;
+    auto handle_error = [&](auto origin, auto status, auto error, auto const &text) {
+      log::warn(R"(origin={}, error={}, status={}, text="{}")"sv, origin, error, status, text);
+    };
+    auto handle_success = [&](auto &body) {
+      log::warn("DEBUG {}"sv, body);
+      protocol::json::GetOrderStatusAck order_status_ack{body, decode_buffer_};
+      create_trace_and_dispatch_2(trace_info, order_status_ack);
+    };
+    process_response(event, handle_error, handle_success);
+    //
+    if (download_lost_orders_counter_) {
+      --download_lost_orders_counter_;
+    } else {
+      log::fatal("Unexpected"sv);
+    }
+    log::warn("DEBUG remaining orders: {}"sv, download_lost_orders_counter_);
+    if (download_lost_orders_counter_ == 0) {
+      request_.lost_orders.commit(trace_info);
+    }
+  });
+}
+
+void OrderEntry::operator()(Trace<protocol::json::GetOrderStatusAck> const &event) {
+  auto &[trace_info, order_status_ack] = event;
+  log::info<4>("order_status_ack={}"sv, order_status_ack);
+  auto &item = order_status_ack.order.order;
+  // log::warn("DEBUG item={}"sv, item);
+  auto exchange = get_exchange_from_coin(item.coin, shared_.settings);
+  auto external_order_id = fmt::format("{}"sv, item.oid);
+  auto client_order_id = protocol::json::get_client_order_id(item.cloid);
+  auto traded_quantity = item.orig_sz - item.sz;
+  auto order_update = server::oms::OrderUpdate{
+      .account = account_.name,
+      .exchange = exchange,
+      .symbol = item.coin,
+      .side = map(item.side),
+      .position_effect = {},
+      .margin_mode = {},
+      .max_show_quantity = NaN,
+      .order_type = map(item.order_type),
+      .time_in_force = TimeInForce::GTC,  // note! we need this to always be GTC due to modify order using it
+      .execution_instructions = {},
+      .execution_destination = {},
+      .create_time_utc = {},
+      .update_time_utc = {},
+      .external_account = {},
+      .external_order_id = external_order_id,
+      .client_order_id = client_order_id,
+      .order_status = map(order_status_ack.order.status),
+      .error = {},
+      .text = {},
+      .quantity = item.orig_sz,
+      .price = item.limit_px,
+      .stop_price = NaN,
+      .leverage = NaN,
+      .remaining_quantity = item.sz,
+      .traded_quantity = traded_quantity,
+      .average_traded_price = NaN,
+      .last_traded_quantity = {},
+      .last_traded_price = {},
+      .last_liquidity = {},
+      .routing_id = {},
+      .max_request_version = {},
+      .max_response_version = {},
+      .max_accepted_version = {},
+      .update_type = UpdateType::SNAPSHOT,
+      .sending_time_utc = {},
+  };
+  // log::warn("DEBUG order_update={}"sv, order_update);
+  create_trace_and_dispatch(shared_.dispatcher, trace_info, order_update, stream_id_);
 }
 
 // user-fills
@@ -776,7 +889,19 @@ void OrderEntry::operator()(
 void OrderEntry::check_request_queue(TraceInfo const &trace_info) {
   request_.spot_clearing_house_state.check_pending(trace_info, [this](auto &trace_info) { get_spot_clearing_house_state(trace_info); });
   request_.clearing_house_state.check_pending(trace_info, [this](auto &trace_info) { get_clearing_house_state(trace_info); });
-  request_.orders.check_pending(trace_info, [this](auto &trace_info) { get_open_orders(trace_info); });
+  request_.open_orders.check_pending(trace_info, [this](auto &trace_info) { get_open_orders(trace_info); });
+  request_.lost_orders.check_pending(trace_info, [this](auto &trace_info) {
+    // XXX FIXME TODO throttle requests
+    auto helper = [&](auto &order) { get_order_status(trace_info, order.client_order_id, order.external_order_id); };
+    for (auto &[user_id, order_id] : request_.details_lost_orders) {
+      if (shared_.dispatcher.find_order(user_id, order_id, helper)) {
+        ++download_lost_orders_counter_;
+      } else {
+        log::warn("Unexpected: user_id={}, order_id={}"sv, user_id, order_id);
+      }
+    }
+    request_.details_lost_orders.clear();
+  });
   request_.trades.check_pending(trace_info, [this](auto &trace_info) { get_user_fills(trace_info); });
 }
 

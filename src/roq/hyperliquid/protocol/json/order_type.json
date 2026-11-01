@@ -1,0 +1,9 @@
+{
+  "name": "roq/hyperliquid/protocol/json/OrderType",
+  "type": "enum",
+  "values": [
+    {
+      "name": "Limit"
+    }
+  ]
+}

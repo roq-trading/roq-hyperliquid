@@ -33,8 +33,10 @@ namespace {
 auto const NAME = "ex"sv;
 
 auto const SUPPORTS = Mask{
+    SupportType::CREATE_ORDER,
+    SupportType::MODIFY_ORDER,
+    SupportType::CANCEL_ORDER,
     SupportType::ORDER_ACK,
-    SupportType::ORDER,
 };
 
 size_t const MAX_DECODE_BUFFER_DEPTH = 2;
@@ -168,7 +170,7 @@ void WebSocket::operator()(Trace<ConnectionStatus> const &event, std::string_vie
   connection_status_ = connection_status;
   auto stream_status = StreamStatus{
       .stream_id = stream_id_,
-      .account = {},
+      .account = account_.name,
       .supports = SUPPORTS,
       .transport = Transport::TCP,
       .protocol = Protocol::WS,
@@ -285,7 +287,6 @@ void WebSocket::operator()(Trace<web::socket::Disconnected> const &event) {
 void WebSocket::operator()(Trace<web::socket::Ready> const &event) {
   auto &[trace_info, ready] = event;
   create_trace_and_dispatch_2(trace_info, ConnectionStatus::READY);
-  subscribe();
 }
 
 void WebSocket::operator()(Trace<web::socket::Close> const &event) {
@@ -331,12 +332,8 @@ void WebSocket::operator()(Trace<protocol::json::Error> const &event) {
   });
 }
 
-void WebSocket::operator()(Trace<protocol::json::SubscriptionResponse> const &event) {
-  profile_.subscription_response([&]() {
-    auto &[trace_info, subscription_response] = event;
-    log::info<2>("subscription_response={}"sv, subscription_response);
-    (*connection_).touch(trace_info.source_receive_time);
-  });
+void WebSocket::operator()(Trace<protocol::json::SubscriptionResponse> const &) {
+  log::fatal("Unexpected"sv);
 }
 
 void WebSocket::operator()(Trace<protocol::json::BBO> const &) {
@@ -569,32 +566,6 @@ void WebSocket::operator()(Trace<protocol::json::ActionCancel> const &event) {
 
 // helpers
 
-void WebSocket::subscribe() {
-  /*
-  subscribe("notification"sv);
-  subscribe("orderUpdates"sv);
-  subscribe("userEvents"sv);
-  subscribe("userFills"sv);
-  subscribe("userFundings"sv);
-  // subscribe("userNonFundingLedgerUpdates"sv);
-  */
-}
-
-void WebSocket::subscribe(std::string_view const &type) {
-  auto message = fmt::format(
-      R"({{)"
-      R"("method":"subscribe",)"
-      R"("subscription":{{)"
-      R"("type":"{}",)"
-      R"("user":"{}")"
-      R"(}})"
-      R"(}})"sv,
-      type,
-      account_.get_key());
-  log::warn("DEBUG {}"sv, message);
-  (*connection_).send_text(message);
-}
-
 void WebSocket::send_ping(std::chrono::nanoseconds now) {
   assert(ping_frequency_.count() > 0);
   next_ping_ = now + ping_frequency_ / 2;
@@ -604,7 +575,6 @@ void WebSocket::send_ping(std::chrono::nanoseconds now) {
 
 void WebSocket::parse(TraceInfo const &trace_info, std::string_view const &message) {
   profile_.parse([&]() {
-    log::warn("DEBUG {}"sv, message);
     auto log_message = [&]() { log::warn(R"(*** PLEASE REPORT *** message="{}")"sv, message); };
     try {
       if (!protocol::json::Parser::dispatch(*this, message, decode_buffer_, trace_info, shared_.settings.experimental.allow_unknown_event_types)) {

@@ -48,6 +48,9 @@ get_meta_ack_margin_tables_item_margin_table.hpp
 get_meta_ack_universe_item.hpp
 get_open_orders_ack.hpp
 get_open_orders_ack_item.hpp
+get_order_status_ack.hpp
+get_order_status_ack_order.hpp
+get_order_status_ack_order_order.hpp
 get_perp_dexs_ack.hpp
 get_perp_dexs_ack_item.hpp
 get_spot_clearing_house_state_ack.hpp
@@ -69,6 +72,7 @@ modify_order_ack_response_data.hpp
 notification.hpp
 notification_data_item.hpp
 order_status.hpp
+order_type.hpp
 order_updates.hpp
 order_updates_data_item.hpp
 order_updates_data_item_order.hpp
@@ -147,6 +151,9 @@ get_meta_ack_margin_tables_item_margin_table.cpp
 get_meta_ack_universe_item.cpp
 get_open_orders_ack.cpp
 get_open_orders_ack_item.cpp
+get_order_status_ack.cpp
+get_order_status_ack_order.cpp
+get_order_status_ack_order_order.cpp
 get_perp_dexs_ack.cpp
 get_perp_dexs_ack_item.cpp
 get_spot_clearing_house_state_ack.cpp
@@ -168,6 +175,7 @@ modify_order_ack_response_data.cpp
 notification.cpp
 notification_data_item.cpp
 order_status.cpp
+order_type.cpp
 order_updates.cpp
 order_updates_data_item.cpp
 order_updates_data_item_order.cpp

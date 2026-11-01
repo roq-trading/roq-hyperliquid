@@ -5,16 +5,22 @@
 #include "roq/map.hpp"
 
 #include "roq/order_status.hpp"
+#include "roq/order_type.hpp"
 #include "roq/side.hpp"
 #include "roq/time_in_force.hpp"
 
 #include "roq/hyperliquid/protocol/json/order_status.hpp"
+#include "roq/hyperliquid/protocol/json/order_type.hpp"
 #include "roq/hyperliquid/protocol/json/side.hpp"
 #include "roq/hyperliquid/protocol/json/time_in_force.hpp"
 
 namespace roq {
 
 // hyperliquid::json => roq
+
+template <>
+template <>
+std::optional<OrderType> Map<hyperliquid::protocol::json::OrderType>::helper() const;
 
 template <>
 template <>

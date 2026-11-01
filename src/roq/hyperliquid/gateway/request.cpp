@@ -12,11 +12,12 @@ namespace gateway {
 
 // === IMPLEMENTATION ===
 
-Request::Request(Shared &shared) : spot_clearing_house_state{*this}, clearing_house_state{*this}, orders{*this}, trades{*this}, shared_{shared} {
+Request::Request(Shared &shared)
+    : spot_clearing_house_state{*this}, clearing_house_state{*this}, open_orders{*this}, lost_orders{*this}, trades{*this}, shared_{shared} {
 }
 
 bool Request::ready() const {
-  return spot_clearing_house_state.ready() && clearing_house_state.ready() && orders.ready() && trades.ready();
+  return spot_clearing_house_state.ready() && clearing_house_state.ready() && open_orders.ready() && lost_orders.ready() && trades.ready();
 }
 
 bool Request::can_request(TraceInfo const &trace_info) {

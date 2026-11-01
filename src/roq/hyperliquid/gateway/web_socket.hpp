@@ -103,9 +103,6 @@ struct WebSocket final : public Base<WebSocket>, public server::OrderActionStrea
 
   // helpers
 
-  void subscribe();
-  void subscribe(std::string_view const &type);
-
   void send_ping(std::chrono::nanoseconds now);
 
   void parse(TraceInfo const &, std::string_view const &message);

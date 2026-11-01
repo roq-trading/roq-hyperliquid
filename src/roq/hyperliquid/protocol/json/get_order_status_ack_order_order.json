@@ -1,0 +1,69 @@
+{
+  "name": "roq/hyperliquid/protocol/json/GetOrderStatusAckOrderOrder",
+  "type": "dictionary",
+  "values": [
+    {
+      "name": "coin",
+      "type": "std/string_view"
+    },
+    {
+      "name": "side",
+      "type": "roq/hyperliquid/protocol/json/Side"
+    },
+    {
+      "name": "limitPx",
+      "type": "std/double"
+    },
+    {
+      "name": "sz",
+      "type": "std/double"
+    },
+    {
+      "name": "oid",
+      "type": "std/int64"
+    },
+    {
+      "name": "timestamp",
+      "type": "std/milliseconds"
+    },
+    {
+      "name": "origSz",
+      "type": "std/double"
+    },
+    {
+      "name": "cloid",
+      "type": "std/string_view"
+    },
+    {
+      "name": "reduceOnly",
+      "type": "std/bool"
+    },
+    {
+      "name": "triggerCondition",
+      "type": "std/string_view"
+    },
+    {
+      "name": "isTrigger",
+      "type": "std/bool"
+    },
+    {
+      "name": "triggerPx",
+      "type": "std/double"
+    },
+    {
+      "name": "children"
+    },
+    {
+      "name": "isPositionTpsl",
+      "type": "std/bool"
+    },
+    {
+      "name": "orderType",
+      "type": "roq/hyperliquid/protocol/json/OrderType"
+    },
+    {
+      "name": "tif",
+      "type": "roq/hyperliquid/protocol/json/TimeInForce"
+    }
+  ]
+}
