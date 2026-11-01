@@ -179,7 +179,7 @@ void OrderEntry::operator()(Trace<ConnectionStatus> const &event, std::string_vi
   connection_status_ = connection_status;
   auto stream_status = StreamStatus{
       .stream_id = stream_id_,
-      .account = {},
+      .account = account_.name,
       .supports = SUPPORTS,
       .transport = Transport::TCP,
       .protocol = Protocol::HTTP,
