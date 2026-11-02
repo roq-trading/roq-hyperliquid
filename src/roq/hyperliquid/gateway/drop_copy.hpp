@@ -73,7 +73,7 @@ struct DropCopy final : public Base<DropCopy>, public server::Stream, public web
     GET_CLEARING_HOUSE_STATE,
     SUBSCRIBE_ORDER_UPDATES,
     GET_OPEN_ORDERS,
-    GET_LOST_ORDERS,
+    GET_STALE_ORDERS,
     SUBSCRIBE_USER_FILLS,
     GET_USER_FILLS,
     SUBSCRIBE_USER_EVENTS,

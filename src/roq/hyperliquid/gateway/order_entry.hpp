@@ -182,7 +182,7 @@ struct OrderEntry final : public Base<OrderEntry>, public server::OrderActionStr
   // ...
   core::limit::RateLimiter rate_limiter;
   //
-  size_t download_lost_orders_counter_ = {};
+  size_t download_stale_orders_counter_ = {};
   //
   std::string encode_buffer_;
 };
