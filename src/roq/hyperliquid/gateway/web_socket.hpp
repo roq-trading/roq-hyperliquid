@@ -103,7 +103,7 @@ struct WebSocket final : public Base<WebSocket>, public server::OrderActionStrea
 
   // helpers
 
-  void send_ping(std::chrono::nanoseconds now);
+  void send_ping();
 
   void parse(TraceInfo const &, std::string_view const &message);
 

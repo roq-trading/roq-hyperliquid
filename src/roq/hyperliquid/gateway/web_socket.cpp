@@ -141,9 +141,14 @@ void WebSocket::operator()(Trace<Stop> const &) {
 
 void WebSocket::operator()(Trace<Timer> const &event) {
   auto &[trace_info, timer] = event;
-  (*connection_).refresh(timer.now);
-  if (ready() && next_ping_ < timer.now) {
-    send_ping(timer.now);
+  if ((*connection_).refresh(trace_info)) {
+    if (ready()) {
+      if (next_ping_ < trace_info.origin_create_time) {
+        assert(ping_frequency_.count() > 0);
+        next_ping_ = trace_info.origin_create_time + ping_frequency_ / 2;
+        send_ping();
+      }
+    }
   }
 }
 
@@ -566,9 +571,7 @@ void WebSocket::operator()(Trace<protocol::json::ActionCancel> const &event) {
 
 // helpers
 
-void WebSocket::send_ping(std::chrono::nanoseconds now) {
-  assert(ping_frequency_.count() > 0);
-  next_ping_ = now + ping_frequency_ / 2;
+void WebSocket::send_ping() {
   auto message = R"({"method":"ping"})";
   (*connection_).send_text(message);
 }
