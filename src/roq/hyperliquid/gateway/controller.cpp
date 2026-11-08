@@ -163,10 +163,10 @@ uint16_t Controller::operator()(
     Event<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &ref_data, std::string_view const &request_id) {
   auto &[message_info, create_order] = event;
   assert(!std::empty(create_order.account));
-  if (shared_.settings.ws_api) {
-    return get_web_socket(create_order.account)(event, order, ref_data, request_id);
-  } else {
+  if (shared_.settings.misc.disable_ws_api) {
     return get_order_entry(create_order.account)(event, order, ref_data, request_id);
+  } else {
+    return get_web_socket(create_order.account)(event, order, ref_data, request_id);
   }
 }
 
@@ -179,10 +179,10 @@ uint16_t Controller::operator()(
   auto &[message_info, modify_order] = event;
   assert(!std::empty(modify_order.account));
   assert(modify_order.account == order.account);
-  if (shared_.settings.ws_api) {
-    return get_web_socket(modify_order.account)(event, order, ref_data, request_id, previous_request_id);
-  } else {
+  if (shared_.settings.misc.disable_ws_api) {
     return get_order_entry(modify_order.account)(event, order, ref_data, request_id, previous_request_id);
+  } else {
+    return get_web_socket(modify_order.account)(event, order, ref_data, request_id, previous_request_id);
   }
 }
 
@@ -195,20 +195,20 @@ uint16_t Controller::operator()(
   auto &[message_info, cancel_order] = event;
   assert(!std::empty(cancel_order.account));
   assert(cancel_order.account == order.account);
-  if (shared_.settings.ws_api) {
-    return get_web_socket(cancel_order.account)(event, order, ref_data, request_id, previous_request_id);
-  } else {
+  if (shared_.settings.misc.disable_ws_api) {
     return get_order_entry(cancel_order.account)(event, order, ref_data, request_id, previous_request_id);
+  } else {
+    return get_web_socket(cancel_order.account)(event, order, ref_data, request_id, previous_request_id);
   }
 }
 
 uint16_t Controller::operator()(Event<CancelAllOrders> const &event, std::string_view const &request_id) {
   auto &[message_info, cancel_all_orders] = event;
   assert(!std::empty(cancel_all_orders.account));
-  if (shared_.settings.ws_api) {
-    return get_web_socket(cancel_all_orders.account)(event, request_id);
-  } else {
+  if (shared_.settings.misc.disable_ws_api) {
     return get_order_entry(cancel_all_orders.account)(event, request_id);
+  } else {
+    return get_web_socket(cancel_all_orders.account)(event, request_id);
   }
 }
 
@@ -235,7 +235,7 @@ void Controller::operator()(Trace<SymbolsUpdate> const &event) {
   }
   // delayed creation of order-entry due to need for symbols
   if (!std::empty(accounts_)) {
-    if (shared_.settings.ws_api) {
+    if (!shared_.settings.misc.disable_ws_api) {
       if (std::empty(web_socket_)) {
         web_socket_ = create_web_socket<decltype(web_socket_)>(*this, context_, stream_id_, accounts_, shared_);
         Start start;

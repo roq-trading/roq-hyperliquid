@@ -22,6 +22,12 @@
       "validator": "roq/flags/validators/TimePeriod",
       "default": "60s",
       "description": "HTTP status 429 will suspend the connection for this period"
+    },
+    {
+      "name": "disable_ws_api",
+      "type": "std/bool",
+      "default": false,
+      "description": "Disable WebSocket API?"
     }
   ]
 }
