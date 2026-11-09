@@ -59,7 +59,7 @@ TEST_CASE("simple", "[json_create_order]") {
   auto request_id = "123"sv;  // note! hex value (without the "0x" prefix)
   auto now_utc = 123ms;
   auto expires_after_utc = 234ms;
-  tools::Crypto crypto{EXAMPLE_WALLET_ADDRESS, EXAMPLE_SECRET_KEY};
+  tools::Crypto crypto{EXAMPLE_WALLET_ADDRESS, EXAMPLE_SECRET_KEY, false};
   auto [action, packed] = tools::Encoder::create_order(create_order, order, ref_data, request_id, now_utc, expires_after_utc);
   auto request = crypto.sign_l1_action(action, packed, now_utc, expires_after_utc);
   CHECK(
