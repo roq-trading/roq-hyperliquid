@@ -28,6 +28,12 @@
       "type": "std/bool",
       "default": false,
       "description": "Disable WebSocket API?"
+    },
+    {
+      "name": "disable_secp256k1",
+      "type": "std/bool",
+      "default": false,
+      "description": "Disable secp256k1?"
     }
   ]
 }

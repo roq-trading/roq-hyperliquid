@@ -47,7 +47,8 @@ auto compute_connection_id(auto &packed, auto &hasher, auto &digest) {
 
 // === IMPLEMENTATION ===
 
-Crypto::Crypto(std::string_view const &key, std::string_view const &secret) : key_{key}, mainnet_{true}, account_{secret} {
+Crypto::Crypto(std::string_view const &key, std::string_view const &secret, bool disable_secp256k1)
+    : key_{key}, mainnet_{true}, account_{secret, disable_secp256k1} {
   log::warn("DEBUG wallet address={}"sv, account_.get_address());
 }
 
