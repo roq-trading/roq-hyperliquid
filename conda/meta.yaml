@@ -27,6 +27,7 @@ requirements:
     - fmt
     - libabseil
     - libopenssl-static  # roq-utils
+    - libsecp256k1
     - magic_enum
     - msgpack-cxx
     - nlohmann_json
