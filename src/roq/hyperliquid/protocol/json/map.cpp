@@ -2,9 +2,15 @@
 
 #include "roq/hyperliquid/protocol/json/map.hpp"
 
-// using namespace std::literals;
+#include "roq/server/tools/log_once.hpp"
+
+using namespace std::literals;
 
 namespace roq {
+
+namespace {
+server::tools::LogOnce LOG_ONCE{"Map"sv};
+}
 
 namespace {
 template <typename... Args>
