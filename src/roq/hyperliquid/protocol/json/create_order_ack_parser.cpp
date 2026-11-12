@@ -61,7 +61,7 @@ bool CreateOrderAckParser::dispatch(
           result = dispatch_helper<CreateOrderAck>(handler, message, buffer_stack, trace_info);
           return true;
         } else {
-          for (auto item : std::get<core::json::Array>(value)) {
+          for ([[maybe_unused]]auto item : std::get<core::json::Array>(value)) {
             // XXX could be status (dict) or string
             auto handler_2 = utils::overloaded{
                 [](core::json::Null const &) { return false; },
