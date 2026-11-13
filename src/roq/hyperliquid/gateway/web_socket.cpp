@@ -470,6 +470,7 @@ void WebSocket::operator()(Trace<protocol::json::ActionError> const &event) {
         .text = text,
         .version = {},
         .request_id = {},
+        .external_trace_id = {},
         .external_order_id = {},
         .client_order_id = {},
         .quantity = NaN,
@@ -516,6 +517,7 @@ void WebSocket::operator()(Trace<protocol::json::ActionOrder> const &event) {
         .text = text,
         .version = 1,
         .request_id = {},
+        .external_trace_id = {},
         .external_order_id = {},
         .client_order_id = {},
         .quantity = NaN,
@@ -556,6 +558,7 @@ void WebSocket::operator()(Trace<protocol::json::ActionCancel> const &event) {
         .text = text,
         .version = {},  // note! using heuristics
         .request_id = {},
+        .external_trace_id = {},
         .external_order_id = {},
         .client_order_id = {},
         .quantity = NaN,
