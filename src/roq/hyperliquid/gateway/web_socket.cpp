@@ -422,6 +422,7 @@ void WebSocket::operator()(Trace<protocol::json::OrderUpdates> const &event) {
           .execution_destination = {},
           .create_time_utc = item.order.timestamp,
           .update_time_utc = item.status_timestamp,
+          .external_trace_id = {},
           .external_account = {},
           .external_order_id = external_order_id,
           .client_order_id = client_order_id,
