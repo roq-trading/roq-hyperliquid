@@ -195,14 +195,26 @@ void OrderEntry::operator()(Trace<ConnectionStatus> const &event, std::string_vi
 
 // server::OrderActionStream
 
+void OrderEntry::operator()(Trace<server::oms::OrderActionBatchBegin> const &) {
+  throw server::oms::NotSupported{"not supported"sv};
+}
+
+void OrderEntry::operator()(Trace<server::oms::OrderActionBatchCommit> const &) {
+  throw server::oms::NotSupported{"not supported"sv};
+}
+
+void OrderEntry::operator()(Trace<server::oms::OrderActionBatchRollback> const &) {
+  throw server::oms::NotSupported{"not supported"sv};
+}
+
 uint16_t OrderEntry::operator()(
-    Event<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &ref_data, std::string_view const &request_id) {
+    Trace<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &ref_data, std::string_view const &request_id) {
   create_order(event, order, ref_data, request_id);
   return stream_id_;
 }
 
 uint16_t OrderEntry::operator()(
-    Event<ModifyOrder> const &event,
+    Trace<ModifyOrder> const &event,
     server::oms::Order const &order,
     server::oms::RefData const &ref_data,
     std::string_view const &request_id,
@@ -212,7 +224,7 @@ uint16_t OrderEntry::operator()(
 }
 
 uint16_t OrderEntry::operator()(
-    Event<CancelOrder> const &event,
+    Trace<CancelOrder> const &event,
     server::oms::Order const &order,
     server::oms::RefData const &ref_data,
     std::string_view const &request_id,
@@ -221,7 +233,7 @@ uint16_t OrderEntry::operator()(
   return stream_id_;
 }
 
-uint16_t OrderEntry::operator()(Event<CancelAllOrders> const &, [[maybe_unused]] std::string_view const &request_id) {
+uint16_t OrderEntry::operator()(Trace<CancelAllOrders> const &, [[maybe_unused]] std::string_view const &request_id) {
   throw server::oms::NotSupported{"not supported"sv};
 }
 
@@ -638,9 +650,9 @@ void OrderEntry::operator()(Trace<protocol::json::GetUserFillsAck> const &event,
 // create-order
 
 void OrderEntry::create_order(
-    Event<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &ref_data, std::string_view const &request_id) {
+    Trace<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &ref_data, std::string_view const &request_id) {
   profile_.create_order([&]() {
-    auto &[message_info, create_order] = event;
+    auto &[trace_info, create_order] = event;
     auto send_request = [&](auto &body) {
       auto path = shared_.api.simple.order_create;
       auto request = web::rest::Request{
@@ -653,14 +665,14 @@ void OrderEntry::create_order(
           .body = body,
           .quality_of_service = {},
       };
-      auto callback = [this, user_id = message_info.source, order_id = create_order.order_id](auto &event, [[maybe_unused]] auto &request_id) {
+      auto callback = [this, user_id = order.user_id, order_id = order.order_id](auto &event, [[maybe_unused]] auto &request_id) {
         auto version = 1;
         create_order_ack(event, user_id, order_id, version);
       };
       // log::warn(R"(DEBUG request="{}")"sv, request);
       (*connection_)(request, callback, request_id);
     };
-    auto now_utc = std::chrono::duration_cast<std::chrono::milliseconds>(message_info.receive_time_utc);
+    auto now_utc = std::chrono::duration_cast<std::chrono::milliseconds>(trace_info.origin_create_time_utc);
     auto expires_after_utc = now_utc + shared_.settings.rest.recv_window;
     auto [action, packed] = tools::Encoder::create_order(create_order, order, ref_data, request_id, now_utc, expires_after_utc);
     auto request = account_.sign_l1_action(action, packed, now_utc, expires_after_utc);
@@ -728,13 +740,13 @@ void OrderEntry::operator()(
 // modify-order
 
 void OrderEntry::modify_order(
-    Event<ModifyOrder> const &event,
+    Trace<ModifyOrder> const &event,
     server::oms::Order const &order,
     server::oms::RefData const &ref_data,
     [[maybe_unused]] std::string_view const &request_id,
     [[maybe_unused]] std::string_view const &previous_request_id) {
   profile_.modify_order([&]() {
-    auto &[message_info, modify_order] = event;
+    auto &[trace_info, modify_order] = event;
     auto send_request = [&](auto &body) {
       auto path = shared_.api.simple.order_create;
       auto request = web::rest::Request{
@@ -747,12 +759,12 @@ void OrderEntry::modify_order(
           .body = body,
           .quality_of_service = {},
       };
-      auto callback = [this, user_id = message_info.source, order_id = modify_order.order_id, version = modify_order.version](
+      auto callback = [this, user_id = order.user_id, order_id = order.order_id, version = modify_order.version](
                           auto &event, [[maybe_unused]] auto &request_id) { modify_order_ack(event, user_id, order_id, version); };
       log::warn(R"(DEBUG request="{}")"sv, request);
       (*connection_)(request, callback, request_id);
     };
-    auto now_utc = std::chrono::duration_cast<std::chrono::milliseconds>(message_info.receive_time_utc);
+    auto now_utc = std::chrono::duration_cast<std::chrono::milliseconds>(trace_info.origin_create_time_utc);
     auto expires_after_utc = now_utc + shared_.settings.rest.recv_window;
     auto [action, packed] = tools::Encoder::modify_order(modify_order, order, ref_data, request_id, previous_request_id, now_utc, expires_after_utc);
     auto request = account_.sign_l1_action(action, packed, now_utc, expires_after_utc);
@@ -798,13 +810,13 @@ void OrderEntry::operator()(
 // cancel-order
 
 void OrderEntry::cancel_order(
-    Event<CancelOrder> const &event,
+    Trace<CancelOrder> const &event,
     server::oms::Order const &order,
     server::oms::RefData const &ref_data,
     [[maybe_unused]] std::string_view const &request_id,
     [[maybe_unused]] std::string_view const &previous_request_id) {
   profile_.cancel_order([&]() {
-    auto &[message_info, cancel_order] = event;
+    auto &[trace_info, cancel_order] = event;
     auto send_request = [&](auto &body) {
       auto path = shared_.api.simple.order_create;
       auto request = web::rest::Request{
@@ -817,12 +829,12 @@ void OrderEntry::cancel_order(
           .body = body,
           .quality_of_service = {},
       };
-      auto callback = [this, user_id = message_info.source, order_id = cancel_order.order_id, version = cancel_order.version](
+      auto callback = [this, user_id = order.user_id, order_id = order.order_id, version = cancel_order.version](
                           auto &event, [[maybe_unused]] auto &request_id) { cancel_order_ack(event, user_id, order_id, version); };
       // log::warn(R"(DEBUG request="{}")"sv, request);
       (*connection_)(request, callback, request_id);
     };
-    auto now_utc = std::chrono::duration_cast<std::chrono::milliseconds>(message_info.receive_time_utc);
+    auto now_utc = std::chrono::duration_cast<std::chrono::milliseconds>(trace_info.origin_create_time_utc);
     auto expires_after_utc = now_utc + shared_.settings.rest.recv_window;
     auto [action, packed] = tools::Encoder::cancel_order(cancel_order, order, ref_data, request_id, previous_request_id, now_utc, expires_after_utc);
     auto request = account_.sign_l1_action(action, packed, now_utc, expires_after_utc);
