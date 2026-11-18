@@ -721,7 +721,7 @@ void OrderEntry::create_order_ack(Trace<web::rest::Response> const &event, uint8
       };
       try {
         if (!protocol::json::CreateOrderAckParser::dispatch(
-                body, decode_buffer_, trace_info, shared_.settings.experimental.allow_unknown_event_types, handle_error_2, handle_success_2)) {
+                body, decode_buffer_, trace_info, shared_.settings.app.disable_strict_parsing, handle_error_2, handle_success_2)) {
           log_message();
         }
       } catch (...) {
@@ -882,7 +882,7 @@ void OrderEntry::cancel_order_ack(Trace<web::rest::Response> const &event, uint8
       };
       try {
         if (!protocol::json::CancelOrderAckParser::dispatch(
-                body, decode_buffer_, trace_info, shared_.settings.experimental.allow_unknown_event_types, handle_error_2, handle_success_2)) {
+                body, decode_buffer_, trace_info, shared_.settings.app.disable_strict_parsing, handle_error_2, handle_success_2)) {
           log_message();
         }
       } catch (...) {
