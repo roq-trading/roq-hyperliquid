@@ -22,7 +22,7 @@ struct CancelOrderAckParser final {
       std::string_view const &message,
       core::json::BufferStack &buffer_stack,
       TraceInfo const &trace_info,
-      bool allow_unknown_event_types,
+      bool disable_strict_parsing,
       ErrorHandler error_handler,
       SuccessHandler success_handler) {
     struct MyHandler final : public Handler {
@@ -39,7 +39,7 @@ struct CancelOrderAckParser final {
       ErrorHandler error_handler_;
       SuccessHandler success_handler_;
     } handler{error_handler, success_handler};
-    return dispatch(handler, message, buffer_stack, trace_info, allow_unknown_event_types);
+    return dispatch(handler, message, buffer_stack, trace_info, disable_strict_parsing);
   }
 
  protected:
@@ -48,7 +48,7 @@ struct CancelOrderAckParser final {
     virtual void operator()(Trace<protocol::json::CancelOrderAck> const &) = 0;
   };
 
-  static bool dispatch(Handler &, std::string_view const &message, core::json::BufferStack &, TraceInfo const &, bool allow_unknown_event_types);
+  static bool dispatch(Handler &, std::string_view const &message, core::json::BufferStack &, TraceInfo const &, bool disable_strict_parsing);
 };
 
 }  // namespace json
