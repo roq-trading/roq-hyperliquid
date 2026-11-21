@@ -123,7 +123,7 @@ OrderEntry::OrderEntry(Handler &handler, io::Context &context, uint16_t stream_i
       latency_{
           .ping = create_metrics(shared.settings, name_, "ping"sv),
       },
-      account_{account}, shared_{shared}, request_{request}, rate_limiter{create_rate_limiter(shared.settings)} {
+      account_{account}, shared_{shared}, request_{request} {
 }
 
 // server::Stream

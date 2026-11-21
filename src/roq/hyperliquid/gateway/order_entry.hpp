@@ -14,8 +14,6 @@
 
 #include "roq/core/json/buffer_stack.hpp"
 
-#include "roq/core/limit/rate_limiter.hpp"
-
 #include "roq/server/stream.hpp"
 
 #include "roq/hyperliquid/gateway/account.hpp"
@@ -157,14 +155,12 @@ struct OrderEntry final : public Base<OrderEntry>, public server::OrderActionStr
 
  private:
   [[maybe_unused]] Handler &handler_;
-  // config
+  //
   uint16_t const stream_id_;
   std::string const name_;
-  // connection
   std::unique_ptr<web::rest::Client> const connection_;
-  // buffers
+  //
   core::json::BufferStack decode_buffer_;
-  // metrics
   struct {
     utils::metrics::Counter disconnect;
   } counter_;
@@ -176,18 +172,11 @@ struct OrderEntry final : public Base<OrderEntry>, public server::OrderActionStr
   struct {
     utils::metrics::Latency ping;
   } latency_;
-  // account
   Account &account_;
-  // cache
   Shared &shared_;
   Request &request_;
-  // state
   ConnectionStatus connection_status_ = {};
-  // ...
-  core::limit::RateLimiter rate_limiter;
-  //
   size_t download_stale_orders_counter_ = {};
-  //
   std::string encode_buffer_;
 };
 

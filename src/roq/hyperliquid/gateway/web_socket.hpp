@@ -113,31 +113,27 @@ struct WebSocket final : public Base<WebSocket>, public server::OrderActionStrea
 
  private:
   [[maybe_unused]] Handler &handler_;
-  // config
+  //
   uint16_t const stream_id_;
   std::string const name_;
   std::chrono::nanoseconds const ping_frequency_;
-  // web socket
   std::unique_ptr<web::socket::Client> const connection_;
-  // buffers
+  //
   core::json::BufferStack decode_buffer_;
-  // metrics
   struct {
     utils::metrics::Counter disconnect;
   } counter_;
   struct {
-    utils::metrics::Profile parse, pong, error, subscription_response, user, user_fundings, user_fills, order_updates;
+    utils::metrics::Profile parse,           //
+        pong, error, subscription_response,  //
+        user, user_fundings, user_fills, order_updates;
   } profile_;
   struct {
     utils::metrics::Latency ping, heartbeat;
   } latency_;
-  // account
   Account &account_;
-  // cache
   Shared &shared_;
-  // state
   ConnectionStatus connection_status_ = {};
-  // ping
   std::chrono::nanoseconds next_ping_ = {};
 };
 
