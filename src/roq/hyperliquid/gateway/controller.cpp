@@ -47,6 +47,10 @@ Request &get_request(auto &requests, auto &account) {
   return *(*iter).second;
 }
 
+auto create_rest(auto &gateway, auto &context, auto &stream_id, auto &shared) {
+  return std::make_unique<Rest>(gateway, context, ++stream_id, shared);
+}
+
 template <typename R>
 R create_web_socket(auto &gateway, auto &context, auto &stream_id, auto &accounts, auto &shared) {
   using result_type = std::remove_cvref_t<R>;
@@ -97,8 +101,8 @@ uint8_t Controller::parse_api(Settings const &) {
 }
 
 Controller::Controller(server::Dispatcher &dispatcher, Settings const &settings, Config const &config, io::Context &context)
-    : dispatcher_{dispatcher}, accounts_{create_accounts<decltype(accounts_)>(settings, config)}, context_{context}, shared_{dispatcher, settings},
-      requests_{create_requests<decltype(requests_)>(config, shared_)}, rest_{*this, context_, ++stream_id_, shared_} {
+    : dispatcher_{dispatcher}, context_{context}, shared_{dispatcher, settings}, accounts_{create_accounts<decltype(accounts_)>(settings, config)},
+      requests_{create_requests<decltype(requests_)>(config, shared_)}, rest_{create_rest(*this, context_, stream_id_, shared_)} {
   // must be delayed until we have symbols
   assert(std::empty(web_socket_));
   assert(std::empty(order_entry_));
@@ -217,7 +221,7 @@ void Controller::operator()(Trace<SymbolsUpdate> const &event) {
   auto [size, start_from] = shared_.symbols(symbols_update.symbols);
   ensure_symbol_slices(trace_info, size);
   for (auto &item : market_data_) {
-    (*item).subscribe(start_from);
+    dynamic_cast<server::MarketDataStream &>(*item).subscribe(start_from);
   }
   // delayed creation of order-entry due to need for symbols
   if (!std::empty(accounts_)) {
@@ -226,7 +230,7 @@ void Controller::operator()(Trace<SymbolsUpdate> const &event) {
         web_socket_ = create_web_socket<decltype(web_socket_)>(*this, context_, stream_id_, accounts_, shared_);
         Start start;
         for (auto &[_, item] : web_socket_) {
-          create_trace_and_dispatch(*item, trace_info, start);
+          create_trace_and_dispatch(dynamic_cast<server::Stream &>(*item), trace_info, start);
         }
       }
     }
@@ -234,14 +238,14 @@ void Controller::operator()(Trace<SymbolsUpdate> const &event) {
       order_entry_ = create_order_entry<decltype(order_entry_)>(*this, context_, stream_id_, accounts_, shared_, requests_);
       Start start;
       for (auto &[_, item] : order_entry_) {
-        create_trace_and_dispatch(*item, trace_info, start);
+        create_trace_and_dispatch(dynamic_cast<server::Stream &>(*item), trace_info, start);
       }
     }
     if (std::empty(drop_copy_)) {
       drop_copy_ = create_drop_copy<decltype(drop_copy_)>(*this, context_, stream_id_, accounts_, shared_, requests_);
       Start start;
       for (auto &[_, item] : drop_copy_) {
-        create_trace_and_dispatch(*item, trace_info, start);
+        create_trace_and_dispatch(dynamic_cast<server::Stream &>(*item), trace_info, start);
       }
     }
   }
@@ -254,7 +258,7 @@ void Controller::ensure_symbol_slices(TraceInfo const &trace_info, size_t size) 
     log::info("Create market-data (user-stream)"sv);
     auto obj = std::make_unique<MarketData>(*this, context_, ++stream_id_, shared_, std::size(market_data_));
     Start start;
-    create_trace_and_dispatch(*obj, trace_info, start);
+    create_trace_and_dispatch(dynamic_cast<server::Stream &>(*obj), trace_info, start);
     market_data_.emplace_back(std::move(obj));
   }
 }
@@ -266,8 +270,14 @@ void Controller::dispatch(Args &&...args) {
 
 template <typename... Args>
 void Controller::dispatch_helper(auto &self, Args &&...args) {
-  auto helper = [&](auto &target) { target(std::forward<Args>(args)...); };
-  helper(self.rest_);
+  auto helper = [&](auto &target) {
+    if constexpr (std::is_const_v<decltype(self)>) {
+      dynamic_cast<server::Stream const &>(target)(std::forward<Args>(args)...);
+    } else {
+      dynamic_cast<server::Stream &>(target)(std::forward<Args>(args)...);
+    }
+  };
+  helper(*self.rest_);
   for (auto &item : self.market_data_) {
     helper(*item);
   }
@@ -290,13 +300,13 @@ Res Controller::dispatch_order_action(Trace<T> const &event, Args &&...args) {
     if (iter == std::end(order_entry_)) [[unlikely]] {
       throw RuntimeError{R"(Unknown account="{}")"sv, value.account};
     }
-    return (*(*iter).second)(event, args...);
+    return dynamic_cast<server::OrderActionStream &>(*(*iter).second)(event, args...);
   } else {
     auto iter = web_socket_.find(value.account);
     if (iter == std::end(web_socket_)) [[unlikely]] {
       throw RuntimeError{R"(Unknown account="{}")"sv, value.account};
     }
-    return (*(*iter).second)(event, args...);
+    return dynamic_cast<server::OrderActionStream &>(*(*iter).second)(event, args...);
   }
 }
 
