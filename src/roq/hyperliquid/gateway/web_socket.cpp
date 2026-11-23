@@ -131,17 +131,17 @@ WebSocket::WebSocket(Handler &handler, io::Context &context, uint16_t stream_id,
 
 // server::Stream
 
-void WebSocket::operator()(Trace<Start> const &) {
-  (*connection_).start();
+void WebSocket::operator()(Trace<Start> const &event) {
+  (*connection_)(event);
 }
 
-void WebSocket::operator()(Trace<Stop> const &) {
-  (*connection_).stop();
+void WebSocket::operator()(Trace<Stop> const &event) {
+  (*connection_)(event);
 }
 
 void WebSocket::operator()(Trace<Timer> const &event) {
   auto &[trace_info, timer] = event;
-  if ((*connection_).refresh(trace_info)) {
+  if ((*connection_)(event)) {
     if (ready()) {
       if (next_ping_ < trace_info.origin_create_time) {
         assert(ping_frequency_.count() > 0);
@@ -208,7 +208,7 @@ void WebSocket::operator()(Trace<server::oms::OrderActionBatchRollback> const &)
   throw server::oms::NotSupported{"not supported"sv};
 }
 
-uint16_t WebSocket::operator()(
+void WebSocket::operator()(
     Trace<CreateOrder> const &event, server::oms::Order const &order, server::oms::RefData const &ref_data, std::string_view const &request_id) {
   auto &[trace_info, create_order] = event;
   auto now_utc = std::chrono::duration_cast<std::chrono::milliseconds>(trace_info.origin_create_time_utc);
@@ -229,10 +229,9 @@ uint16_t WebSocket::operator()(
       request);
   log::warn(R"(DEBUG message="{}")"sv, message);
   (*connection_).send_text(message);
-  return stream_id();
 }
 
-uint16_t WebSocket::operator()(
+void WebSocket::operator()(
     Trace<ModifyOrder> const &event,
     server::oms::Order const &order,
     server::oms::RefData const &ref_data,
@@ -257,10 +256,9 @@ uint16_t WebSocket::operator()(
       request);
   log::warn(R"(DEBUG message="{}")"sv, message);
   (*connection_).send_text(message);
-  return stream_id();
 }
 
-uint16_t WebSocket::operator()(
+void WebSocket::operator()(
     Trace<CancelOrder> const &event,
     server::oms::Order const &order,
     server::oms::RefData const &ref_data,
@@ -285,10 +283,9 @@ uint16_t WebSocket::operator()(
       request);
   log::warn(R"(DEBUG message="{}")"sv, message);
   (*connection_).send_text(message);
-  return stream_id();
 }
 
-uint16_t WebSocket::operator()(Trace<CancelAllOrders> const &, [[maybe_unused]] std::string_view const &request_id) {
+void WebSocket::operator()(Trace<CancelAllOrders> const &, [[maybe_unused]] std::string_view const &request_id) {
   throw server::oms::NotSupported{"not supported"sv};
 }
 
