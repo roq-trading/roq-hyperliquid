@@ -37,10 +37,6 @@ struct WebSocket final : public Base<WebSocket>, public server::OrderActionStrea
 
   // server::Stream
 
-  uint16_t stream_id() const override { return stream_id_; }
-
-  bool ready() const override { return connection_status_ == ConnectionStatus::READY; }
-
   void operator()(Trace<Start> const &) override;
   void operator()(Trace<Stop> const &) override;
   void operator()(Trace<Timer> const &) override;
@@ -113,7 +109,6 @@ struct WebSocket final : public Base<WebSocket>, public server::OrderActionStrea
  private:
   [[maybe_unused]] Handler &handler_;
   //
-  uint16_t const stream_id_;
   std::string const name_;
   std::chrono::nanoseconds const ping_frequency_;
   std::unique_ptr<web::socket::Client> const connection_;
@@ -132,7 +127,6 @@ struct WebSocket final : public Base<WebSocket>, public server::OrderActionStrea
   } latency_;
   Account &account_;
   Shared &shared_;
-  ConnectionStatus connection_status_ = {};
   std::chrono::nanoseconds next_ping_ = {};
 };
 

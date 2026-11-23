@@ -107,7 +107,7 @@ auto decode_request_id(uint64_t request_id) {
 // === IMPLEMENTATION ===
 
 WebSocket::WebSocket(Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared)
-    : handler_{handler}, stream_id_{stream_id}, name_{create_name(stream_id_)}, ping_frequency_{shared.settings.ws.ping_freq},
+    : server::OrderActionStream{stream_id}, handler_{handler}, name_{create_name(stream_id)}, ping_frequency_{shared.settings.ws.ping_freq},
       connection_{create_connection(*this, shared.settings, context, shared)}, decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
@@ -172,25 +172,26 @@ void WebSocket::operator()(metrics::Writer &writer) const {
 
 void WebSocket::operator()(Trace<ConnectionStatus> const &event, std::string_view const &reason) {
   auto &[trace_info, connection_status] = event;
-  connection_status_ = connection_status;
-  auto stream_status = StreamStatus{
-      .stream_id = stream_id_,
-      .account = account_.name,
-      .supports = SUPPORTS,
-      .transport = Transport::TCP,
-      .protocol = Protocol::WS,
-      .encoding = {Encoding::JSON},
-      .priority = Priority::PRIMARY,
-      .connection_status = connection_status_,
-      .reason = reason,
-      .interface = (*connection_).get_interface(),
-      .proxy = (*connection_).get_proxy(),
-      .peer = (*connection_).get_current_peer(),
-      .authority = (*connection_).get_current_authority(),
-      .path = (*connection_).get_current_path(),
-  };
-  log::info("stream_status={}"sv, stream_status);
-  create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
+  if (update(connection_status, reason)) {
+    auto stream_status = StreamStatus{
+        .stream_id = stream_id(),
+        .account = account_.name,
+        .supports = SUPPORTS,
+        .transport = Transport::TCP,
+        .protocol = Protocol::WS,
+        .encoding = {Encoding::JSON},
+        .priority = Priority::PRIMARY,
+        .connection_status = connection_status,
+        .reason = reason,
+        .interface = (*connection_).get_interface(),
+        .proxy = (*connection_).get_proxy(),
+        .peer = (*connection_).get_current_peer(),
+        .authority = (*connection_).get_current_authority(),
+        .path = (*connection_).get_current_path(),
+    };
+    log::info("stream_status={}"sv, stream_status);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, stream_status);
+  }
 }
 
 // server::OrderActionStream
@@ -228,7 +229,7 @@ uint16_t WebSocket::operator()(
       request);
   log::warn(R"(DEBUG message="{}")"sv, message);
   (*connection_).send_text(message);
-  return stream_id_;
+  return stream_id();
 }
 
 uint16_t WebSocket::operator()(
@@ -256,7 +257,7 @@ uint16_t WebSocket::operator()(
       request);
   log::warn(R"(DEBUG message="{}")"sv, message);
   (*connection_).send_text(message);
-  return stream_id_;
+  return stream_id();
 }
 
 uint16_t WebSocket::operator()(
@@ -284,7 +285,7 @@ uint16_t WebSocket::operator()(
       request);
   log::warn(R"(DEBUG message="{}")"sv, message);
   (*connection_).send_text(message);
-  return stream_id_;
+  return stream_id();
 }
 
 uint16_t WebSocket::operator()(Trace<CancelAllOrders> const &, [[maybe_unused]] std::string_view const &request_id) {
@@ -299,12 +300,12 @@ void WebSocket::operator()(Trace<web::socket::Connected> const &) {
 void WebSocket::operator()(Trace<web::socket::Disconnected> const &event) {
   auto &[trace_info, disconnected] = event;
   ++counter_.disconnect;
-  create_trace_and_dispatch_2(trace_info, ConnectionStatus::DISCONNECTED);
+  publish(trace_info, ConnectionStatus::DISCONNECTED);
 }
 
 void WebSocket::operator()(Trace<web::socket::Ready> const &event) {
   auto &[trace_info, ready] = event;
-  create_trace_and_dispatch_2(trace_info, ConnectionStatus::READY);
+  publish(trace_info, ConnectionStatus::READY);
 }
 
 void WebSocket::operator()(Trace<web::socket::Close> const &event) {
@@ -315,7 +316,7 @@ void WebSocket::operator()(Trace<web::socket::Close> const &event) {
 void WebSocket::operator()(Trace<web::socket::Latency> const &event) {
   auto &[trace_info, latency] = event;
   auto external_latency = ExternalLatency{
-      .stream_id = stream_id_,
+      .stream_id = stream_id(),
       .account = {},
       .latency = latency.sample,
   };
@@ -459,7 +460,7 @@ void WebSocket::operator()(Trace<protocol::json::OrderUpdates> const &event) {
           .sending_time_utc = {},
       };
       log::warn("DEBUG order_update={}"sv, order_update);
-      create_trace_and_dispatch(shared_.dispatcher, trace_info, order_update, stream_id_);
+      create_trace_and_dispatch(shared_.dispatcher, trace_info, order_update, stream_id());
     }
   });
 }
@@ -489,7 +490,7 @@ void WebSocket::operator()(Trace<protocol::json::ActionError> const &event) {
         .quantity = NaN,
         .price = NaN,
     };
-    create_trace_and_dispatch(shared_.dispatcher, trace_info, response, stream_id_, user_id, order_id);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, response, stream_id(), user_id, order_id);
   };
   auto helper = [&]([[maybe_unused]] auto &order) {
     handle_error(Origin::EXCHANGE, RequestStatus::REJECTED, Error::UNKNOWN, action_error.data.response.payload.response);
@@ -536,7 +537,7 @@ void WebSocket::operator()(Trace<protocol::json::ActionOrder> const &event) {
         .quantity = NaN,
         .price = NaN,
     };
-    create_trace_and_dispatch(shared_.dispatcher, trace_info, response, stream_id_, user_id, order_id);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, response, stream_id(), user_id, order_id);
   };
   auto helper = [&]([[maybe_unused]] auto &order) { handle_error(Origin::EXCHANGE, RequestStatus::REJECTED, Error::UNKNOWN, message); };
   if (shared_.dispatcher.find_order(user_id, order_id, helper)) {
@@ -577,7 +578,7 @@ void WebSocket::operator()(Trace<protocol::json::ActionCancel> const &event) {
         .quantity = NaN,
         .price = NaN,
     };
-    create_trace_and_dispatch(shared_.dispatcher, trace_info, response, stream_id_, user_id, order_id);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, response, stream_id(), user_id, order_id);
   };
   auto helper = [&]([[maybe_unused]] auto &order) { handle_error(Origin::EXCHANGE, RequestStatus::REJECTED, Error::UNKNOWN, message); };
   if (shared_.dispatcher.find_order(user_id, order_id, helper)) {
