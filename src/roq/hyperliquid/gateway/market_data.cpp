@@ -92,9 +92,9 @@ auto get_exchange_from_coin(auto &coin, auto &settings) {
 // === IMPLEMENTATION ===
 
 MarketData::MarketData(Handler &handler, io::Context &context, uint16_t stream_id, Shared &shared, size_t index)
-    : server::MarketDataStream{stream_id}, handler_{handler}, name_{create_name(stream_id)}, index_{index}, ping_frequency_{shared.settings.ws.ping_freq},
-      connection_{create_connection(*this, shared.settings, context, shared)}, decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
-      request_id_{stream_id * REQUEST_ID},
+    : server::MarketDataStream{stream_id, {}, SUPPORTS}, handler_{handler}, name_{create_name(stream_id)}, index_{index},
+      ping_frequency_{shared.settings.ws.ping_freq}, connection_{create_connection(*this, shared.settings, context, shared)},
+      decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH}, request_id_{stream_id * REQUEST_ID},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
@@ -162,9 +162,9 @@ void MarketData::operator()(Trace<ConnectionStatus> const &event, std::string_vi
   auto &[trace_info, connection_status] = event;
   if (update(connection_status, reason)) {
     auto stream_status = StreamStatus{
-        .stream_id = stream_id(),
-        .account = {},
-        .supports = SUPPORTS,
+        .stream_id = stream_id,
+        .account = account,
+        .supports = supports,
         .transport = Transport::TCP,
         .protocol = Protocol::WS,
         .encoding = {Encoding::JSON},
@@ -217,7 +217,7 @@ void MarketData::operator()(Trace<web::socket::Close> const &event) {
 void MarketData::operator()(Trace<web::socket::Latency> const &event) {
   auto &[trace_info, latency] = event;
   auto external_latency = ExternalLatency{
-      .stream_id = stream_id(),
+      .stream_id = stream_id,
       .account = {},
       .latency = latency.sample,
   };
@@ -268,7 +268,7 @@ void MarketData::operator()(Trace<protocol::json::BBO> const &event) {
     if (std::size(bbo.data.bbo) == 2) {
       auto exchange = get_exchange_from_coin(bbo.data.coin, shared_.settings);
       auto top_of_book = TopOfBook{
-          .stream_id = stream_id(),
+          .stream_id = stream_id,
           .exchange = exchange,
           .symbol = bbo.data.coin,
           .layer =
@@ -320,7 +320,7 @@ void MarketData::operator()(Trace<protocol::json::L2Book> const &event) {
     if (!(std::empty(shared_.bids) && std::empty(shared_.asks))) {
       auto exchange = get_exchange_from_coin(l2book.data.coin, shared_.settings);
       auto market_by_price_update = MarketByPriceUpdate{
-          .stream_id = stream_id(),
+          .stream_id = stream_id,
           .exchange = exchange,
           .symbol = l2book.data.coin,
           .bids = shared_.bids,
@@ -353,7 +353,7 @@ void MarketData::operator()(Trace<protocol::json::Trades> const &event) {
       }
       auto exchange = get_exchange_from_coin(coin, shared_.settings);
       auto trade_summary = TradeSummary{
-          .stream_id = stream_id(),
+          .stream_id = stream_id,
           .exchange = exchange,
           .symbol = coin,
           .trades = shared_.trades,
@@ -411,7 +411,7 @@ void MarketData::operator()(Trace<protocol::json::ActiveAssetCtx> const &event) 
     }};
     auto exchange = get_exchange_from_coin(active_asset_ctx.data.coin, shared_.settings);
     auto statistics_update = StatisticsUpdate{
-        .stream_id = stream_id(),
+        .stream_id = stream_id,
         .exchange = exchange,
         .symbol = active_asset_ctx.data.coin,
         .statistics = statistics,

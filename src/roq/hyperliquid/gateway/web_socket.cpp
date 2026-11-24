@@ -107,8 +107,9 @@ auto decode_request_id(uint64_t request_id) {
 // === IMPLEMENTATION ===
 
 WebSocket::WebSocket(Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared)
-    : server::OrderActionStream{stream_id}, handler_{handler}, name_{create_name(stream_id)}, ping_frequency_{shared.settings.ws.ping_freq},
-      connection_{create_connection(*this, shared.settings, context, shared)}, decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
+    : server::OrderActionStream{stream_id, account.name, SUPPORTS}, handler_{handler}, name_{create_name(stream_id)},
+      ping_frequency_{shared.settings.ws.ping_freq}, connection_{create_connection(*this, shared.settings, context, shared)},
+      decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
       },
@@ -174,9 +175,9 @@ void WebSocket::operator()(Trace<ConnectionStatus> const &event, std::string_vie
   auto &[trace_info, connection_status] = event;
   if (update(connection_status, reason)) {
     auto stream_status = StreamStatus{
-        .stream_id = stream_id(),
-        .account = account_.name,
-        .supports = SUPPORTS,
+        .stream_id = stream_id,
+        .account = account,
+        .supports = supports,
         .transport = Transport::TCP,
         .protocol = Protocol::WS,
         .encoding = {Encoding::JSON},
@@ -313,7 +314,7 @@ void WebSocket::operator()(Trace<web::socket::Close> const &event) {
 void WebSocket::operator()(Trace<web::socket::Latency> const &event) {
   auto &[trace_info, latency] = event;
   auto external_latency = ExternalLatency{
-      .stream_id = stream_id(),
+      .stream_id = stream_id,
       .account = {},
       .latency = latency.sample,
   };
@@ -457,7 +458,7 @@ void WebSocket::operator()(Trace<protocol::json::OrderUpdates> const &event) {
           .sending_time_utc = {},
       };
       log::warn("DEBUG order_update={}"sv, order_update);
-      create_trace_and_dispatch(shared_.dispatcher, trace_info, order_update, stream_id());
+      create_trace_and_dispatch(shared_.dispatcher, trace_info, order_update, stream_id);
     }
   });
 }
@@ -487,7 +488,7 @@ void WebSocket::operator()(Trace<protocol::json::ActionError> const &event) {
         .quantity = NaN,
         .price = NaN,
     };
-    create_trace_and_dispatch(shared_.dispatcher, trace_info, response, stream_id(), user_id, order_id);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, response, stream_id, user_id, order_id);
   };
   auto helper = [&]([[maybe_unused]] auto &order) {
     handle_error(Origin::EXCHANGE, RequestStatus::REJECTED, Error::UNKNOWN, action_error.data.response.payload.response);
@@ -534,7 +535,7 @@ void WebSocket::operator()(Trace<protocol::json::ActionOrder> const &event) {
         .quantity = NaN,
         .price = NaN,
     };
-    create_trace_and_dispatch(shared_.dispatcher, trace_info, response, stream_id(), user_id, order_id);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, response, stream_id, user_id, order_id);
   };
   auto helper = [&]([[maybe_unused]] auto &order) { handle_error(Origin::EXCHANGE, RequestStatus::REJECTED, Error::UNKNOWN, message); };
   if (shared_.dispatcher.find_order(user_id, order_id, helper)) {
@@ -575,7 +576,7 @@ void WebSocket::operator()(Trace<protocol::json::ActionCancel> const &event) {
         .quantity = NaN,
         .price = NaN,
     };
-    create_trace_and_dispatch(shared_.dispatcher, trace_info, response, stream_id(), user_id, order_id);
+    create_trace_and_dispatch(shared_.dispatcher, trace_info, response, stream_id, user_id, order_id);
   };
   auto helper = [&]([[maybe_unused]] auto &order) { handle_error(Origin::EXCHANGE, RequestStatus::REJECTED, Error::UNKNOWN, message); };
   if (shared_.dispatcher.find_order(user_id, order_id, helper)) {

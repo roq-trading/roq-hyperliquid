@@ -82,7 +82,7 @@ auto get_exchange_from_coin(auto &coin, auto &settings) {
 // === IMPLEMENTATION ===
 
 DropCopy::DropCopy(Handler &handler, io::Context &context, uint16_t stream_id, Account &account, Shared &shared, Request &request)
-    : server::Stream{stream_id}, handler_{handler}, name_{create_name(stream_id)}, ping_frequency_{shared.settings.ws.ping_freq},
+    : server::Stream{stream_id, account.name, SUPPORTS}, handler_{handler}, name_{create_name(stream_id)}, ping_frequency_{shared.settings.ws.ping_freq},
       connection_{create_connection(*this, shared.settings, context, shared)}, decode_buffer_{shared.settings.misc.decode_buffer_size, MAX_DECODE_BUFFER_DEPTH},
       counter_{
           .disconnect = create_metrics(shared.settings, name_, "disconnect"sv),
@@ -151,9 +151,9 @@ void DropCopy::operator()(Trace<ConnectionStatus> const &event, std::string_view
   auto &[trace_info, connection_status] = event;
   if (update(connection_status, reason)) {
     auto stream_status = StreamStatus{
-        .stream_id = stream_id(),
-        .account = account_.name,
-        .supports = SUPPORTS,
+        .stream_id = stream_id,
+        .account = account,
+        .supports = supports,
         .transport = Transport::TCP,
         .protocol = Protocol::WS,
         .encoding = {Encoding::JSON},
@@ -197,7 +197,7 @@ void DropCopy::operator()(Trace<web::socket::Close> const &event) {
 void DropCopy::operator()(Trace<web::socket::Latency> const &event) {
   auto &[trace_info, latency] = event;
   auto external_latency = ExternalLatency{
-      .stream_id = stream_id(),
+      .stream_id = stream_id,
       .account = {},
       .latency = latency.sample,
   };
@@ -435,7 +435,7 @@ void DropCopy::operator()(Trace<protocol::json::OrderUpdates> const &event) {
           .sending_time_utc = {},
       };
       log::warn("DEBUG order_update={}"sv, order_update);
-      create_trace_and_dispatch(shared_.dispatcher, trace_info, order_update, stream_id());
+      create_trace_and_dispatch(shared_.dispatcher, trace_info, order_update, stream_id);
     }
   });
 }
