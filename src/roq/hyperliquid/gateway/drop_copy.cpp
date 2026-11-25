@@ -107,6 +107,25 @@ DropCopy::DropCopy(Handler &handler, io::Context &context, uint16_t stream_id, A
 
 // server::Stream
 
+void DropCopy::operator()(metrics::Writer &writer) const {
+  writer
+      // counter
+      .write(counter_.disconnect, metrics::Type::COUNTER)
+      // profile
+      .write(profile_.parse, metrics::Type::PROFILE)
+      .write(profile_.pong, metrics::Type::PROFILE)
+      .write(profile_.error, metrics::Type::PROFILE)
+      .write(profile_.subscription_response, metrics::Type::PROFILE)
+      .write(profile_.user, metrics::Type::PROFILE)
+      .write(profile_.user_fundings, metrics::Type::PROFILE)
+      .write(profile_.user_fills, metrics::Type::PROFILE)
+      .write(profile_.order_updates, metrics::Type::PROFILE)
+      .write(profile_.notification, metrics::Type::PROFILE)
+      // latency
+      .write(latency_.ping, metrics::Type::LATENCY)
+      .write(latency_.heartbeat, metrics::Type::LATENCY);
+}
+
 void DropCopy::operator()(Trace<Start> const &event) {
   (*connection_)(event);
 }
@@ -126,25 +145,6 @@ void DropCopy::operator()(Trace<Timer> const &event) {
     }
     check_request_queue(trace_info);
   }
-}
-
-void DropCopy::operator()(metrics::Writer &writer) const {
-  writer
-      // counter
-      .write(counter_.disconnect, metrics::Type::COUNTER)
-      // profile
-      .write(profile_.parse, metrics::Type::PROFILE)
-      .write(profile_.pong, metrics::Type::PROFILE)
-      .write(profile_.error, metrics::Type::PROFILE)
-      .write(profile_.subscription_response, metrics::Type::PROFILE)
-      .write(profile_.user, metrics::Type::PROFILE)
-      .write(profile_.user_fundings, metrics::Type::PROFILE)
-      .write(profile_.user_fills, metrics::Type::PROFILE)
-      .write(profile_.order_updates, metrics::Type::PROFILE)
-      .write(profile_.notification, metrics::Type::PROFILE)
-      // latency
-      .write(latency_.ping, metrics::Type::LATENCY)
-      .write(latency_.heartbeat, metrics::Type::LATENCY);
 }
 
 void DropCopy::operator()(Trace<ConnectionStatus> const &event, std::string_view const &reason) {

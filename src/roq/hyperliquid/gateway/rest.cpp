@@ -115,21 +115,6 @@ Rest::Rest(Handler &handler, io::Context &context, uint16_t stream_id, Shared &s
 
 // server::Stream
 
-void Rest::operator()(Trace<Start> const &event) {
-  (*connection_)(event);
-}
-
-void Rest::operator()(Trace<Stop> const &event) {
-  (*connection_)(event);
-}
-
-void Rest::operator()(Trace<Timer> const &event) {
-  if ((*connection_)(event)) {
-    if (ready()) {
-    }
-  }
-}
-
 void Rest::operator()(metrics::Writer &writer) const {
   writer
       // counter
@@ -143,6 +128,21 @@ void Rest::operator()(metrics::Writer &writer) const {
       .write(profile_.meta_ack, metrics::Type::PROFILE)
       // latency
       .write(latency_.ping, metrics::Type::LATENCY);
+}
+
+void Rest::operator()(Trace<Start> const &event) {
+  (*connection_)(event);
+}
+
+void Rest::operator()(Trace<Stop> const &event) {
+  (*connection_)(event);
+}
+
+void Rest::operator()(Trace<Timer> const &event) {
+  if ((*connection_)(event)) {
+    if (ready()) {
+    }
+  }
 }
 
 void Rest::operator()(Trace<ConnectionStatus> const &event, std::string_view const &reason) {
